@@ -1,0 +1,31 @@
+# modules needed for CPM_stonehaven
+# installon jasmin  by 
+# 1)   module load jasr 
+# 2    mamba env create -p ~/CPMpy -f requirements.yml
+name: CPMpy
+channels:
+    - conda-forge
+    - defaults
+dependencies:
+   - python=3.9
+   - ipython
+   - xarray~=2022.9.0
+   - scipy~=1.9.1
+   - pandas~=1.4.4
+   - numpy~=1.21.5
+   - rpy2~=3.5.6
+   - matplotlib~=3.6.0
+   - pathlib~=1.0.1
+   - cartopy~=0.21.0
+   - rioxarray~=0.13.1
+   - statsmodels~=0.13.2
+   - iris~=3.3.1
+   - cftime~=1.6.2
+   - dask~=2022.9.2
+   - fiona~=1.8.22
+   - shapely~=1.8.4
+   - zlib~=1.2.13
+   - requests~=2.28.1
+   - r-extRemes
+   - seaborn~=0.13
+
