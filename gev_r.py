@@ -8,9 +8,12 @@ import pandas as pd
 import os
 import numpy as np
 import typing
+import platform
 
-os.environ['R_HOME'] = \
-    r"C:\Users\stett2\AppData\Local\Microsoft\AppV\Client\Integration\0E3F48F7-DE80-473E-ABFA-A6BC515ABDCA\Root"
+if platform.node() == "geos-w-048": # SFBT's laptop. Need to set R_HOME
+    r_home=r"C:\Users\stett2\AppData\Local\Microsoft\AppV\Client\Integration\0E3F48F7-DE80-473E-ABFA-A6BC515ABDCA\Root"
+    os.environ['R_HOME'] = r_home
+
 # will need adjusting depending on where R got installed
 import rpy2
 import rpy2.robjects as robjects
