@@ -1,0 +1,2 @@
+Guidance for running processing code
+* ./process_radar_data.py 2020 --resolution 1km --verbose --monitor --coarsen 4 --outdir /gws/nopw/j04/edin_cesd/stett2/radar4km --region 52500 497500 502500 1497500 --nodaily

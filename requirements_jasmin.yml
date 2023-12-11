@@ -1,7 +1,7 @@
 # modules needed for CPM_analysis
 # install on jasmin  by 
 # 1)   module load jasr 
-# 2    mamba env create -p ~/CPMpy -f requirements.yml
+# 2    mamba env create -p ~/CPMpy -f requirements_jasmin.yml
 # OR update:
 # 1) module load jasr
 # 2) mamba env create -p ~/CPMpy -f requirements.ymlupdate 
@@ -10,8 +10,8 @@ channels:
     - conda-forge
     - defaults
 dependencies:
-   - python=3.9
-   - ipython
+   - python~=3.9
+   - ipython~=8.18
    - xarray~=2022.9.0
    - scipy~=1.9.1
    - pandas~=1.4.4
@@ -30,4 +30,5 @@ dependencies:
    - requests~=2.28.1
    - r-extRemes
    - seaborn~=0.13
+   - cdo>=2.0.4
 
