@@ -50,52 +50,8 @@ def inv_disc(disc_time:xarray.DataArray) -> xarray.DataArray:
     result =cftime.num2date(disc_time,units=time_unit,calendar='360day')
     return result
 
-def quants_locn(data_set:xarray.Dataset,
-                dimension:typing.Optional[typing.Union[str,typing.List[str]]]=None,
-                quantiles:typing.Optional[typing.Union[np.ndarray,typing.List[float]]]=None,
-                x_coord:str = 'grid_longitude',
-                y_coord:str = 'grid_latitude') -> xarray.Dataset:
-    """ compute quantiles and locations"""
-    if quantiles is None:
-        quantiles=np.linspace(0.0,1.0,6)
 
-    data_array = data_set.maxV # maximum values
-    time_array = data_set.maxT # time when max occurs
-    quant = data_array.quantile(quantiles,dim=dimension).rename(quantile="quantv")
-    order_values = data_array.values.argsort()
-    oindices = ((data_array.size-1)*quantiles).astype('int64')
-    indices = order_values[oindices] # actual indices to the data where the quantiles are roughly
-    indices = xarray.DataArray(indices, coords=dict(quantv=quantiles)) # and give them co-ords
-    y = data_array[y_coord].broadcast_like(data_array)[indices]
-    x = data_array[x_coord].broadcast_like(data_array)[indices]
-    time = time_array[indices]
-    result = xarray.Dataset(dict(x=x,y=y,t=time,quant=quant))
-    # drop unneeded coords
-    coords_to_drop = [c for c in result.coords if c not in result.dims]
-    result = result.drop_vars(coords_to_drop)
-    return result
 
-def event_stats(max_precip, max_time,group, dim,source=None):
-
-    if source is None:
-        source = 'CPM'
-    if source == 'CPM':
-        x_coord='grid_longitude'
-        y_coord = 'grid_latitude'
-    elif source == 'radar':
-        x_coord='projection_x_coordinate'
-        y_coord = 'projection_y_coordinate'
-    else:
-        raise ValueError(f"Unknown source {source}")
-
-    ds=xarray.Dataset(dict(maxV=max_precip,maxT=max_time))
-    grper= ds.groupby(group)
-    quantiles = np.linspace(0,1,21)
-    dataSet = grper.map(quants_locn,quantiles=quantiles,x_coord=x_coord,y_coord=y_coord).rename(quant='max_precip')
-    grper2 = max_precip.groupby(group)
-    count = grper2.count().rename("# Cells")
-    dataSet['count_cells']=count
-    return dataSet
 
 
 def time_convert(DataArray, ref_yr=1970, set_attrs=True,calendar='360_day'):

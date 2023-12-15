@@ -8,7 +8,7 @@ import commonLib
 import xarray
 import scipy.stats
 import numpy as np
-import gev_r
+from R_python import gev_r
 
 proj=ccrs.PlateCarree()
 projGB=ccrs.OSGB()
@@ -59,7 +59,7 @@ coords_to_drop=['grid_latitude',
 ]
 cet = cet.drop_vars(coords_to_drop,errors='ignore')
 ds=ds.drop_vars(coords_to_drop,errors='ignore')
-fit = gev_r.xarray_gev(ds.seasonalMax,cov=[cet],dim='indx')
+fit = gev_r.xarray_gev(ds.seasonalMax, cov=[cet], dim='indx')
 
 t_today = obs_cet_jja.sel(time=slice('2014','2023')).mean()
 t_PI = float(obs_cet_jja.sel(time=slice('1850','1899')).mean())

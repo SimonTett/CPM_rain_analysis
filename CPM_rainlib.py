@@ -3,7 +3,7 @@ Provides classes, variables and functions used across the project
 """
 
 import fiona
-
+import rioxarray
 import iris
 import tarfile
 import gzip
@@ -21,9 +21,10 @@ import cftime
 import cf_units
 import matplotlib.pyplot as plt
 import iris.exceptions
+import typing
 
 bad_data_err = (
-zlib.error, ValueError, TypeError, iris.exceptions.ConstraintMismatchError, gzip.BadGzipFile)  # possible bad data
+    zlib.error, ValueError, TypeError, iris.exceptions.ConstraintMismatchError, gzip.BadGzipFile)  # possible bad data
 # bad_data_err = (zlib.error,iris.exceptions.ConstraintMismatchError,gzip.BadGzipFile) # possible bad data
 machine = platform.node()
 if ('jasmin.ac.uk' in machine) or ('jc.rl.ac.uk' in machine):
@@ -300,3 +301,135 @@ def std_decorators(ax, showregions=True, radarNames=False):
 
     ax.add_feature(coastline)
     # ax.add_feature(nations, edgecolor='black')
+
+
+def get_radar_data(file: pathlib.Path,
+                   topog_grid: typing.Optional[int] = None,
+                   region: typing.Optional[dict] = None,
+                   height_range:slice=slice(0, 200),
+                   mxMeanRain:float=1000.) -> (xarray.DataArray,xarray.DataArray,xarray.DataArray):
+    """
+    read in radar data and mask it by heights and mean rain being reasonable.
+    :param file: file to be read in
+    :param region: region to extract. If None is Edinburgh region
+    :param height_range: Height range to use (all data strictly *between* these values will be used)
+    :param mxMeanRain: the maximum mean rain allowed (QC)
+    :return: Data masked for region requested & mxTime
+    """
+
+    radar_precip = xarray.open_dataset(file)  #
+    if region is not None:
+        radar_precip = radar_precip.sel(**region)
+    rseas = radar_precip.drop_vars('No_samples').resample(time='QS-Dec')
+    rseas = rseas.map(time_process, varPrefix='monthly', summary_prefix='seasonal')
+    rseas = rseas.sel(time=(rseas.time.dt.season == 'JJA'))  # Summer max rain
+    topog = read_90m_topog(region=region, resample=topog_grid) # read in topography and regrid
+    top_fit_grid = topog.interp_like(rseas.isel(time=0).squeeze())
+
+    htMsk = (top_fit_grid > height_range.start) & (top_fit_grid < height_range.stop)  # in ht range
+    # mask by seasonal sum < 1000.
+    mskRain = ((rseas.seasonalMean * (30 + 31 + 31) / 4.) < mxMeanRain) & htMsk
+    rseasMskmax = xarray.where(mskRain, rseas.seasonalMax, np.nan)
+    mxTime = rseas.seasonalMaxTime
+
+    return (rseasMskmax, mxTime, top_fit_grid)
+
+
+def read_90m_topog(region: typing.Optional[dict] = None, resample=None):
+    """
+    Read 90m DEM data from UoE regridded OSGB data.
+    Fix various problems
+    :param region: region to select to.
+    :param resample: If not None then the amount to coarsen by.
+    :return: topography dataset
+    """
+    topog = rioxarray.open_rasterio(dataDir / 'uk_srtm')
+    topog = topog.reindex(y=topog.y[::-1]).rename(x='projection_x_coordinate', y='projection_y_coordinate')
+    if region is not None:
+        topog = topog.sel(**region)
+    topog = topog.load().squeeze()
+    L = (topog > -10000) & (topog < 10000)  # fix bad data. L is where data is good!
+    topog = topog.where(L)
+    if resample is not None:
+        topog = topog.coarsen(projection_x_coordinate=resample,
+                              projection_y_coordinate=resample, boundary='pad').mean()
+    return topog
+
+
+def event_stats(max_precip: xarray.Dataset,
+                max_time: xarray.Dataset,
+                group,
+                source: str = "CPM"):
+
+    if source == 'CPM':
+        x_coord = 'grid_longitude'
+        y_coord = 'grid_latitude'
+    elif source == 'radar':
+        x_coord = 'projection_x_coordinate'
+        y_coord = 'projection_y_coordinate'
+    else:
+        raise ValueError(f"Unknown source {source}")
+
+    ds = xarray.Dataset(dict(maxV=max_precip, maxT=max_time))
+    grper = ds.groupby(group)
+    quantiles = np.linspace(0, 1, 21)
+    dataSet = grper.map(quants_locn, quantiles=quantiles, x_coord=x_coord, y_coord=y_coord).rename(quant='max_precip')
+    grper2 = max_precip.groupby(group)
+    count = grper2.count().rename("# Cells")
+    dataSet['count_cells'] = count
+    return dataSet
+
+
+def quants_locn(data_set: xarray.Dataset,
+                dimension: typing.Optional[typing.Union[str, typing.List[str]]] = None,
+                quantiles: typing.Optional[typing.Union[np.ndarray, typing.List[float]]] = None,
+                x_coord: str = 'grid_longitude',
+                y_coord: str = 'grid_latitude') -> xarray.Dataset:
+    """ compute quantiles and locations"""
+    if quantiles is None:
+        quantiles = np.linspace(0.0, 1.0, 6)
+
+    data_array = data_set.maxV  # maximum values
+    time_array = data_set.maxT  # time when max occurs
+    quant = data_array.quantile(quantiles, dim=dimension).rename(quantile="quantv")
+    order_values = data_array.values.argsort()
+    oindices = ((data_array.size - 1) * quantiles).astype('int64')
+    indices = order_values[oindices]  # actual indices to the data where the quantiles are roughly
+    indices = xarray.DataArray(indices, coords=dict(quantv=quantiles))  # and give them co-ords
+    y = data_array[y_coord].broadcast_like(data_array)[indices]
+    x = data_array[x_coord].broadcast_like(data_array)[indices]
+    time = time_array[indices]
+    result = xarray.Dataset(dict(x=x, y=y, t=time, quant=quant))
+    # drop unneeded coords
+    coords_to_drop = [c for c in result.coords if c not in result.dims]
+    result = result.drop_vars(coords_to_drop)
+    return result
+
+
+def comp_event_stats(file: pathlib.Path,
+                     topog_grid: typing.Optional[int] = None,
+                     region: typing.Optional[dict] = None,
+                     height_range: slice = slice(0, 200),
+                     mxMeanRain: float = 1000.,
+                     source: str = 'radar'):
+    """
+    read in radar data and then group by day.
+    :param file: File to be read in
+    :param region: Region to extract.
+    :param height_range: Height range to use (all data strictly *between* these values will be used)
+    :param mxMeanRain: the maximum mean rain allowed (QC)
+    :return: grouped dataset
+    """
+    rseasMskmax, mxTime, topog = get_radar_data(file, region=region, topog_grid=topog_grid, height_range=height_range,
+                                         mxMeanRain=mxMeanRain)
+
+    grp = ((mxTime.dt.dayofyear - 1) + mxTime.dt.year * 1000).rename('EventTime')
+    # mask!
+    grp = xarray.where(~rseasMskmax.isnull(), grp, 0).rename('EventTime')
+    radar_dataset = event_stats(rseasMskmax, mxTime, grp,  source=source).sel(EventTime=slice(1, None))
+    ht =topog.sel(projection_x_coordinate=radar_dataset.x, projection_y_coordinate=radar_dataset.y)
+    # drop unnneded coords
+    coords_to_drop = [c for c in ht.coords if c not in ht.dims]
+    ht = ht.drop_vars(coords_to_drop)
+    radar_dataset['height'] = ht
+    return radar_dataset

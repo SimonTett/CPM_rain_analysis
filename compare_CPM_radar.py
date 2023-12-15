@@ -1,5 +1,5 @@
 # Compare the radar  and CPM fit (for today)
-import gev_r
+from R_filter import gev_r
 import CPMlib
 import xarray
 import matplotlib.pyplot as plt
@@ -13,7 +13,7 @@ fit_radar = xarray.load_dataset(save_radar_file)
 obs_cet=commonLib.read_cet() # read in the obs CET
 obs_cet_jja = obs_cet.sel(time=(obs_cet.time.dt.season == 'JJA'))
 t_today = obs_cet_jja.sel(time=slice('2010','2020')).mean()
-params_today = gev_r.param_at_cov(fit_cpm.Parameters,t_today)
+params_today = gev_r.param_at_cov(fit_cpm.Parameters, t_today)
 
 fig=plt.figure(num='radar_CPM_dist',clear=True)
 ax=fig.add_subplot(111)

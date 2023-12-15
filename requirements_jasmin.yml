@@ -12,23 +12,29 @@ channels:
 dependencies:
    - python~=3.9
    - ipython~=8.18
-   - xarray~=2022.9.0
-   - scipy~=1.9.1
-   - pandas~=1.4.4
-   - numpy~=1.21.5
-   - rpy2~=3.5.6
+   - xarray~=2022.9
+   - flox~=0.8
+   - scipy~=1.11
+   - pandas~=2.1
+   - numpy~=1.21
+   - rpy2~=3.5.13
    - matplotlib~=3.6.0
-   - cartopy~=0.21.0
-   - rioxarray~=0.13.1
+   - cartopy~=0.22
+   - rioxarray~=0.15
    - statsmodels~=0.13.2
    - iris~=3.3.1
-   - cftime~=1.6.2
-   - dask~=2022.9.2
+   - cftime~=1.6
+   - dask~=2023.12
    - fiona~=1.8.22
    - shapely~=1.8.4
    - zlib~=1.2.13
    - requests~=2.28.1
    - r-extRemes
+   - r-viridis
+   - r-fields
+   - r-raster
+   - r-codetools
    - seaborn~=0.13
    - cdo>=2.0.4
+   - rioxarray~=0.15
 

@@ -1,11 +1,10 @@
 # COmpute simulated events
 # fit the CPM rainfall data.
-import gev_r
 import commonLib
-import matplotlib.pyplot as plt
 import numpy as np
 import xarray
 import CPMlib
+import CPM_rainlib
 
 # first get in CET -- our covariate
 
@@ -49,7 +48,7 @@ for ensemble in ds.ensemble_member:
     dataset=ds.sel(ensemble_member=ensemble) # extract the ensemble
     grp = CPMlib.discretise(dataset.seasonalMaxTime) # compute discrete times
     grp = xarray.where((t>1) & (tmn<300.), grp,0).rename("EventTime") # land < 300m (t>1 make sure no sea included)
-    dd=CPMlib.event_stats(dataset.seasonalMax,dataset.seasonalMaxTime,grp,'EventTime').sel(EventTime=slice(1,None))
+    dd=CPM_rainlib.comp_event_stats(dataset.seasonalMax,dataset.seasonalMaxTime,grp,'EventTime').sel(EventTime=slice(1,None))
     # get the CPM summer mean CET out and force its time's to be the same.
     tc = np.array([f"{int(y)}-06-01" for y in dd.t.isel(quantv=0).dt.year])
     cet_extreme_times = cpm_cet_jja.sel(ensemble_member=ensemble).interp(time=tc).rename(dict(time='EventTime'))

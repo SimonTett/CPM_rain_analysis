@@ -8,14 +8,7 @@ import pandas as pd
 import os
 import numpy as np
 import typing
-import platform
 
-if platform.node() == "geos-w-048": # SFBT's laptop. Need to set R_HOME
-    r_home=r"C:\Users\stett2\AppData\Local\Microsoft\AppV\Client\Integration\0E3F48F7-DE80-473E-ABFA-A6BC515ABDCA\Root"
-    os.environ['R_HOME'] = r_home
-
-# will need adjusting depending on where R got installed
-import rpy2
 import rpy2.robjects as robjects
 import rpy2.robjects.packages as rpackages
 import rpy2.robjects.pandas2ri as rpandas2ri
@@ -32,6 +25,8 @@ if len(names_to_install) > 0:
     utils.install_packages(robjects.vectors.StrVector(names_to_install))
 for package in packnames:
     rpackages.importr(package)  # so available
+
+base= rpackages.importr('base') # to give us summary
 
 
 def gev_fit(*args:typing.List[np.ndarray],
@@ -66,12 +61,12 @@ def gev_fit(*args:typing.List[np.ndarray],
         if shapeCov:
             r_code += ',shape.fun=' + cov_expr
     r_code += ')'  # add on the trailing bracket.
-    r_code_summ = 'summary(' + r_code + ',silent=TRUE)'
     df = pd.DataFrame(np.array(df_data).T, columns=cols)
-    with rpy2.robjects.conversion.localconverter(robjects.default_converter + rpandas2ri.converter):
+    with (robjects.default_converter + rpandas2ri.converter).context():
         robjects.globalenv['df'] = df  # push the dataframe with info into R
     try:
-        fit = robjects.r(r_code_summ)  # do the fit
+        r_fit = robjects.r(r_code)  # do the fit
+        fit = base.summary(r_fit,silent=True) # get the summary fit info
         # extract the data
         params = fit.rx2('par') # get the parameters.
         se = fit.rx2('se.theta') # get the std error
@@ -184,12 +179,12 @@ def xarray_gev(data_array: xarray.DataArray,
 
 
     kwargs['shapeCov'] = shape_cov
-    # TODO generalise to multiple dims
+
     if cov is None:
         cov=[]
 
     cov_names = [c.name for c in cov]
-    print(cov_names)
+
 
     ncov = len(cov)
     input_core_dims = [[dim]] * (1 + ncov)

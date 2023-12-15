@@ -1,5 +1,5 @@
 # fit the CPM rainfall data.
-import gev_r
+from R_python import gev_r
 import commonLib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,8 +8,8 @@ import CPMlib
 dataset = xarray.load_dataset(CPMlib.CPM_dir/"CPM_all_events.nc") # load the processed events
 dataset= dataset.stack(idx=['ensemble_member','EventTime']).dropna('idx')
 
-radar_datset= xarray.load_dataset(CPMlib.datadir/"radar_events.nc")
-recreate=False # set True to recreate the fits
+
+recreate=True # set True to recreate the fits
 
 
 
@@ -32,39 +32,36 @@ ht=dd.height
 ln_area = np.log10(dd.count_cells*4.4**2).rename('log10_area')
 precip = dd.max_precip
 
-ln_radar_area  = (np.log10(radar_datset.count_cells * 25)).rename('log10_area')
-fit_radar = gev_r.xarray_gev(radar_datset.max_precip,dim='EventTime',verbose=True,
-                             file=CPMlib.fit_dir/'radar_fit_no_cov.nc',recreate_fit=recreate)
-
-fit_radar = gev_r.xarray_gev(radar_datset.max_precip,dim='EventTime',verbose=True,
-                             file=CPMlib.fit_dir/'radar_fit_no_cov.nc',recreate_fit=recreate)
-fit_radar_lnarea = gev_r.xarray_gev(radar_datset.max_precip,cov=[ln_radar_area],dim='EventTime',verbose=True,
-                             file=CPMlib.fit_dir/'radar_fit_lnarea.nc',recreate_fit=recreate)
-fit = gev_r.xarray_gev(precip,dim=dim,verbose=True,file=CPMlib.fit_dir/'fit_no_cov.nc',recreate_fit=recreate)
+fit = gev_r.xarray_gev(precip, dim=dim, verbose=True, file=CPMlib.fit_dir / 'fit_no_cov.nc', recreate_fit=recreate)
 fit_cet = gev_r.xarray_gev(precip,
-                       cov=[dd.CET],dim=dim,verbose=True,file=CPMlib.fit_dir/'fit_cet.nc',recreate_fit=recreate)
+                           cov=[dd.CET], dim=dim, verbose=True, file=CPMlib.fit_dir/'fit_cet.nc', recreate_fit=recreate)
 fit_cet_cells = gev_r.xarray_gev(precip,
-                       cov=[dd.CET,dd.count_cells],
-                         dim=dim,verbose=True,file=CPMlib.fit_dir/'fit_cet_cells.nc',recreate_fit=recreate)
+                                 cov=[dd.CET,dd.count_cells],
+                                 dim=dim, verbose=True, file=CPMlib.fit_dir/'fit_cet_cells.nc', recreate_fit=recreate)
 fit_cet_ln_cells = gev_r.xarray_gev(precip,
-                       cov=[dd.CET,ln_area],
-                         dim=dim,verbose=True,file=CPMlib.fit_dir/'fit_cet_lnarea.nc',recreate_fit=recreate)
+                                    cov=[dd.CET,ln_area],
+                                    dim=dim, verbose=True, file=CPMlib.fit_dir/'fit_cet_lnarea.nc', recreate_fit=recreate)
+
+cet_sqr = (dd.CET**2).rename("CET_sqr")
+fit_cet_sqr_ln_cells = gev_r.xarray_gev(precip,
+                                    cov=[dd.CET,cet_sqr,ln_area],
+                                    dim=dim, verbose=True, file=CPMlib.fit_dir/'fit_cet_sqr_lnarea.nc', recreate_fit=recreate)
 
 fit_cells = gev_r.xarray_gev(precip,
-                       cov=[dd.count_cells],
-                         dim=dim,verbose=True,file=CPMlib.fit_dir/'fit_cells.nc',recreate_fit=recreate)
+                             cov=[dd.count_cells],
+                             dim=dim, verbose=True, file=CPMlib.fit_dir/'fit_cells.nc', recreate_fit=recreate)
 
-fit_ht = gev_r.xarray_gev(precip,cov=[ht],dim=dim,verbose=True,file=CPMlib.fit_dir/'fit_ht.nc',recreate_fit=recreate)
-fit_cet_cells_ht = gev_r.xarray_gev(precip,cov=[dd.CET,dd.count_cells,ht],dim=dim,verbose=True,
-                                    file=CPMlib.fit_dir/'fit_cet_cells_ht.nc',recreate_fit=recreate)
+fit_ht = gev_r.xarray_gev(precip, cov=[ht], dim=dim, verbose=True, file=CPMlib.fit_dir / 'fit_ht.nc', recreate_fit=recreate)
+fit_cet_cells_ht = gev_r.xarray_gev(precip, cov=[dd.CET, dd.count_cells, ht], dim=dim, verbose=True,
+                                    file=CPMlib.fit_dir/'fit_cet_cells_ht.nc', recreate_fit=recreate)
 fit_cet_ln_cells_ht = gev_r.xarray_gev(precip,
-                                      cov=[dd.CET,ln_area,ht],
-                                      dim=dim,verbose=True,file=CPMlib.fit_dir/'fit_cet_lnarea_ht.nc',recreate_fit=recreate)
+                                       cov=[dd.CET,ln_area,ht],
+                                       dim=dim, verbose=True, file=CPMlib.fit_dir/'fit_cet_lnarea_ht.nc', recreate_fit=recreate)
 
 fig=plt.figure(num='AIC',clear=True)
 for f,title,marker in zip(
-            [fit,fit_cet,fit_cells,fit_cet_cells,fit_cet_ln_cells,fit_ht,fit_cet_cells_ht,fit_cet_ln_cells_ht],
-                   ['None','CET','cells','CET & cells','CET & ln Cells','ht','CET, Cells & Ht','C lnCe ht'],
+            [fit,fit_cet,fit_cells,fit_cet_cells,fit_cet_ln_cells,fit_ht,fit_cet_cells_ht,fit_cet_ln_cells_ht,fit_cet_sqr_ln_cells],
+                   ['None','CET','cells','CET & cells','CET & lnA','ht','CET, Cells & Ht','C lnA ht','C C^2 lnA'],
                           ['x','+','o']*10):
     if 'ht' in title:
         alpha=0.5
