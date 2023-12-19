@@ -118,6 +118,7 @@ def xarray_filter(data_array:xarray.DataArray,
                 max_precip=xarray.DataArray(data=[max_precip],coords=timec),
                 badb=xarray.DataArray(data=[badb],coords=timec),
                 bads=xarray.DataArray(data=[bads],coords=timec),
+                n_filter=xarray.DataArray(data=[int(da.isnull().sum())],coords=timec), # count bad.
                 )
         )
         result_ancil.append(ds)

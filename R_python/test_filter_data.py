@@ -8,7 +8,7 @@ from R_python import spatial_filter_r
 
 
 # load up the data.
-path = (CPMlib.CPM_dir)/"Example_CPM_data").glob("pr_rcp85_land-cpm_uk_2.2km_01_1hr_1994*.nc")
+path = (CPMlib.CPM_dir/"Example_CPM_data").glob("pr_rcp85_land-cpm_uk_2.2km_01_1hr_1994*.nc")
 #ds = xarray.load_dataset(path)
 ds = xarray.open_mfdataset(path,chunks=dict(time=24,grid_longitude=100,grid_latitude=100)).sortby('time')
 logging.basicConfig(level=logging.INFO,force=True)
@@ -17,15 +17,19 @@ scotland = ds.pr.sel(grid_longitude=slice(359.5, 360.5), grid_latitude=slice(5, 
 filter_scotland, ancil =spatial_filter_r.xarray_filter(scotland) # occasionally freezes.
 max_rain = scotland.max(['grid_longitude','grid_latitude'])
 max_rain_filtered = filter_scotland.max(['grid_longitude','grid_latitude'])
+n_filter = filter_scotland.isnull().sum(['grid_longitude','grid_latitude'])
 ## plot the monthly max rain at each point.
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 #import commonLib
 
 # plot max rain in domain
-fig=plt.figure(figsize=(11,6),num='Domain_mx_rain',clear=True)
-max_rain_filtered.plot(label='filtered')
-max_rain.plot(label='raw')
+fig,axis=plt.subplots(figsize=(11,6),nrows=2,num='Domain_mx_rain',clear=True,sharex=True)
+max_rain_filtered.plot(label='filtered',ax=axis[0])
+max_rain.plot(label='raw',ax=axis[0])
+# plot the number of filtered cells
+n_filter.plot(ax=axis[1])
+axis[1].set_title("Number cells set missing")
 fig.legend()
 fig.show()
 #commonLib.saveFig(fig)
