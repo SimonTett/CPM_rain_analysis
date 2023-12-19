@@ -44,7 +44,7 @@ badth_values = dict(DJF=180, JJA=160)  # Seasonally dep precip for lines
 badthp_values = dict(DJF=12, JJA=31)  # and for points.
 
 
-def filter_data(var: xarray.Variable,
+def filter_data(var: xarray.Dataset,
                 badth: float,
                 badthp: float,
                 badb: int = 2,
@@ -61,7 +61,7 @@ def filter_data(var: xarray.Variable,
     :param bads: Number of pixels to set missing near bad data - small
     :param max_precip: Only filter if any precip in domain is above this (mm/hr).
 
-    returns filtered array (or original data) & bool saying if data was filtered or not
+    returns filtered array (or original data)
     """
     if var.ndim != 2:
         raise ValueError("Must be a 2d array")
@@ -77,47 +77,61 @@ def filter_data(var: xarray.Variable,
     return filtered
 
 def xarray_filter(data_array:xarray.DataArray,
-                  badth: typing.Optional[float] = None,
-                  badthp: typing.Optional[float] = None,
                   badb: int = 2,
                   bads: int = 1,
                   max_precip: float = 10.0,
                   stack_dims:typing.Optional[typing.List[str]] = None,
-                  ) -> xarray.DataArray:
+                  ) -> (xarray.DataArray,xarray.Dataset):
     """
 
     :param data_array: DataArray to be filtered.
-    :param badth: precipitation scaling (?) for lines. Value depends on season
-    :param badthp: precipitation scaling (?) for points.
     :param badb: Number of pixels to set missing near bad data - big
     :param bads: Number of pixels to set missing near bad data - small
     :param max_precip: Only filter if any precip in domain is above this (mm/hr).
-    :param stack_dims:  Dimensions to be stacked along. Defaiult is time and ensemble_no.
-    :return: filtered dataArray.
+    :param stack_dims:  Dimensions to be stacked along. Default is time and ensemble_no. First dimension must be time-coord.
+    :return: filtered dataArray and ancillary data as dataset.Ancillary dataset contains values for badth, badthp, badb, bads and max_precip
     """
 
 
-    if (badthp is None) or (badthp is None):
-        seasons = set(data_array.time.dt.season.values)
-        if len(seasons) != 1:
-            raise ValueError(f"Can only cope with unique season. Have {seasons}")
-        season = seasons.pop() # get the season
-        if badth is None:
-            badth = badth_values.get(season,170.0) # Outside JJA or DJF use value 1/2 way between
-        if badthp is None:
-            badthp = badthp_values.get(season,22.0)# Outside JJA or DJF use value 1/2 way between
     if stack_dims is None:
         stack_dims =['time','ensemble_member'] # default dimensions to stack over
 
+    result=[] # where we store the filtered result
+    result_ancil=[] # where we store the ancillary data.
+    for (c,g) in data_array.resample({stack_dims[0]:'QS-DEC'}): # iterate over seasons.
+        seasons = set(g.time.dt.season.values) #  check only have one season.
+        if len(seasons) != 1:
+            raise ValueError(f"Can only cope with unique season. Have {seasons}")
+        season = seasons.pop()  # get the season
+        badth = badth_values.get(season, 170.0)  # Outside JJA or DJF use value 1/2 way between
+        badthp = badthp_values.get(season, 22.0)  # Outside JJA or DJF use value 1/2 way between
 
-    da = data_array.stack(stack_dim=stack_dims).groupby('stack_dim',squeeze=True).\
-        map(filter_data,badth=badth,badthp=badthp,badb=badb, bads=bads, max_precip=max_precip,shortcut=True).\
-        unstack('stack_dim')
-    da.attrs = data_array.attrs.copy() # explicitly copying the attributes.
-    da.attrs['Processing'] = da.attrs.get('Processing',[])+['Filtered to remove non-conservation extreme rain']
+        da = g.stack(stack_dim=stack_dims).groupby('stack_dim').\
+            map(filter_data,args=(badth,badthp),badb=badb, bads=bads, max_precip=max_precip,shortcut=True).\
+            unstack('stack_dim') # run the filtering -- one field at a time. Stacking this togetehr for free afterwards.
+        # make the ancillary data.
+        timec=dict(time2=[c])
+        ds=xarray.Dataset(
+                dict(
+                badth=xarray.DataArray(data=[badth],coords=timec),
+                badthp=xarray.DataArray(data=[badthp],coords=timec),
+                max_precip=xarray.DataArray(data=[max_precip],coords=timec),
+                badb=xarray.DataArray(data=[badb],coords=timec),
+                bads=xarray.DataArray(data=[bads],coords=timec),
+                )
+        )
+        result_ancil.append(ds)
+        result.append(da)
+    result = xarray.concat(result,dim='time')
+    result_ancil = xarray.concat(result_ancil,dim='time2')
+    result.attrs = data_array.attrs.copy() # explicitly copying the attributes.
+    result.attrs['Processing'] = data_array.attrs.get('Processing',[])+['Filtered to remove non-conservation extreme rain']
+    result_ancil.attrs = data_array.attrs.copy() #copy any attributes
+    result_ancil.attrs['Processing'] = data_array.attrs.get('Processing', []) + [
+        'Parameters for filtering']
 
 
-    return da
+    return result, result_ancil
 
 
 

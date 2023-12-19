@@ -3,20 +3,20 @@
 import numpy as np
 import xarray
 import CPMlib
-# import rpy2
 import logging
 from R_python import spatial_filter_r
 
 
 # load up the data.
-path = CPMlib.CPM_dir / 'Example_CPM_data/pr_rcp85_land-cpm_uk_2.2km_01_1hr_19940801-19940830.nc'
+path = (CPMlib.CPM_dir)/"Example_CPM_data").glob("pr_rcp85_land-cpm_uk_2.2km_01_1hr_1994*.nc")
 #ds = xarray.load_dataset(path)
-ds = xarray.open_dataset(path,chunks=dict(time=24,grid_longitude=100,grid_latitude=100))
-logging.basicConfig(level=logging.DEBUG,force=True)
+ds = xarray.open_mfdataset(path,chunks=dict(time=24,grid_longitude=100,grid_latitude=100)).sortby('time')
+logging.basicConfig(level=logging.INFO,force=True)
 scotland = ds.pr.sel(grid_longitude=slice(357.5, 361), grid_latitude=slice(1.5, 7.5))  # Just want scotland
-filter_scotland =spatial_filter_r.xarray_filter(scotland) # occasionally freezes.
+scotland = ds.pr.sel(grid_longitude=slice(359.5, 360.5), grid_latitude=slice(5, 6.))#.isel(time=slice(0,48))  # Just want mini scotland
+filter_scotland, ancil =spatial_filter_r.xarray_filter(scotland) # occasionally freezes.
 max_rain = scotland.max(['grid_longitude','grid_latitude'])
-max_rain_filtered = scotland.max(['grid_longitude','grid_latitude'])
+max_rain_filtered = filter_scotland.max(['grid_longitude','grid_latitude'])
 ## plot the monthly max rain at each point.
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
