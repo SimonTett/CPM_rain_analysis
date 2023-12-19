@@ -14,7 +14,7 @@ my_logger=logging.getLogger(f"CPM_rain_analysis.{__name__}")
 utils = rpackages.importr('utils')
 utils.chooseCRANmirror(ind=1)
 # R package names
-packnames = (['viridis', 'fields', 'raster', 'codetools'])  # list of packages to install/make available,
+packnames = (['terra','viridis', 'fields', 'raster', 'codetools'])  # list of packages to install/make available,
 # From example rpy2 install what needs to be installed.
 names_to_install = [x for x in packnames if not rpackages.isinstalled(x)]
 if len(names_to_install) > 0:

@@ -17,24 +17,27 @@ dependencies:
    - scipy~=1.11
    - pandas~=2.1
    - numpy~=1.21
-   - rpy2~=3.5.13
-   - matplotlib~=3.6.0
+   - rpy2~=3.5
+   - matplotlib~=3.6
    - cartopy~=0.22
    - rioxarray~=0.15
-   - statsmodels~=0.13.2
-   - iris~=3.3.1
+   - statsmodels~=0.13
+   - iris~=3.3
    - cftime~=1.6
    - dask~=2023.12
-   - fiona~=1.8.22
-   - shapely~=1.8.4
-   - zlib~=1.2.13
-   - requests~=2.28.1
+   - fiona~=1.8
+   - shapely~=1.8
+   - zlib~=1.2
+   - requests~=2.28
    - r-extRemes
    - r-viridis
    - r-fields
    - r-raster
    - r-codetools
+   - r-terra=1.7-29 # need to downgrade to work on jasmin
    - seaborn~=0.13
-   - cdo>=2.0.4
+   - cdo>=2.0
    - rioxarray~=0.15
+   - openpyxl~=3.0
+   - nc-time-axis~=1.4
 

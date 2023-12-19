@@ -6,10 +6,11 @@ import typing
 import pathlib
 import functools
 import cartopy.crs as ccrs
+import CPM_rainlib
 
-datadir=pathlib.Path(r"C:\Users\stett2\OneDrive - University of Edinburgh\data\Scotland_extremes")
-CPM_dir=datadir/"CPM_scotland"
-fit_dir = datadir/'fits'
+#datadir=pathlib.Path(r"C:\Users\stett2\OneDrive - University of Edinburgh\data\Scotland_extremes")
+CPM_dir=CPM_rainlib.dataDir/"CPM_scotland" # processed CPM data
+fit_dir = CPM_rainlib.outdir/'fits'  # where the fits go
 fit_dir.mkdir(exist_ok=True,parents=True)
 time_unit='hours since 1980-01-01'
 projRot = ccrs.RotatedPole(pole_longitude=177.5,pole_latitude=37.5)

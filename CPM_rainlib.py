@@ -29,14 +29,14 @@ bad_data_err = (
 machine = platform.node()
 if ('jasmin.ac.uk' in machine) or ('jc.rl.ac.uk' in machine):
     # specials for Jasmin cluster or LOTUS cluster
-    dataDir = pathlib.Path.cwd()
+    dataDir = pathlib.Path("/gws/nopw/j04/edin_cesd/stett2/Scotland_extremes")
     nimrodRootDir = pathlib.Path("/badc/ukmo-nimrod/data/composite")  # where the nimrod data lives
     cpmDir = pathlib.Path("/badc/ukcp18/data/land-cpm/uk/2.2km/rcp85")  # where the CPM data lives
-    outdir = pathlib.Path("/gws/nopw/j04/edin_cesd/stett2/")  # writing locally. Really need a workspace..
+    outdir = dataDir
 elif 'GEOS-' in machine.upper():
-    dataDir = pathlib.Path(r'C:\Users\stett2\OneDrive - University of Edinburgh\data\EdinburghRainfall')
+    dataDir = pathlib.Path(r'C:\Users\stett2\OneDrive - University of Edinburgh\data\Scotland_extremes')
     nimrodRootDir = dataDir / 'nimrod_data'
-    outdir = dataDir / 'output_data'
+    outdir = dataDir 
 else:  # don't know what to do so raise an error.
     raise Exception(f"On platform {machine} no idea where data lives")
 # create the outdir
