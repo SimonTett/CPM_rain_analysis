@@ -68,11 +68,11 @@ def filter_data(var: xarray.Dataset,
 
     if var.max() < max_precip:
         my_logger.debug("No filtering")
-        return var.values  # no filtering so just return the values.
+        return var.to_numpy()  # no filtering so just return the values.
 
     my_logger.debug(f"filtering badth={badth},badthp={badthp},badb={badb},bads={bads}")
     with rpy2.robjects.conversion.localconverter(np_cv_rules): # run the R code on the numpy array
-        filtered = filter_r.filt_point_vbar_hbar_wnorm(var.values, badth=badth, badthp=badthp, badb=badb, bads=bads)
+        filtered = filter_r.filt_point_vbar_hbar_wnorm(var.to_numpy(), badth=badth, badthp=badthp, badb=badb, bads=bads)
 
     return filtered
 
@@ -92,23 +92,27 @@ def xarray_filter(data_array:xarray.DataArray,
     :return: filtered dataArray and ancillary data as dataset.Ancillary dataset contains values for badth, badthp, badb, bads and max_precip
     """
 
-
+    
     if stack_dims is None:
         stack_dims =['time','ensemble_member'] # default dimensions to stack over
+    time_coord=stack_dims[0]
 
     result=[] # where we store the filtered result
     result_ancil=[] # where we store the ancillary data.
-    for (c,g) in data_array.resample({stack_dims[0]:'QS-DEC'}): # iterate over seasons.
+    for (c,g) in data_array.resample({time_coord:'QS-DEC'}): # iterate over seasons.
         seasons = set(g.time.dt.season.values) #  check only have one season.
         if len(seasons) != 1:
             raise ValueError(f"Can only cope with unique season. Have {seasons}")
         season = seasons.pop()  # get the season
         badth = badth_values.get(season, 170.0)  # Outside JJA or DJF use value 1/2 way between
         badthp = badthp_values.get(season, 22.0)  # Outside JJA or DJF use value 1/2 way between
-
-        da = g.stack(stack_dim=stack_dims).groupby('stack_dim').\
-            map(filter_data,args=(badth,badthp),badb=badb, bads=bads, max_precip=max_precip,shortcut=True).\
-            unstack('stack_dim') # run the filtering -- one field at a time. Stacking this togetehr for free afterwards.
+        g.load()
+        da = g.stack(stack_dim=stack_dims) # stack !
+        da = da.groupby('stack_dim').\
+            map(filter_data,args=(badth,badthp),badb=badb, bads=bads, max_precip=max_precip,shortcut=True) 
+        # run the filtering -- one field at a time. Stacking this togetehr  afterwards.
+        da = da.unstack('stack_dim') 
+        # unstack. Causes some numpy RuntimeWarning's wiht modern version of pandas
         # make the ancillary data.
         timec=dict(time2=[c])
         ds=xarray.Dataset(
@@ -118,11 +122,12 @@ def xarray_filter(data_array:xarray.DataArray,
                 max_precip=xarray.DataArray(data=[max_precip],coords=timec),
                 badb=xarray.DataArray(data=[badb],coords=timec),
                 bads=xarray.DataArray(data=[bads],coords=timec),
-                n_filter=xarray.DataArray(data=[int(da.isnull().sum())],coords=timec), # count bad.
+                n_filter=da.isnull().sum(time_coord), # count bad.
                 )
         )
         result_ancil.append(ds)
         result.append(da)
+        logging.info(f"Processed data for {c}") 
     result = xarray.concat(result,dim='time')
     result_ancil = xarray.concat(result_ancil,dim='time2')
     result.attrs = data_array.attrs.copy() # explicitly copying the attributes.
