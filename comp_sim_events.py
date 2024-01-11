@@ -18,8 +18,13 @@ cpm_cet_jja = cpm_cet.sel(time=(cpm_cet.time.dt.season=='JJA')) # and pull out s
 # Load up CPM extreme rainfall data, select to region of interest and mask
 rgn_all=dict(longitude=slice(357.5,361.0),latitude=slice(1.5,7.5)) # region for which extraction was done.
 rgn = CPMlib.stonehaven_rgn
-
-paths = sorted((CPMlib.CPM_dir).glob('CPM*/*.nc'))
+filtered=True
+if filtered:
+    paths = sorted((CPM_rainlib.dataDir/'CPM_scotland_filter').glob('CPM*/*11_30_23.nc'))
+    outpath = path = CPM_rainlib.dataDir/'CPM_scotland_filter'/"CPM_filter_all_events.nc"
+else:
+    paths = sorted((CPMlib.CPM_dir).glob('CPM*/*.nc'))
+    outpath =  CPMlib.CPM_dir/"CPM_all_events.nc"
 print("Opening data")
 ds=xarray.open_mfdataset(paths)
 ds=ds.sel(time=(ds.time.dt.season=='JJA')) # get summer only
@@ -48,7 +53,7 @@ for ensemble in ds.ensemble_member:
     dataset=ds.sel(ensemble_member=ensemble) # extract the ensemble
     grp = CPMlib.discretise(dataset.seasonalMaxTime) # compute discrete times
     grp = xarray.where((t>1) & (tmn<300.), grp,0).rename("EventTime") # land < 300m (t>1 make sure no sea included)
-    dd=CPM_rainlib.comp_event_stats(dataset.seasonalMax,dataset.seasonalMaxTime,grp,'EventTime').sel(EventTime=slice(1,None))
+    dd=CPM_rainlib.event_stats(dataset.seasonalMax,dataset.seasonalMaxTime,grp,).sel(EventTime=slice(1,None))
     # get the CPM summer mean CET out and force its time's to be the same.
     tc = np.array([f"{int(y)}-06-01" for y in dd.t.isel(quantv=0).dt.year])
     cet_extreme_times = cpm_cet_jja.sel(ensemble_member=ensemble).interp(time=tc).rename(dict(time='EventTime'))
@@ -75,5 +80,5 @@ dataset=xarray.concat(grped_list,dim='ensemble_member')
 for var in ['t']:
     dataset[var]=CPMlib.time_convert(dataset[var])
 
-path = CPMlib.CPM_dir/"CPM_all_events.nc"
-dataset.to_netcdf(path)
+print(f"Writing events to {outpath}")
+dataset.to_netcdf(outpath)

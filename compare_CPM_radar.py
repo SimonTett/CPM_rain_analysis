@@ -1,11 +1,12 @@
 # Compare the radar  and CPM fit (for today)
-from R_filter import gev_r
+from R_python import gev_r
 import CPMlib
+import CPM_rainlib
 import xarray
 import matplotlib.pyplot as plt
 import commonLib
 
-save_file_cpm=CPMlib.datadir/'fits/cpm_fit.nc'
+save_file_cpm=CPM_rainlib.datadir/'fits/cpm_fit.nc'
 fit_cpm = xarray.load_dataset(save_file_cpm)
 save_radar_file=CPMlib.datadir/'fits/radar_fit.nc'
 

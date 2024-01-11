@@ -212,6 +212,7 @@ def xarray_gev(data_array: xarray.DataArray,
     data_array = xarray.Dataset(dict(Parameters=params, StdErr=std_err, Cov=cov_param,nll=nll, AIC=AIC)).assign_coords(
         parameter=pnames,parameter2=pnames)
     if file is not None:
+        file.parent.mkdir(exist_ok=True,parents=True) # make directory
         data_array.to_netcdf(file)  # save the dataset.
         if verbose:
             print(f"Wrote fit information to {file}")
@@ -220,8 +221,17 @@ def xarray_gev(data_array: xarray.DataArray,
 
 ## use apply ufunc to generate distributions...
 
-def fn_isf(c, loc, scale, p=None, dist=scipy.stats.genextreme):
-    x = dist.isf(p, c, loc=loc, scale=scale)
+def fn_isf(c, loc, scale, p:typing.Optional[np.ndarray]=None, dist=scipy.stats.genextreme):
+    shape=list(c.shape)+list(p.shape)
+    fd=dist(np.broadcast_to(c,shape),loc=np.broadcast_to(loc,shape),scale=np.broadcast_to(scale,shape))
+    # handle single p value.
+    #if len(p) == 1:
+    #    p=p.reshape(1,-1)
+
+
+    #breakpoint()
+    x = fd.isf(np.broadcast_to(p,shape))
+    #x=fd.isf(p)
     # x = fdist.isf(p)  # values for 1-cdf.
     return x
 
@@ -247,6 +257,8 @@ def xarray_sf(x, params, output_dim_name='value'):
     :return:dataset of survival function values (1-cdf for values specified)
 
     """
+    # need to add a dummy singleton dimension to params
+    params = params.assign_coords(probability=1)
     sf = xarray.apply_ufunc(fn_sf, params.sel(parameter='shape'), params.sel(parameter='location'),
                             params.sel(parameter='scale'),
                             output_core_dims=[[output_dim_name]],
@@ -273,7 +285,10 @@ def xarray_interval(alpha, params):
     return interval
 
 
-def xarray_isf(p, params):
+def xarray_isf(p:np.ndarray,
+               params:xarray.DataArray,
+               output_dim_name:typing.Optional[str]=None,
+               input_dim_name:typing.Optional[str]=None) -> xarray.DataArray:
     """
     Compute the inverse survival function for specified probability values
     :param output_dim_name: name of output_dim -- default is probability
@@ -282,10 +297,15 @@ def xarray_isf(p, params):
     :param kwargs:Additional keyword arguments passes to fn_isf. Make sure p is set.
     :return:
     """
-    output_dim_name = 'probability'
-    x = xarray.apply_ufunc(fn_isf, params.sel(parameter='shape'), params.sel(parameter='location'),
-                           params.sel(parameter='scale'),
-                           output_core_dims=[[output_dim_name]],
+    if output_dim_name is None:
+        output_dim_name = 'probability'
+    if input_dim_name is None:
+        input_dim_name = 'quantv'
+
+    #FIXME -- this is failing with a broadcast error. Sigh. I hate apply_ufunc.
+    aa = tuple([params.sel(parameter=k,drop=True) for k in ['shape', 'location', 'scale']])
+    x = xarray.apply_ufunc(fn_isf, *aa,input_core_dims=[[input_dim_name]]*len(aa),
+                           output_core_dims=[[output_dim_name,input_dim_name]],
                            vectorize=True, kwargs=dict(p=p))
     x = x.assign_coords({output_dim_name: p}).rename('isf')
     return x

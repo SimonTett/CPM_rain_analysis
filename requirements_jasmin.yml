@@ -17,7 +17,7 @@ dependencies:
    - scipy~=1.11
    - pandas~=1.4 # reduced version as want compatability with 2022 xarray.
    - numpy~=1.21
-   - rpy2~=3.5
+   - rpy2~=3.5.15
    - matplotlib~=3.6
    - cartopy~=0.22
    - rioxarray~=0.15
