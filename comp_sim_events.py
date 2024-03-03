@@ -34,7 +34,7 @@ topog= xarray.load_dataset(CPMlib.CPM_dir/'orog_land-cpm_BI_2.2km.nc',decode_tim
 topog= topog.ht.sel(rgn_all).rename(dict(longitude='grid_longitude',latitude='grid_latitude')).squeeze()
 t=topog.coarsen(grid_longitude=2,grid_latitude=2,boundary='trim').min().sel(rgn)
 tmn = topog.coarsen(grid_longitude=2,grid_latitude=2,boundary='trim').mean().sel(rgn)
-# check rel errors < 1.06
+# check rel errors < 1.e-6
 max_rel_lon = float((np.abs(t.grid_longitude.values/ds.grid_longitude.values-1)).max())
 max_rel_lat = float((np.abs(t.grid_latitude.values/ds.grid_latitude.values-1)).max())
 

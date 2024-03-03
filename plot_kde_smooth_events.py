@@ -19,10 +19,15 @@ import commonLib
 import  pandas as pd
 import cftime
 
+filter = True
 dataset = xarray.load_dataset(CPMlib.CPM_dir/"CPM_all_events.nc") # load the processed events
-radar_dataset = xarray.load_dataset(CPMlib.datadir/"radar_events.nc") # load the processed radar
-dataset_flat= dataset.stack(idx=['ensemble_member','EventTime']).dropna('idx')
-for q in [0.1,0.5,0.9]:
+dataset_filter = xarray.load_dataset(CPMlib.CPM_filt_dir/"CPM_filter_all_events.nc") # load the processed events
+radar_dataset = xarray.load_dataset(CPMlib.radar_dir/"radar_events_1km_c5.nc") # load the processed radar
+if filter:
+    dataset_flat= dataset_filter.stack(idx=['ensemble_member','EventTime']).dropna('idx')
+else: # non filtered data
+    dataset_flat = dataset.stack(idx=['ensemble_member', 'EventTime']).dropna('idx')
+for q in [0.1,0.9,0.5]:
 
     quant = dataset_flat.sel(quantv=q)
     area = (quant.count_cells*(4.4)**2).rename("Area")
@@ -37,7 +42,8 @@ for q in [0.1,0.5,0.9]:
     # plot KDEs for radar period
     L= ((cftime.datetime(2005,1,1,calendar='360_day') <= quant.t) &
         (quant.t <= cftime.datetime(2023,12,30,calendar='360_day')) )
-    fig,axes = plt.subplots(nrows=2,ncols=2,figsize=[11,7],clear=True,num=f"Obs Period q={q} ")
+    fig,axes = plt.subplots(nrows=2,ncols=2,figsize=[11,7],
+                            clear=True,num=f"Obs Period q={q} ",layout='constrained')
     crit_area=(2.2**2)*25.
     L2 = L & (area > crit_area)
     L_rad = radar_area > crit_area
@@ -69,16 +75,19 @@ for q in [0.1,0.5,0.9]:
         ax.set_xlabel(xlabel)
 
     axes[0][0].legend()
-    fig.tight_layout()
     fig.show()
     commonLib.saveFig(fig)
 
 # plto combined distributions -- largely to show no systematic change
 #Will do one plot per figure as using jointplot
 plt.close('all') # close all exisiting figures
+if filter:
+    fname='_filter'
+else:
+    fname = ''
 g=sns.jointplot(x=quant.CET,y=quant.t.dt.hour,kind='kde',fill=True,height=3,xlim=[12.5,23.5],ylim=[0,23],cut=0)
-g.fig.savefig('figures/cet_hour.png')
+g.fig.savefig(f'figures/cet_hour{fname}.png')
 g=sns.jointplot(x=quant.CET,y=log10_area,kind='kde',fill=True,height=3,xlim=[12.5,23.5],ylim=[1.2,4.],cut=5)
-g.fig.savefig('figures/cet_log10_area.png')
+g.fig.savefig(f'figures/cet_log10_area{fname}.png')
 g=sns.jointplot(x=quant.CET,y=quant.height,kind='kde',fill=True,height=3,xlim=[12.5,23.5],ylim=[0,300.],cut=0)
-g.fig.savefig('figures/cet_height.png')
+g.fig.savefig(f'figures/cet_height{fname}.png')

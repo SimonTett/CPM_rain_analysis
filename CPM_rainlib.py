@@ -280,7 +280,7 @@ L = metadata.Working.str.upper() == 'Y'
 metadata = metadata[L]
 
 
-def std_decorators(ax, showregions=True, radarNames=False):
+def std_decorators(ax, showregions=True, radarNames=False,radar_col='orange'):
     """
     Add a bunch of stuff to an axis
     :param ax: axis
@@ -289,7 +289,7 @@ def std_decorators(ax, showregions=True, radarNames=False):
     :return: Nada
     """
 
-    ax.plot(metadata.Easting, metadata.Northing, marker='h', color='orange', ms=10, linestyle='none',
+    ax.plot(metadata.Easting, metadata.Northing, marker='h', color=radar_col, ms=10, linestyle='none',
             transform=cartopy.crs.OSGB(approx=True), clip_on=True)  # radar stations location.
     # ax.gridlines(draw_labels=False, x_inline=False, y_inline=False)
     if showregions:
@@ -343,7 +343,7 @@ def read_90m_topog(region: typing.Optional[dict] = None, resample=None):
     :param resample: If not None then the amount to coarsen by.
     :return: topography dataset
     """
-    topog = rioxarray.open_rasterio(dataDir / 'uk_srtm')
+    topog = rioxarray.open_rasterio(dataDir/"../EdinburghRainfall" / 'uk_srtm')
     topog = topog.reindex(y=topog.y[::-1]).rename(x='projection_x_coordinate', y='projection_y_coordinate')
     if region is not None:
         topog = topog.sel(**region)

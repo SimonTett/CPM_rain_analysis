@@ -26,11 +26,11 @@ if len(names_to_install) > 0:
 for package in packnames:
     rpackages.importr(package)  # so available
 
-base= rpackages.importr('base') # to give us summary
+base = rpackages.importr('base')  # to give us summary
 
 
-def gev_fit(*args:typing.List[np.ndarray],
-            shapeCov:bool=False, **kwargs):
+def gev_fit(*args: typing.List[np.ndarray],
+            shapeCov: bool = False, **kwargs):
     """
     Do GEV fit using R and return named tuple of relevant values.
     :param x: Data to be fit
@@ -43,16 +43,16 @@ def gev_fit(*args:typing.List[np.ndarray],
     :return: A dataset of the parameters of the fit.
     """
     x = args[0]
-    ncov = len(args)-1
+    ncov = len(args) - 1
     L = ~np.isnan(x)
     df_data = [x[L]]  # remove nan from data]
     cols = ['x']
-    npts = 3+2*ncov
+    npts = 3 + 2 * ncov
     if shapeCov:
         npts += ncov
         # end of dealing with covariance and trying to get to the right shape.
     r_code = 'fevd(x=x,data=df'
-    for indx,cov in enumerate(args[1:]):
+    for indx, cov in enumerate(args[1:]):
         df_data.append(cov[L])  # remove places where x was nan from cov.
         cols.append(f"cov{indx:d}")
     if len(cols) > 1:
@@ -66,11 +66,11 @@ def gev_fit(*args:typing.List[np.ndarray],
         robjects.globalenv['df'] = df  # push the dataframe with info into R
     try:
         r_fit = robjects.r(r_code)  # do the fit
-        fit = base.summary(r_fit,silent=True) # get the summary fit info
+        fit = base.summary(r_fit, silent=True)  # get the summary fit info
         # extract the data
-        params = fit.rx2('par') # get the parameters.
-        se = fit.rx2('se.theta') # get the std error
-        cov_params = fit.rx2('cov.theta') # get the covariance.
+        params = fit.rx2('par')  # get the parameters.
+        se = fit.rx2('se.theta')  # get the std error
+        cov_params = fit.rx2('cov.theta')  # get the covariance.
         if isinstance(params, rpy2.rinterface_lib.sexp.NULLType):
             # params not present (for some reason) set everything to nan
             params = np.broadcast_to(np.nan, npts)
@@ -79,7 +79,7 @@ def gev_fit(*args:typing.List[np.ndarray],
             se = np.broadcast_to(np.nan, npts)
         if isinstance(cov_params, rpy2.rinterface_lib.sexp.NULLType):
             # cov not present (for some reason) set everything to nan
-            cov_params = np.broadcast_to(np.nan,[npts,npts])
+            cov_params = np.broadcast_to(np.nan, [npts, npts])
         params = np.array(params)
         se = np.array(se)
         cov_params = np.array(cov_params)
@@ -90,18 +90,18 @@ def gev_fit(*args:typing.List[np.ndarray],
         start_shape = -1
         if shapeCov:
             start_shape = -ncov
-        params[start_shape:] = params[start_shape:]*(-1)
+        params[start_shape:] = params[start_shape:] * (-1)
         nllh = np.array(fit.rx2('nllh'))
         aic = np.array(fit.rx2('AIC'))
     except rpy2.rinterface_lib.embedded.RRuntimeError:
         # some problem in R with the fit. Set everything to nan.
         params = np.broadcast_to(np.nan, npts)
         se = np.broadcast_to(np.nan, npts)
-        cov_params = np.broadcast_to(np.nan,[npts,npts])
+        cov_params = np.broadcast_to(np.nan, [npts, npts])
         nllh = np.array([np.nan])
         aic = np.array([np.nan])
 
-    return (params, se, cov_params,nllh, aic) # return the data.
+    return (params, se, cov_params, nllh, aic)  # return the data.
 
 
 import scipy.stats
@@ -150,12 +150,13 @@ def xarray_gev(data_array: xarray.DataArray,
                cov: typing.Optional[typing.List[xarray.DataArray]] = None,
                shape_cov=False,
                dim: [typing.List[str], str] = 'time_ensemble',
-               file=None, recreate_fit=False,
-               verbose=False,
+               file=None, recreate_fit: bool = False,
+               verbose: bool = False, name: typing.Optional[str] = None,
                **kwargs):
     #
     """
     Fit a GEV to xarray data using R.
+
     :param data_array: dataArray for which GEV is to be fit
     :param cov: covariate (If None not used) --a list of dataarrays or None.
     :param shape_cov: If True then allow the shape to vary with the covariate.
@@ -163,6 +164,7 @@ def xarray_gev(data_array: xarray.DataArray,
     :param file -- if defined save fit to this file. If file exists then read data from it and so not actually do fit.
     :param recreate_fit -- if True even if file exists compute fit.
     :param verbose -- be verbose if True
+    :param name: Name of the fit. Stored in result attributes under name.
     :param kwargs: any kwargs passed through to the fitting function
     :return: a dataset containing:
         Parameters -- the parameters of the fit; location, location wrt cov, scale, scale wrt cov, shape, shape wrt cov
@@ -177,30 +179,28 @@ def xarray_gev(data_array: xarray.DataArray,
             print(f"Loaded existing data from {file}")
         return data_array
 
-
     kwargs['shapeCov'] = shape_cov
 
     if cov is None:
-        cov=[]
+        cov = []
 
     cov_names = [c.name for c in cov]
 
-
     ncov = len(cov)
     input_core_dims = [[dim]] * (1 + ncov)
-    output_core_dims= [['parameter']]*2+[ ['parameter','parameter2'],['NegLog'], ['AIC']]
-    args= [data_array] + cov
+    output_core_dims = [['parameter']] * 2 + [['parameter', 'parameter2'], ['NegLog'], ['AIC']]
+    args = [data_array] + cov
     params, std_err, cov_param, nll, AIC = xarray.apply_ufunc(gev_fit, *args,
-                                                        input_core_dims=input_core_dims,
-                                                        output_core_dims=output_core_dims,
-                                                        vectorize=True, kwargs=kwargs)
+                                                              input_core_dims=input_core_dims,
+                                                              output_core_dims=output_core_dims,
+                                                              vectorize=True, kwargs=kwargs)
     pnames = []
     for n in ['location', 'scale', 'shape']:
         pnames += [n]
         if not shape_cov and n == 'shape':
-            continue # no Dshape_dX
+            continue  # no Dshape_dX
         for cn in cov_names:
-            pnames += ['D'+n+'_'+cn]
+            pnames += ['D' + n + '_' + cn]
 
     # name variables and then combine into one dataset.
 
@@ -209,10 +209,12 @@ def xarray_gev(data_array: xarray.DataArray,
     cov_param = cov_param.rename("Cov")
     nll = nll.rename('nll').squeeze()
     AIC = AIC.rename('AIC').squeeze()
-    data_array = xarray.Dataset(dict(Parameters=params, StdErr=std_err, Cov=cov_param,nll=nll, AIC=AIC)).assign_coords(
-        parameter=pnames,parameter2=pnames)
+    data_array = xarray.Dataset(dict(Parameters=params, StdErr=std_err, Cov=cov_param, nll=nll, AIC=AIC)).assign_coords(
+        parameter=pnames, parameter2=pnames)
+    if name:
+        data_array.attrs.update(name=name)
     if file is not None:
-        file.parent.mkdir(exist_ok=True,parents=True) # make directory
+        file.parent.mkdir(exist_ok=True, parents=True)  # make directory
         data_array.to_netcdf(file)  # save the dataset.
         if verbose:
             print(f"Wrote fit information to {file}")
@@ -221,17 +223,16 @@ def xarray_gev(data_array: xarray.DataArray,
 
 ## use apply ufunc to generate distributions...
 
-def fn_isf(c, loc, scale, p:typing.Optional[np.ndarray]=None, dist=scipy.stats.genextreme):
-    shape=list(c.shape)+list(p.shape)
-    fd=dist(np.broadcast_to(c,shape),loc=np.broadcast_to(loc,shape),scale=np.broadcast_to(scale,shape))
+def fn_isf(c, loc, scale, p: typing.Optional[np.ndarray] = None, dist=scipy.stats.genextreme):
+    shape = list(c.shape) + list(p.shape)
+    fd = dist(np.broadcast_to(c, shape), loc=np.broadcast_to(loc, shape), scale=np.broadcast_to(scale, shape))
     # handle single p value.
-    #if len(p) == 1:
+    # if len(p) == 1:
     #    p=p.reshape(1,-1)
 
-
-    #breakpoint()
-    x = fd.isf(np.broadcast_to(p,shape))
-    #x=fd.isf(p)
+    # breakpoint()
+    x = fd.isf(np.broadcast_to(p, shape))
+    # x=fd.isf(p)
     # x = fdist.isf(p)  # values for 1-cdf.
     return x
 
@@ -285,10 +286,10 @@ def xarray_interval(alpha, params):
     return interval
 
 
-def xarray_isf(p:np.ndarray,
-               params:xarray.DataArray,
-               output_dim_name:typing.Optional[str]=None,
-               input_dim_name:typing.Optional[str]=None) -> xarray.DataArray:
+def xarray_isf(p: np.ndarray,
+               params: xarray.DataArray,
+               output_dim_name: typing.Optional[str] = None,
+               input_dim_name: typing.Optional[str] = None) -> xarray.DataArray:
     """
     Compute the inverse survival function for specified probability values
     :param output_dim_name: name of output_dim -- default is probability
@@ -302,10 +303,10 @@ def xarray_isf(p:np.ndarray,
     if input_dim_name is None:
         input_dim_name = 'quantv'
 
-    #FIXME -- this is failing with a broadcast error. Sigh. I hate apply_ufunc.
-    aa = tuple([params.sel(parameter=k,drop=True) for k in ['shape', 'location', 'scale']])
-    x = xarray.apply_ufunc(fn_isf, *aa,input_core_dims=[[input_dim_name]]*len(aa),
-                           output_core_dims=[[output_dim_name,input_dim_name]],
+    # FIXME -- this is failing with a broadcast error. Sigh. I hate apply_ufunc.
+    aa = tuple([params.sel(parameter=k, drop=True) for k in ['shape', 'location', 'scale']])
+    x = xarray.apply_ufunc(fn_isf, *aa, input_core_dims=[[input_dim_name]] * len(aa),
+                           output_core_dims=[[output_dim_name, input_dim_name]],
                            vectorize=True, kwargs=dict(p=p))
     x = x.assign_coords({output_dim_name: p}).rename('isf')
     return x

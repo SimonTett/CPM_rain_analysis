@@ -1,9 +1,9 @@
 # Analyse the Stonehaven event using only the CPM data.
 # Rain coming from the radar but that is it!
-# get the radar data and slice out what we wanT
+# get the radar data and slice out what we want
 import cartopy.crs as ccrs
 import CPMlib
-import edinburghRainLib
+import CPM_rainlib
 import commonLib
 import xarray
 import scipy.stats
@@ -17,8 +17,8 @@ stonehaven = projGB.transform_point(*v,CPMlib.projRot)
 var_names = ["projection_x_coordinate","projection_y_coordinate"]
 stonehaven = dict(zip(var_names,stonehaven))
 stonehaven_rgn={k:slice(v-75e3,v+75e3) for k,v in stonehaven.items()}
-path=CPMlib.datadir/'summary_5km_1hr_scotland.nc'
-rseasMskmax, mxTime=edinburghRainLib.get_radar_data(path,region=stonehaven_rgn,height_range=slice(1,300))
+path=CPM_rainlib.datadir/'summary_5km_1hr_scotland.nc'
+rseasMskmax, mxTime, topog=CPM_rainlib.get_radar_data(path,region=stonehaven_rgn,height_range=slice(1,300))
 rseasMskmax=rseasMskmax.sel(time='2020-06')
 mxTime = mxTime.sel(time='2020-06')
 carmont_plus = CPMlib.carmont_OSGB.copy()
@@ -59,7 +59,7 @@ coords_to_drop=['grid_latitude',
 ]
 cet = cet.drop_vars(coords_to_drop,errors='ignore')
 ds=ds.drop_vars(coords_to_drop,errors='ignore')
-fit = gev_r.xarray_gev(ds.seasonalMax, cov=[cet], dim='indx')
+fit = gev_r.xarray_gev(ds.seasonalMax, cov=[cet], dim='indx', name=If)
 
 t_today = obs_cet_jja.sel(time=slice('2014','2023')).mean()
 t_PI = float(obs_cet_jja.sel(time=slice('1850','1899')).mean())

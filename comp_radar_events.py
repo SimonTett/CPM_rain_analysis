@@ -26,7 +26,7 @@ obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.sel(time=(obs_cet.time.dt.season == 'JJA'))
 summary_files = ['summary_5km_1hr_scotland.nc','summary_1km/1km_c5_summary.nc','summary_1km/1km_summary.nc','summary_1km/1km_c2_summary.nc',
                  'summary_1km/1km_c4_summary.nc','summary_1km/1km_c8_summary.nc']
-summary_files = [CPMlib.datadir/f for f in summary_files]
+summary_files = [CPMlib.radar_dir/f for f in summary_files]
 for path,resoln,name in zip(summary_files,
                           [5000,5000,1000,2000,4000,8000],
                           ['5km hourly','coarsened 1km  to 5km hourly','1km hourly','coarsened 1km to 2km hourly','coarsened 1km to 4km hourly','coarsened 1km to 8km hourly']):
@@ -51,7 +51,7 @@ for path,resoln,name in zip(summary_files,
     source_str=f'Processed NIMROD RADAR data from {name} to events using comp_radar_events.py on {datetime.datetime.now()}'
     radar_dataset.attrs.update(source=source_str)
 
-    opath = CPMlib.datadir/"radar"/f"radar_events_{out_file}"
+    opath = CPMlib.radar_dir/f"radar_events_{out_file}"
     opath.parent.mkdir(exist_ok=True)
     radar_dataset.to_netcdf(opath)
     print(f"Saved {radar_dataset.attrs['source']} to {opath}")
@@ -61,22 +61,21 @@ for path,resoln,name in zip(summary_files,
     out_dir.mkdir(parents=True,exist_ok=True)
     ln_radar_area = (np.log10(radar_dataset.count_cells * (resoln/1000)**2)).rename('log10_area')
     opath = out_dir/f'fit_{out_file}'
-    fit_nocov = gev_r.xarray_gev(radar_dataset.max_precip, dim="EventTime", verbose=True, file=opath, recreate_fit=recreate)
+    fit_nocov = gev_r.xarray_gev(radar_dataset.max_precip, dim="EventTime", file=opath, recreate_fit=recreate,
+                                 verbose=True, name='No_cov')
 
     opath = out_dir/f'fit_area_{out_file}'
 
-    fit_area = gev_r.xarray_gev(radar_dataset.max_precip,
-                                cov=[ln_radar_area],
-                                dim="EventTime", verbose=True, file=opath, recreate_fit=recreate)
+    fit_area = gev_r.xarray_gev(radar_dataset.max_precip, cov=[ln_radar_area], dim="EventTime", file=opath,
+                                recreate_fit=recreate, verbose=True, name='lnA')
     opath = out_dir/f'fit_area_ht_{out_file}'
-    fit_area_ht = gev_r.xarray_gev(radar_dataset.max_precip,
-                                   cov=[ln_radar_area,radar_dataset.height],
-                                   dim="EventTime", verbose=True, file=opath, recreate_fit=recreate)
+    fit_area_ht = gev_r.xarray_gev(radar_dataset.max_precip, cov=[ln_radar_area, radar_dataset.height], dim="EventTime",
+                                   file=opath, recreate_fit=recreate, verbose=True, name='lnA+z')
 
     print("DOne fits")
 
 ## lets check there are OK and plot them
-files=pathlib.Path(CPMlib.datadir/"radar").glob("*.nc")
+files=pathlib.Path(CPMlib.radar_dir).glob("*.nc")
 datasets={}
 for file in files:
     datasets[file.name]=xarray.load_dataset(file)

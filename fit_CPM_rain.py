@@ -6,8 +6,10 @@ import numpy as np
 import xarray
 import CPMlib
 import CPM_rainlib
+import pandas as pd
 filtered=True # Set true to use filtered rather than raw data.
 recreate=False # set True to recreate the fits
+verbose=True
 if filtered:
     event_path = CPM_rainlib.dataDir/'CPM_scotland_filter'/"CPM_filter_all_events.nc"
     fit_dir = CPM_rainlib.dataDir/'CPM_scotland_filter'/"fits"
@@ -38,49 +40,83 @@ ht=dd.height
 
 
 ln_area = np.log10(dd.count_cells*4.4**2).rename('log10_area')
+area = (dd.count_cells*4.4**2).rename('area')
+hour = dd.t.dt.hour.rename('hour')
+hour_sqr = (hour**2).rename('hour_sqr')
+cet_sqr = (dd.CET**2).rename("CET_sqr")
 precip = dd.max_precip
 
-fit = gev_r.xarray_gev(precip, dim=dim, verbose=True, file=fit_dir / 'fit_no_cov.nc', recreate_fit=recreate)
-fit_cet = gev_r.xarray_gev(precip,
-                           cov=[dd.CET], dim=dim, verbose=True, file=fit_dir/'fit_cet.nc', recreate_fit=recreate)
-fit_cet_cells = gev_r.xarray_gev(precip,
-                                 cov=[dd.CET,dd.count_cells],
-                                 dim=dim, verbose=True, file=fit_dir/'fit_cet_cells.nc', recreate_fit=recreate)
-fit_cet_ln_cells = gev_r.xarray_gev(precip,
-                                    cov=[dd.CET,ln_area],
-                                    dim=dim, verbose=True, file=fit_dir/'fit_cet_lnarea.nc', recreate_fit=recreate)
+fit = gev_r.xarray_gev(precip, dim=dim, file=fit_dir / 'fit_no_cov.nc', recreate_fit=recreate, verbose=verbose, name='None')
+fit_cet = gev_r.xarray_gev(precip, cov=[dd.CET], dim=dim, file=fit_dir / 'fit_cet.nc', recreate_fit=recreate,
+                           verbose=verbose, name='C')
 
-cet_sqr = (dd.CET**2).rename("CET_sqr")
-fit_cet_sqr_ln_cells = gev_r.xarray_gev(precip,
-                                    cov=[dd.CET,cet_sqr,ln_area],
-                                    dim=dim, verbose=True, file=fit_dir/'fit_cet_sqr_lnarea.nc', recreate_fit=recreate)
+fit_cet_sqr = gev_r.xarray_gev(precip, cov=[dd.CET, cet_sqr], dim=dim, file=fit_dir / 'fit_cet_sqr.nc',
+                               recreate_fit=recreate, verbose=verbose, name='C+C^2')
 
-fit_cells = gev_r.xarray_gev(precip,
-                             cov=[dd.count_cells],
-                             dim=dim, verbose=True, file=fit_dir/'fit_cells.nc', recreate_fit=recreate)
+fit_cet_area = gev_r.xarray_gev(precip, cov=[dd.CET, area], dim=dim, file=fit_dir / 'fit_cet_area.nc',
+                                 recreate_fit=recreate, verbose=verbose, name='C+A')
+fit_cet_ln_area = gev_r.xarray_gev(precip, cov=[dd.CET, ln_area], dim=dim, file=fit_dir / 'fit_cet_lnarea.nc',
+                                    recreate_fit=recreate, verbose=verbose, name='C+lnA')
+fit_ln_area = gev_r.xarray_gev(precip, cov=[ln_area], dim=dim, file=fit_dir / 'fit_lnarea.nc',
+                                    recreate_fit=recreate, verbose=verbose, name='lnA')
+fit_area = gev_r.xarray_gev(precip, cov=[area], dim=dim, file=fit_dir / 'fit_area.nc',
+                                    recreate_fit=recreate, verbose=verbose, name='A')
 
-fit_ht = gev_r.xarray_gev(precip, cov=[ht], dim=dim, verbose=True, file=fit_dir / 'fit_ht.nc', recreate_fit=recreate)
-fit_cet_cells_ht = gev_r.xarray_gev(precip, cov=[dd.CET, dd.count_cells, ht], dim=dim, verbose=True,
-                                    file=fit_dir/'fit_cet_cells_ht.nc', recreate_fit=recreate)
-fit_cet_ln_cells_ht = gev_r.xarray_gev(precip,
-                                       cov=[dd.CET,ln_area,ht],
-                                       dim=dim, verbose=True, file=fit_dir/'fit_cet_lnarea_ht.nc', recreate_fit=recreate)
+fit_cet_sqr_ln_area = gev_r.xarray_gev(precip, cov=[dd.CET, cet_sqr, ln_area], dim=dim,
+                                        file=fit_dir / 'fit_cet_sqr_lnarea.nc', recreate_fit=recreate, verbose=verbose,
+                                        name='C+C^2+lnA')
 
-fig=plt.figure(num=f'{base_img_name}_AIC',clear=True)
-for f,title,marker in zip(
-            [fit,fit_cet,fit_cells,fit_cet_cells,fit_cet_ln_cells,fit_ht,fit_cet_cells_ht,fit_cet_ln_cells_ht,fit_cet_sqr_ln_cells],
-                   ['None','CET','cells','CET & cells','CET & lnA','ht','CET, Cells & Ht','C lnA ht','C C^2 lnA'],
-                          ['x','+','o']*10):
-    if 'ht' in title:
+fit_cet_area_z = gev_r.xarray_gev(precip, cov=[dd.CET, area, ht], dim=dim,
+                                    file=fit_dir / 'fit_cet_area_z.nc', recreate_fit=recreate, verbose=verbose, name='C+A+z')
+fit_cet_ln_area_z = gev_r.xarray_gev(precip, cov=[dd.CET, ln_area, ht], dim=dim,
+                                       file=fit_dir / 'fit_cet_lnarea_z.nc', recreate_fit=recreate, verbose=verbose,
+                                       name='C+lnA+z')
+
+# try using hour of day.
+
+fit_cet_sqr_ln_area_hr_sqr = gev_r.xarray_gev(precip, cov=[dd.CET, cet_sqr, ln_area, hour, hour_sqr], dim=dim,
+                                               file=fit_dir / 'fit_cet_sqr_lnarea_hr_sqr.nc', recreate_fit=recreate,
+                                               verbose=verbose,name='C+C^2+lnA+hr+hr^2')
+
+fit_cet_sqr_ln_cells_hr_sqr_ht = gev_r.xarray_gev(precip, cov=[dd.CET, cet_sqr, ln_area, hour, hour_sqr, ht], dim=dim,
+                                                  file=fit_dir / 'fit_cet_sqr_lnarea_hr_sqr_ht_z.nc',
+                                                  recreate_fit=recreate, verbose=verbose,name='C+C^2+lnA+hr+hr^2+z')
+## plot everything
+fig,ax=plt.subplots(nrows=1,ncols=1,num=f'{base_img_name}_AIC',clear=True,figsize=(5,3),layout='constrained')
+AIC=dict()
+
+for f,marker in zip(
+            [fit,
+             fit_cet,
+             fit_area,fit_ln_area,
+             fit_cet_ln_area,
+
+             #fit_ht,
+             #fit_cet_cells_ht,
+             # fit_cet_ln_cells_ht,
+             fit_cet_sqr_ln_area,
+            # commented out these more complex fits till figure out what to do with them when comparing with obs.
+             #fit_cet_ln_cells_ht_hr,fit_cet_sqr_ln_cells_hr,fit_cet_sqr_ln_cells_hr_sqr,fit_cet_sqr_ln_cells_hr_sqr_ht
+             ],
+
+                          ['x','+','o']*20):
+    title = f.attrs.get('name')
+    if 'z' in title:
         alpha=0.5
         linewidth=1
     else:
         alpha=1
         linewidth=2
-    f.AIC.plot(label=title,linewidth=linewidth,marker=marker,alpha=alpha)
-fig.legend(ncol=3)
+    (f.AIC/1000).plot(label="$"+title+"$",linewidth=linewidth,marker=marker,alpha=alpha,ax=ax)
+    ax.set_title(f"{base_img_name} AIC")
+    ax.set_ylabel("AIC/1000")
+    AIC[title]=f.AIC
+ax.legend(ncol=2)
+
 fig.show()
 commonLib.saveFig(fig)
+df_AIC = pd.DataFrame(AIC,index=f.quantv).T
+print(df_AIC.idxmin())
 # plot the raw and adjusted CET sensitivity.
 
 
@@ -88,7 +124,7 @@ commonLib.saveFig(fig)
 delta_t = float(t_today - obs_cet_jja.sel(time=slice('1850', '1899')).mean())
 
 fig, ax = plt.subplots(nrows=1, ncols=1, clear=True, num=f'{base_img_name}_scatter_CPM_changes', figsize=[11, 8])
-for fit,title,color in zip([fit_cet,fit_cet_ln_cells],['CET','CET & log10(area)'],['red','purple']):
+for fit,title,color in zip([fit_cet,fit_cet_ln_area],['CET','CET & log10(area)'],['red','purple']):
     ref = fit.Parameters.sel(parameter=['location','scale'])
     D=fit.Parameters.sel(parameter=['Dlocation_CET','Dscale_CET']).assign_coords(parameter=['location','scale'])
     Derr=fit.StdErr.sel(parameter=['Dlocation_CET','Dscale_CET']).assign_coords(parameter=['location','scale'])
