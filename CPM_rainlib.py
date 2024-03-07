@@ -36,7 +36,11 @@ if ('jasmin.ac.uk' in machine) or ('jc.rl.ac.uk' in machine):
 elif 'GEOS-' in machine.upper():
     dataDir = pathlib.Path(r'C:\Users\stett2\OneDrive - University of Edinburgh\data\Scotland_extremes')
     nimrodRootDir = dataDir / 'nimrod_data'
-    outdir = dataDir 
+    outdir = dataDir
+elif machine.upper().startswith('CCRC'): # oz machine at CCRC!
+    dataDir = pathlib.Path('~z3542688/data/Scotland_extremes').expanduser()
+    nimrodRootDir = dataDir / 'nimrod_data'
+    outdir = dataDir
 else:  # don't know what to do so raise an error.
     raise Exception(f"On platform {machine} no idea where data lives")
 # create the outdir

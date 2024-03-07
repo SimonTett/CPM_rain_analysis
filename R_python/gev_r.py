@@ -325,3 +325,65 @@ def param_at_cov(params, cov):
     p2 = ["D" + a.lower() for a in p]
     params_c = params.sel(parameter=p2).assign_coords(parameter=p) * cov + params.sel(parameter=p)
     return params_c
+
+
+def xarray_gev_isf(params: xarray.DataArray,
+                   pvalues: typing.Union[np.ndarray, typing.List[float]],
+                   distribution: typing.Optional[scipy.stats.rv_continuous] = None, ) -> xarray.DataArray:
+    """
+
+    :param distribution: distribution to be used for fit
+    :param params: dataArray of parameters with co-ords parameter and names shape, location and scale
+    :param pvalues: probability values for which thresholds are computed.
+    :return: dataarray
+    """
+    if distribution is None:
+        distribution = scipy.stats.genextreme
+    # convert list to np.ndarray
+    if isinstance(pvalues, list):
+        pvalues = np.array(pvalues)  # convert to a numpy array
+    pvalues = np.unique(pvalues)  # get the unique values.
+    # extract data expanding dimension and generate frozen dist.
+    p_list = [params.sel(parameter=p).expand_dims(dim=dict(pvalues=1), axis=-1) for p in ['shape', 'location', 'scale']]
+    fit = distribution(*p_list)
+    # compute the inverse sf (pvalue -> threshold)
+    result = fit.isf(np.expand_dims(pvalues, axis=list(range(0, params.ndim - 1))))
+    # now to make it into a DataArray
+    coords = {coord: params[coord] for coord in params.coords if coord != 'parameter'}
+    dims = [dim for dim in params.dims if dim != 'parameter']
+    coords['pvalues'] = pvalues
+    dims.append('pvalues')
+    result = xarray.DataArray(data=result, coords=coords, dims=dims, name='isf')
+    # could do more with meta-data but that is for another time,
+    return result
+
+
+def xarray_gev_sf(params: xarray.DataArray,
+                  thresholds: typing.Union[np.ndarray, typing.List[float]],
+                  distribution: typing.Optional[scipy.stats.rv_continuous] = None, ) -> xarray.DataArray:
+    """
+
+    :param distribution: distribution to be used for fit
+    :param params: dataArray of parameters with co-ords parameter and names shape, location and scale
+    :param thresholds: probability values for which thresholds are computed.
+    :return: dataarray
+    """
+    if distribution is None:
+        distribution = scipy.stats.genextreme
+    # convert list to np.ndarray
+    if isinstance(thresholds, list):
+        thresholds = np.array(thresholds)  # convert to a numpy array
+    thresholds = np.unique(thresholds)  # get the unique values.
+    # extract data expanding dimension and generate frozen dist.
+    p_list = [params.sel(parameter=p).expand_dims(dim=dict(pvalues=1), axis=-1) for p in ['shape', 'location', 'scale']]
+    fit = distribution(*p_list)
+    # compute the  sf (threshold -> sf)
+    result = fit.sf(np.expand_dims(thresholds, axis=list(range(0, params.ndim - 1))))
+    # now to make it into a DataArray
+    coords = {coord: params[coord] for coord in params.coords if coord != 'parameter'}
+    dims = [dim for dim in params.dims if dim != 'parameter']
+    coords['threshold'] = thresholds
+    dims.append('threshold')
+    result = xarray.DataArray(data=result, coords=coords, dims=dims, name='isf')
+    # could do more with meta-data but that is for another time,
+    return result
