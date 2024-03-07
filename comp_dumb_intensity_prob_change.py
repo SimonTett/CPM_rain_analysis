@@ -80,6 +80,7 @@ def gev_sf(param: xarray.DataArray,
         result = result.rename(name)
     return result
 ##
+fit_dir = CPM_rainlib.dataDir/'CPM_scotland_filter'/"fits"
 obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA',drop=True)
 temps=dict()
@@ -105,8 +106,11 @@ cpm_cet=xarray.load_dataset(CPMlib.CPM_dir/"cet_tas.nc")
 cpm_cet=cpm_cet.tas.resample(time='QS-DEC').mean() # resample to seasonal means
 cpm_cet_jja = cpm_cet.where(cpm_cet.time.dt.season=='JJA',drop=True) # and pull out summer.
 stack_dim=dict(t_e=['time',"ensemble_member"])
-fit=gev_r.xarray_gev(carmont.stack(**stack_dim), cov=[cpm_cet_jja.rename('CET').stack(**stack_dim)], dim='t_e',name='Carmont_C')
-fit_extra=gev_r.xarray_gev(maxRain.stack(**stack_dim), cov=[cpm_cet_jja.rename('CET').stack(**stack_dim)], dim='t_e',name='Carmont_C')
+fit=gev_r.xarray_gev(carmont.stack(**stack_dim), cov=[cpm_cet_jja.rename('CET').stack(**stack_dim)],
+                     dim='t_e',name='Carmont_C',file=fit_dir/'carmont_fit_cet.nc')
+fit_extra=gev_r.xarray_gev(maxRain.stack(**stack_dim),
+                           cov=[cpm_cet_jja.rename('CET').stack(**stack_dim)],
+                           dim='t_e',name='Rgn_c',file=fit_dir/'rgn_fit_cet.nc')
 fits=dict()
 fits_extra=dict()
 
@@ -166,7 +170,7 @@ label = commonLib.plotLabel()
 
 # plot the intensities first
 kw_colorbar = dict(orientation='horizontal', fraction=0.1, aspect=40, pad=0.05, spacing='uniform', label='% increase')
-intensity_levels=np.arange(2.,13.,2)
+intensity_levels=np.arange(4,13.,1)
 norm_intensity = mcolors.BoundaryNorm(intensity_levels, ncolors=256, extend='both')
 cmap = 'RdYlBu'
 
@@ -208,3 +212,4 @@ for ax in axis.flatten():
     ax.plot(*CPMlib.stonehaven_long_lat,transform=ccrs.PlateCarree(),marker='o',ms=10,color='black')
     CPM_rainlib.std_decorators(ax)
 fig.show()
+commonLib.saveFig(fig)
