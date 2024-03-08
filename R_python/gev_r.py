@@ -354,6 +354,8 @@ def xarray_gev_isf(params: xarray.DataArray,
     coords['pvalues'] = pvalues
     dims.append('pvalues')
     result = xarray.DataArray(data=result, coords=coords, dims=dims, name='isf')
+    # add on another co-ord -- the return_value.
+    result = result.assign_coords(return_period=('pvalues',1.0/pvalues))
     # could do more with meta-data but that is for another time,
     return result
 

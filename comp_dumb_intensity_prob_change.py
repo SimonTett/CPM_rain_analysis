@@ -123,8 +123,8 @@ delta_intens_extra=dict()
 pr=dict()
 for key,t in temps.items():
     fits[key] = comp_params(fit, t)
-    dists[key]= gev_isf(fits[key], 1.0 / np.geomspace(2, 100, 200))
-    probs[key] = gev_sf(fits[key],np.linspace(10,30,num=200))
+    dists[key]= gev_r.xarray_gev_isf(fits[key], 1.0 / np.geomspace(2, 100, 200))
+    probs[key] = gev_r.xarray_gev_sf(fits[key],np.linspace(10,30,num=200))
     # extra stuff!
     fits_extra[key] = comp_params(fit_extra,t)
     dists_extra[key] = gev_r.xarray_gev_isf(fits_extra[key],1.0 / np.geomspace(2, 100, 200))
@@ -139,12 +139,27 @@ for key, t in temps.items():
 
 ## Now plot the intensity and prob changes.
 scale_cet = 5.61 # Hard wired from earlier comp.
+msk= (topog_mn < 300) & (topog_min > 0)
 label = commonLib.plotLabel()
 fig,(ax_ir,ax_pr) = plt.subplots(nrows=1,ncols=2,figsize=(8,5),
                                  clear=True,num='Dumb_carmont_changes',layout='constrained')
 for key in list(delta_intens.keys())[::-1]:
-    delta_intens[key].plot(ax=ax_ir,**plot_styles[key],label=key)
+    delta_intens[key].plot(ax=ax_ir,x='return_period',**plot_styles[key],label=key)
+    # plot the range
+    zz=delta_intens_extra[key].where(msk).stack(idx=['grid_longitude', 'grid_latitude']).\
+        quantile([0.05,0.5, 0.95], dim='idx')
+    lstyle=plot_styles[key].copy()
+    lstyle.update(linestyle='dashdot')
+    zz.isel(quantile=1).plot(ax=ax_ir,x='return_period',**lstyle)
+    ax_ir.fill_between(x=zz.return_period,y1=zz.isel(quantile=0),y2=zz.isel(quantile=-1),alpha=0.5,color=plot_styles[key]['color'])
     pr[key].plot(ax=ax_pr, **plot_styles[key], label=key)
+    zz = probs_extra[key].where(msk).stack(idx=['grid_longitude', 'grid_latitude']).\
+        quantile([0.05, 0.5,0.95], dim='idx')
+    lstyle=plot_styles[key].copy()
+    lstyle.update(linestyle='dashdot')
+    zz.isel(quantile=1).plot(ax=ax_pr,**lstyle)
+    ax_pr.fill_between(x=zz.threshold, y1=zz.isel(quantile=0), y2=zz.isel(quantile=-1), alpha=0.5,
+                       color=plot_styles[key]['color'])
     dt = temps[key]-temps['PI']
     ax_ir.axhline(dt*scale_cet,color=plot_styles[key]['color'],linestyle='dashed')
 ax_ir.legend()
@@ -163,7 +178,7 @@ commonLib.saveFig(fig)
 
 ## plot maps of intensity and PR change for today.
 
-smooth= 3
+smooth= 1
 fig,axis = plt.subplots(nrows=2,ncols=2,figsize=(8,8),clear=True,num='map_intensity_prob',
                         subplot_kw=dict(projection=CPMlib.projRot))
 label = commonLib.plotLabel()
@@ -179,6 +194,9 @@ for ax,rtn_prd in zip(axis[0,:],[20,100]):
     di = delta_intens_extra['2012-2021'].sel(pvalues=1.0/rtn_prd,method='nearest')
     di = di.rolling(grid_latitude=smooth,grid_longitude=smooth,center=True).mean()
     di.plot(ax=ax,cmap=cmap, levels=intensity_levels,add_colorbar=False)
+
+    topog_mn.plot.contour(ax=ax,colors=['blue','palegreen','green','brown'],
+                          levels=[200,300,500,800],linewidths=1)
     ax.set_title(f'Intensity Increase  rp={rtn_prd} ')
 
 cm = mcm.ScalarMappable(norm=norm_intensity, cmap=cmap)
@@ -191,6 +209,9 @@ for ax,intensity in zip(axis[1,:],[20,30]):
     rr = probs_extra['2012-2021'].sel(threshold=intensity,method='nearest')
     rr = rr.rolling(grid_latitude=smooth,grid_longitude=smooth,center=True).mean()
     rr.plot(ax=ax,cmap=cmap, levels=rr_levels,add_colorbar=False)
+
+    topog_mn.plot.contour(ax=ax,colors=['blue','palegreen','green','brown'],
+                          levels=[200,300,500,800],linewidths=1)
     ax.set_title(f'PR for {intensity} mm/h')
 
 cm = mcm.ScalarMappable(norm=norm_rr, cmap=cmap)
@@ -199,9 +220,8 @@ rgn_lst = []
 for s in CPMlib.stonehaven_rgn.values():
     rgn_lst += [s.start,s.stop]
 for ax in axis.flatten():
-
     ax.set_extent(rgn_lst)
-    #ax.coastlines()
+    ax.coastlines()
     g = ax.gridlines(draw_labels=True)
     g.top_labels = False
     g.left_labels = False
@@ -209,7 +229,7 @@ for ax in axis.flatten():
     # add on carmont
     ax.plot(*CPMlib.carmont_long_lat,transform=ccrs.PlateCarree(),marker='*',ms=10,color='black')
     # and stonehaven
-    ax.plot(*CPMlib.stonehaven_long_lat,transform=ccrs.PlateCarree(),marker='o',ms=10,color='black')
-    CPM_rainlib.std_decorators(ax)
+    #ax.plot(*CPMlib.stonehaven_long_lat,transform=ccrs.PlateCarree(),marker='o',ms=10,color='black')
+    CPM_rainlib.std_decorators(ax,radar_col='green')
 fig.show()
 commonLib.saveFig(fig)
