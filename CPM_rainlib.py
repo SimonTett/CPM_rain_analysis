@@ -14,12 +14,13 @@ import xarray
 import pathlib
 import cartopy
 import cartopy.feature
+import cartopy.io
 import pandas as pd
 import numpy as np
 import platform
 import cftime
 import cf_units
-import matplotlib.pyplot as plt
+
 import iris.exceptions
 import typing
 
@@ -37,7 +38,7 @@ elif 'GEOS-' in machine.upper():
     dataDir = pathlib.Path(r'C:\Users\stett2\OneDrive - University of Edinburgh\data\Scotland_extremes')
     nimrodRootDir = dataDir / 'nimrod_data'
     outdir = dataDir
-elif machine.upper().startswith('CCRC'): # oz machine at CCRC!
+elif machine.upper().startswith('CCRC'):  # oz machine at CCRC!
     dataDir = pathlib.Path('~z3542688/data/Scotland_extremes').expanduser()
     nimrodRootDir = dataDir / 'nimrod_data'
     outdir = dataDir
@@ -279,12 +280,22 @@ except fiona.errors.DriverError:
         facecolor='none')
 
 # radar stations
-metadata = pd.read_excel('radar_station_metadata.xlsx', index_col=[0], na_values=['-']).T
+metadata = pd.read_excel(dataDir / 'radar_station_metadata.xlsx', index_col=[0], na_values=['-']).T
 L = metadata.Working.str.upper() == 'Y'
 metadata = metadata[L]
+# rail netowork
+data_path = pathlib.Path(
+    r'C:\Users\stett2\OneDrive - University of Edinburgh\data\common_data\UK_railway_DS_10283_2423\UK_Railways.zip')
+fname = r"zip://" + (data_path / 'Railway.shx').as_posix()
+rdr = cartopy.io.shapereader.Reader(fname)
+railways = cartopy.feature.ShapelyFeature(rdr.geometries(), crs=cartopy.crs.OSGB(),
+                                          linewidth=3, facecolor='none', edgecolor='purple', linestyle='solid')
 
 
-def std_decorators(ax, showregions=True, radarNames=False,radar_col='orange'):
+def std_decorators(ax, showregions=True,
+                   radarNames=False, radar_col='orange',
+                   grid: bool = True,
+                   show_railways: bool = False):
     """
     Add a bunch of stuff to an axis
     :param ax: axis
@@ -295,13 +306,22 @@ def std_decorators(ax, showregions=True, radarNames=False,radar_col='orange'):
 
     ax.plot(metadata.Easting, metadata.Northing, marker='h', color=radar_col, ms=10, linestyle='none',
             transform=cartopy.crs.OSGB(approx=True), clip_on=True)  # radar stations location.
-    # ax.gridlines(draw_labels=False, x_inline=False, y_inline=False)
     if showregions:
-        ax.add_feature(regions, edgecolor='red')
+        ax.add_feature(regions, edgecolor='grey', linewidth=2)
+    if show_railways:
+        ax.add_feature(railways)
+    if grid:
+        g = ax.gridlines(draw_labels=True)
+        g.top_labels = False
+        g.left_labels = False
+
     if radarNames:
         for name, row in metadata.iterrows():
-            ax.annotate(name, (row.Easting + 500, row.Northing + 500), transform=cartopy.crs.OSGB(approx=True),
-                        annotation_clip=True)
+            ax.annotate(name, (row.Easting + 500, row.Northing + 500),
+                        transform=cartopy.crs.OSGB(approx=True),
+                        annotation_clip=True,
+                        # backgroundcolor='grey',alpha=0.5,
+                        fontsize='large', fontweight='bold')
 
     ax.add_feature(coastline)
     # ax.add_feature(nations, edgecolor='black')
@@ -310,8 +330,8 @@ def std_decorators(ax, showregions=True, radarNames=False,radar_col='orange'):
 def get_radar_data(file: pathlib.Path,
                    topog_grid: typing.Optional[int] = None,
                    region: typing.Optional[dict] = None,
-                   height_range:slice=slice(0, 200),
-                   mxMeanRain:float=1000.) -> (xarray.DataArray,xarray.DataArray,xarray.DataArray):
+                   height_range: slice = slice(0, 200),
+                   mxMeanRain: float = 1000.) -> (xarray.DataArray, xarray.DataArray, xarray.DataArray):
     """
     read in radar data and mask it by heights and mean rain being reasonable.
     :param file: file to be read in
@@ -327,7 +347,7 @@ def get_radar_data(file: pathlib.Path,
     rseas = radar_precip.drop_vars('No_samples').resample(time='QS-Dec')
     rseas = rseas.map(time_process, varPrefix='monthly', summary_prefix='seasonal')
     rseas = rseas.sel(time=(rseas.time.dt.season == 'JJA'))  # Summer max rain
-    topog = read_90m_topog(region=region, resample=topog_grid) # read in topography and regrid
+    topog = read_90m_topog(region=region, resample=topog_grid)  # read in topography and regrid
     top_fit_grid = topog.interp_like(rseas.isel(time=0).squeeze())
 
     htMsk = (top_fit_grid > height_range.start) & (top_fit_grid < height_range.stop)  # in ht range
@@ -347,7 +367,7 @@ def read_90m_topog(region: typing.Optional[dict] = None, resample=None):
     :param resample: If not None then the amount to coarsen by.
     :return: topography dataset
     """
-    topog = rioxarray.open_rasterio(dataDir/"../EdinburghRainfall" / 'uk_srtm')
+    topog = rioxarray.open_rasterio(dataDir / "../EdinburghRainfall" / 'uk_srtm')
     topog = topog.reindex(y=topog.y[::-1]).rename(x='projection_x_coordinate', y='projection_y_coordinate')
     if region is not None:
         topog = topog.sel(**region)
@@ -364,7 +384,6 @@ def event_stats(max_precip: xarray.Dataset,
                 max_time: xarray.Dataset,
                 group,
                 source: str = "CPM"):
-
     if source == 'CPM':
         x_coord = 'grid_longitude'
         y_coord = 'grid_latitude'
@@ -425,13 +444,13 @@ def comp_event_stats(file: pathlib.Path,
     :return: grouped dataset
     """
     rseasMskmax, mxTime, topog = get_radar_data(file, region=region, topog_grid=topog_grid, height_range=height_range,
-                                         mxMeanRain=mxMeanRain)
+                                                mxMeanRain=mxMeanRain)
 
     grp = ((mxTime.dt.dayofyear - 1) + mxTime.dt.year * 1000).rename('EventTime')
     # mask!
     grp = xarray.where(~rseasMskmax.isnull(), grp, 0).rename('EventTime')
-    radar_dataset = event_stats(rseasMskmax, mxTime, grp,  source=source).sel(EventTime=slice(1, None))
-    ht =topog.sel(projection_x_coordinate=radar_dataset.x, projection_y_coordinate=radar_dataset.y)
+    radar_dataset = event_stats(rseasMskmax, mxTime, grp, source=source).sel(EventTime=slice(1, None))
+    ht = topog.sel(projection_x_coordinate=radar_dataset.x, projection_y_coordinate=radar_dataset.y)
     # drop unnneded coords
     coords_to_drop = [c for c in ht.coords if c not in ht.dims]
     ht = ht.drop_vars(coords_to_drop)

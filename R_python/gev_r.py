@@ -13,7 +13,7 @@ import rpy2.robjects as robjects
 import rpy2.robjects.packages as rpackages
 import rpy2.robjects.pandas2ri as rpandas2ri
 import rpy2.rinterface_lib
-
+from rpy2.robjects import numpy2ri
 utils = rpackages.importr('utils')
 utils.chooseCRANmirror(ind=1)
 # R package names
@@ -30,17 +30,19 @@ base = rpackages.importr('base')  # to give us summary
 
 
 def gev_fit(*args: typing.List[np.ndarray],
+            weights:typing.Optional[np.ndarray]=None,
             shapeCov: bool = False, **kwargs):
     """
     Do GEV fit using R and return named tuple of relevant values.
     :param x: Data to be fit
-    :param cov: covariate value (if None then not used)
+    :param cov: co-variate value (if None then not used)
     :param returnType. Type to return, allowed is:
         named -- return a named tuple (default)
         tuple -- return a tuple -- useful for apply_ufunc
         DataSet -- return a DataSet
-    :param shapeCov -- If True allow the shape to vary with the covariate.
+    :param shapeCov -- If True allow the shape to vary with the co-variate.
     :return: A dataset of the parameters of the fit.
+    #TODO rewrite this to directly call the R fn.
     """
     x = args[0]
     ncov = len(args) - 1
@@ -60,10 +62,16 @@ def gev_fit(*args: typing.List[np.ndarray],
         r_code = r_code + ",location.fun=" + cov_expr + ",scale.fun=" + cov_expr
         if shapeCov:
             r_code += ',shape.fun=' + cov_expr
+    if weights is not None:# got weights so include that in the R code.
+        r_code += ',weights=wt'
     r_code += ')'  # add on the trailing bracket.
     df = pd.DataFrame(np.array(df_data).T, columns=cols)
-    with (robjects.default_converter + rpandas2ri.converter).context():
+    if weights is not None:
+        wts = robjects.vectors.FloatVector(weights)  # convert to a R vector.
+        robjects.globalenv['wt'] = wts  # and push into the R environment.
+    with (robjects.default_converter + rpandas2ri.converter+numpy2ri.converter).context():
         robjects.globalenv['df'] = df  # push the dataframe with info into R
+
     try:
         r_fit = robjects.r(r_code)  # do the fit
         fit = base.summary(r_fit, silent=True)  # get the summary fit info
@@ -151,7 +159,9 @@ def xarray_gev(data_array: xarray.DataArray,
                shape_cov=False,
                dim: [typing.List[str], str] = 'time_ensemble',
                file=None, recreate_fit: bool = False,
-               verbose: bool = False, name: typing.Optional[str] = None,
+               verbose: bool = False,
+               name: typing.Optional[str] = None,
+               weights: typing.Optional[xarray.DataArray] = None,
                **kwargs):
     #
     """
@@ -160,6 +170,7 @@ def xarray_gev(data_array: xarray.DataArray,
     :param data_array: dataArray for which GEV is to be fit
     :param cov: covariate (If None not used) --a list of dataarrays or None.
     :param shape_cov: If True then allow the shape to vary with the covariate.
+    :param weights: Weights for each sample. If not specified, no weighting will be done.
     :param dim: The dimension(s) over which to collapse.
     :param file -- if defined save fit to this file. If file exists then read data from it and so not actually do fit.
     :param recreate_fit -- if True even if file exists compute fit.
@@ -361,7 +372,7 @@ def xarray_gev_isf(params: xarray.DataArray,
 
 
 def xarray_gev_sf(params: xarray.DataArray,
-                  thresholds: typing.Union[np.ndarray, typing.List[float]],
+                  thresholds: typing.Union[np.ndarray, typing.List[float],float],
                   distribution: typing.Optional[scipy.stats.rv_continuous] = None, ) -> xarray.DataArray:
     """
 
@@ -373,7 +384,7 @@ def xarray_gev_sf(params: xarray.DataArray,
     if distribution is None:
         distribution = scipy.stats.genextreme
     # convert list to np.ndarray
-    if isinstance(thresholds, list):
+    if isinstance(thresholds, (list,float)):
         thresholds = np.array(thresholds)  # convert to a numpy array
     thresholds = np.unique(thresholds)  # get the unique values.
     # extract data expanding dimension and generate frozen dist.

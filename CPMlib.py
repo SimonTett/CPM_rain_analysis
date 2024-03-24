@@ -26,16 +26,22 @@ stonehaven['grid_longitude'] += 360.
 stonehaven_OSGB = dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
                         projOSGB.transform_point(*stonehaven_long_lat, ll)))
 stonehaven_rgn = {k: slice(v - 0.75, v + 0.75) for k, v in stonehaven.items()}
+stonehaven_rgn_extent = []
+for v in stonehaven_rgn.values():
+    stonehaven_rgn_extent.extend([v.start,v.stop])
 # and carmont co-ords
-carmont_long_lat = (-2.321111, 56.952500)
 
+carmont_long_lat= (-2.32094,56.95248) # location of derailment from openstreetmap.
+carmont_drain_long_lat = (-2.3266852553075017,56.951548724582096) # "field" where rainfell
 carmont = dict(zip(['grid_longitude', 'grid_latitude'], projRot.transform_point(*carmont_long_lat, ll)))
 carmont['grid_longitude'] += 360.
 
 carmont_OSGB = dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
                         projOSGB.transform_point(*carmont_long_lat, ll)))
+carmont_drain_OSGB=dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
+                        projOSGB.transform_point(*carmont_drain_long_lat, ll)))
 
-
+kw_colorbar = dict(orientation='horizontal',fraction=0.1,aspect=40,pad=0.05,extend='both')
 def discretise(time: xarray.DataArray) -> xarray.DataArray:
     """
 

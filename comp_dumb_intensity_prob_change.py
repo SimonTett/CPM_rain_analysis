@@ -137,11 +137,29 @@ for key, t in temps.items():
         delta_intens_extra[key] = (dists_extra[key]/dists_extra['PI']-1)*100.
         probs_extra[key] = (probs_extra[key]/probs_extra['PI'])*100.
 
+## plot the Carmont values.
+msk= (topog_mn < 300) & (topog_min > 0)
+key='2012-2021'
+fig_carmont_int,ax_c_int = plt.subplots(nrows=1,ncols=1,figsize=(8,5),
+                                 clear=True,num='Dumb_carmont_intensity',layout='constrained')
+dists[key].plot(ax=ax_c_int,x='return_period',**plot_styles[key])
+zz=dists_extra[key].where(msk).stack(idx=['grid_longitude', 'grid_latitude']).\
+        quantile([0.05,0.5, 0.95], dim='idx')
+lstyle=plot_styles[key].copy()
+lstyle.update(linestyle='dashdot')
+zz.isel(quantile=1).plot(ax=ax_c_int,x='return_period',**lstyle)
+ax_c_int.fill_between(x=zz.return_period,y1=zz.isel(quantile=0),y2=zz.isel(quantile=-1),
+                      alpha=0.5,color=plot_styles[key]['color'])
+ax_c_int.set_title('Carmont Intensity (mm/h')
+ax_c_int.set_xlabel('Return Period (summers)')
+ax_c_int.set_ylabel('Intensity (mm/h)')
+fig_carmont_int.show()
+commonLib.saveFig(fig_carmont_int)
 ## Now plot the intensity and prob changes.
 scale_cet = 5.61 # Hard wired from earlier comp.
-msk= (topog_mn < 300) & (topog_min > 0)
+
 label = commonLib.plotLabel()
-fig,(ax_ir,ax_pr) = plt.subplots(nrows=1,ncols=2,figsize=(8,5),
+fig,(ax_ir,ax_pr) = plt.subplots(nrows=2,ncols=2,figsize=(8,5),
                                  clear=True,num='Dumb_carmont_changes',layout='constrained')
 for key in list(delta_intens.keys())[::-1]:
     delta_intens[key].plot(ax=ax_ir,x='return_period',**plot_styles[key],label=key)
@@ -176,7 +194,46 @@ for ax in [ax_ir,ax_pr]:
 fig.show()
 commonLib.saveFig(fig)
 
+# define region
+
+rgn_stonehaven_lst = []
+for s in CPMlib.stonehaven_rgn.values():
+    rgn_stonehaven_lst += [s.start, s.stop]
+
+## plot "todays" intensity for return periods of 1:20 & 1:100
+fig_today,axis_today = plt.subplots(nrows=1,ncols=2,figsize=(8,4),clear=True,num='map_intensity_today',
+                        subplot_kw=dict(projection=CPMlib.projRot))
+label = commonLib.plotLabel()
+
+kw_colorbar = dict(orientation='horizontal', fraction=0.1, aspect=40, pad=0.05,
+                   spacing='uniform', label='mm/h')
+intensity_levels=np.arange(15,35.,2.5)
+norm_intensity = mcolors.BoundaryNorm(intensity_levels, ncolors=256, extend='both')
+cmap = 'RdYlBu'
+for ax,rtn_prd in zip(axis_today,[20,100]):
+    intensity = dists_extra['2012-2021'].sel(pvalues=1.0/rtn_prd,method='nearest')
+    #di = di.rolling(grid_latitude=smooth,grid_longitude=smooth,center=True).mean()
+    intensity.plot(ax=ax,cmap=cmap, levels=intensity_levels,add_colorbar=False)
+
+    topog_mn.plot.contour(ax=ax,colors=['blue','palegreen','green','brown'],
+                          levels=[200,300,500,800],linewidths=1)
+    ax.set_title(f'Intensity (2012-2022) rp={rtn_prd} ')
+    ax.set_extent(rgn_stonehaven_lst)
+    CPM_rainlib.std_decorators(ax,radar_col='green')
+    g = ax.gridlines(draw_labels=True)
+    g.top_labels = False
+    g.left_labels = False
+    label.plot(ax)
+    # add on carmont
+    ax.plot(*CPMlib.carmont_long_lat, transform=ccrs.PlateCarree(), marker='*', ms=10, color='black')
+cm = mcm.ScalarMappable(norm=norm_intensity, cmap=cmap)
+fig_today.colorbar(cm, ax=axis_today, boundaries=intensity_levels, **kw_colorbar)
+fig_today.show()
+commonLib.saveFig(fig_today)
+
 ## plot maps of intensity and PR change for today.
+
+
 
 smooth= 1
 fig,axis = plt.subplots(nrows=2,ncols=2,figsize=(8,8),clear=True,num='map_intensity_prob',
@@ -216,11 +273,8 @@ for ax,intensity in zip(axis[1,:],[20,30]):
 
 cm = mcm.ScalarMappable(norm=norm_rr, cmap=cmap)
 fig.colorbar(cm, ax=list(axis[1,:]), boundaries=rr_levels, **kw_colorbar)
-rgn_lst = []
-for s in CPMlib.stonehaven_rgn.values():
-    rgn_lst += [s.start,s.stop]
 for ax in axis.flatten():
-    ax.set_extent(rgn_lst)
+    ax.set_extent(rgn_stonehaven_lst)
     ax.coastlines()
     g = ax.gridlines(draw_labels=True)
     g.top_labels = False

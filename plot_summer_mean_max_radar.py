@@ -34,7 +34,7 @@ label = commonLib.plotLabel()
 for ax in axis:
     label.plot(ax)
     ax.set_extent(extent,crs=ccrs.OSGB())
-    CPM_rainlib.std_decorators(ax,radar_col='red',radarNames=True)
+    CPM_rainlib.std_decorators(ax,radar_col='green',radarNames=True)
     g=ax.gridlines(draw_labels=True)
     g.top_labels = False
     g.left_labels = False
