@@ -15,171 +15,154 @@ import resource  # so we can see memory usage every month.
 import warnings
 import logging
 import typing
+import sys
 
 warnings.filterwarnings('ignore', message='.*Vertical coord 5 not yet handled.*')
+# filter out annoying warning from iris.
 
-
-# warning from iris filter out!
-
-
-def memory_use():
+my_logger = logging.getLogger(__name__)  # for logging
+max_memory = 0.0 # used as a global value
+def memory_use() -> str:
     """
-    Report on memory  use
+    Report on Memory Use.
+    Returns: a string with the memory use in Gbytes or "Mem use unknown" if unable to load resource
+     module.
+
     """
+    # Based on https://medium.com/survata-engineering-blog/monitoring-memory-usage-of-a-running-python-program-49f027e3d1ba
+    global max_memory # every time we sample memory need to update the global value.
+    try:
+        import resource
+        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6
+        max_memory = max(mem,max_memory)
+        mem = f"Mem: {mem:7.2f} Max Mem: {max_memory:7.2f} Gbytes"
+    except ModuleNotFoundError:
+        mem = 'Mem use unknown'
+    return mem
     
-def maxValue(da, maxVar, dim='time'):
+
+def time_process(da:xarray.DataArray,
+                 rolling:typing.List[int]=[1]):
     """
-    Return value from da where maxVar is maximum wrt dim.
-    :param da: dataArray where values come from
-    :param maxVar: dataArray where index max is found
-    :param dim: dim over which to work. Default is 'time'
-    :return: dataArray
-    """
-
-    bad = da.isnull().all('time', keep_attrs=True)  # find out where *all* data null
-    indx = maxVar.argmax(dim='time', skipna=False, keep_attrs=True)  # index of maxes
-    result = da.isel(time=indx)
-    result = result.where(~bad)  # mask data where ALL is missing
-    return result
-
-
-def time_of_max(da, dim='time'):
+    Process a dataArray of (daily) data
+    :param dataarray -- Dataset to process
+    :param rolling. List of rolling periods to use.
     """
 
-    Work out time of maxes using argmax to get index and then select the times.
+    mx=[]
+    mx_time=[]
+    for roll in rolling:
+        if roll == 1: # skip rolling!
+            roll_var =  da
+        else:
+            roll_var =  da.rolling(time=roll,center=True).mean()
+        mx_r = roll_var.max('time', keep_attrs=True).rename(f'{da.name}_Max')  # max
+        mx_time_r = roll_var.where(mx_r >0).idxmax('time').rename(f'{da.name}_MaxTime') # only want > 0
+        
+        mx.append(mx_r.assign_coords(rolling=roll))
+        mx_time.append(mx_time_r.assign_coords(rolling=roll))
+    
+    mx=xarray.concat(mx,dim='rolling')
+    mx_time=xarray.concat(mx_time,dim='rolling')
 
-    """
-    bad = da.isnull().all(dim, keep_attrs=True)  # find out where *all* data null
-
-    indx = da.argmax(dim=dim, skipna=False, keep_attrs=True)  # index of maxes
-    result = da.time.isel({dim: indx})
-
-    result = result.where(~bad)  # mask data where ALL is missing
-    return result
-
-
-def process(dataArray, resample='1D', total=True):
-    """
-    process a chunk of data from the hourly processed data
-    Compute  dailyMax, dailyMaxTime and dailyMean and return them in a dataset
-    :param dataArray -- input data array to be resampled and processes to daily
-    :param total (default True) If True   compute the daily total.
-
-    """
-    name_keys = {'1D': 'daily', '1M': 'monthly'}
-    name = name_keys.get(resample, resample)
-    resamp = dataArray.resample(time=resample, label='left')
-    # set up the resample
-    mx = resamp.max(keep_attrs=True).rename(name + 'Max')
-    nsamps = mx.attrs.pop('Number_samples')
-    if total:  # this is problematic if process 15min data. In which case total will be 4 times too large.
-        # TODO fix processing.
-        tot = resamp.sum(keep_attrs=True).rename(name + 'Total')
-        tot.attrs['units'] = 'mm/day'
-        nsamps = tot.attrs.pop('Number_samples')
-
-    mxTime = resamp.map(time_of_max).rename(name + 'MaxTime')
-    ds = xarray.merge([tot, mx, mxTime])
-    # add in the number of samples (and their time)
-    try:
-        v = xarray.DataArray([nsamps], dims=dict(time=mx.time))
-        ds = ds.assign(No_samples=v)
-    except KeyError:  # not there
-        pass
-
-    return ds
-
-
-def time_process(DS, varPrefix='daily', summary_prefix=''):
-    """
-    Process a dataset of (daily) data
-    :param DS -- Dataset to process
-    :param outFile (default None). Name of file for summary data to output. If None  nothing will be written.
-            All times in attributes or "payload" will be converted used commonLib.convert_time
-    :param varPrefix (default 'daily') -- variable prefix on DataArrays in datasets)
-    :param summary_prefix (default '') -- prefix to be added to output maxes etc
-    """
-    mx = DS[varPrefix + 'Max'].max('time', keep_attrs=True).rename(f'{summary_prefix}Max')  # max of maxes
-    mx_idx = DS[varPrefix + 'Max'].fillna(0.0).argmax('time', skipna=True)  # index  of max
-    mx_time = DS[varPrefix + 'MaxTime'].isel(time=mx_idx).drop_vars('time').rename(f'{summary_prefix}MaxTime')
-    time_max = DS[varPrefix + 'Max'].time.max().values
+    time_max = da.time.max().values
+    time_min = da.time.min().values
     # TODO modify to make a total.
-    mn = DS[varPrefix + 'Total'].mean('time', keep_attrs=True).rename(f'{summary_prefix}Mean')
-    # actual time. -- dropping time as has nothing and will fix later
-
+    mn = da.mean('time', keep_attrs=True).rename(f'{da.name}_Mean')
     ds = xarray.merge([mn, mx, mx_time])
-
-    ds.attrs['max_time'] = time_max
+    ds['time_bounds']=xarray.DataArray([time_min,time_max],coords=dict(bounds=[0,1]))
 
     return ds
-
-
-def write_data(ds, outFile, summary_prefix=''):
-    """
-    Write data to netcdf file -- need to fix times!
-      So only converts maxTime
-    :param ds -- dataset to be written
-    :param outFile: file to write to.
-    :param summary_prefix. summary prefix text (usually daily or monthly)
-    :return: converted dataset.
-    """
-    ds2 = ds.copy()  # as modifying things...
-    try:
-        ds2.attrs['max_time'] = CPM_rainlib.time_convert(ds2.attrs['max_time'])
-    except KeyError:  # no maxTime.,
-        pass
-    var = summary_prefix + "MaxTime"
-    ds2[var] = CPM_rainlib.time_convert(ds2[var])
-    # compress the ouput... (useful because most rain is zero...and quite a lot of the data is missing)
-    encoding = dict()
-    comp = dict(zlib=True)
-    for v in ds2.data_vars:
-        encoding[v] = comp
-    ds2.to_netcdf(outFile, encoding=encoding)
-    return ds2
-
 
 def end_period_process(dailyData:typing.List,
                        outDir:pathlib.Path, 
+                       resoln:str, 
                        period:str='1M', 
-                       extra_name:str='',
-                       writeDaily:bool =True):
+                       coarsens:typing.List[int]=[1],
+                       rolling:typing.List[int]=[1]):
     """
     Deal with data processing at end of a period -- normally a calendar month.
     :param dailyData -- input list of daily datasets
     :param outDir -- output directory where data will be written to
+    :param  resoln -- resolution string
     :param period (default '1M'). Time period over which data to be resampled to
-    :param extra_name (defult '')
-    :param writeDaily (default True). If True write out daily data
+    :param coarsens: List of coarsenings to apply to spatial data.
+    :param rolling. List of rolling periods to apply to data in time.
     """
     if len(dailyData) == 0:
-        return []  # nothing to do so return empty list
+        return []  # nothing to do so return empty list 
     name_keys = {'1D': 'daily', '1M': 'monthly'}
     no_days = len(dailyData)
-    time_write = pd.to_datetime(dailyData[-1].time.values[0])
-    time_str = f'{time_write.year:04d}-{time_write.month:02d}'
     summary_prefix = name_keys.get(period, period)
-
-    split_name = f.name.split(".")[0].split("_")
     outDir.mkdir(exist_ok=True,parents=True) # create the outdir
-    outFile = outDir / "_".join(
-        [split_name[0], split_name[1], time_str, split_name[-1], f'{summary_prefix}{extra_name}.nc'])
-    outFileDaily = outDir / "_".join(
-        [split_name[0], split_name[1], time_str, split_name[-1], f'daily{extra_name}.nc'])
-    dsDaily = xarray.concat(dailyData, 'time')
-    resampDS = dsDaily.resample(time=period).map(time_process, summary_prefix=summary_prefix)
-    resampDS = resampDS.assign(
-        No_samples=dsDaily.No_samples.rename(time='time_sample'))  # add in the no of samples and  time of the sample
-    if writeDaily:
-        write_data(dsDaily, outFile=outFileDaily, summary_prefix='daily')
-        print(f"Wrote daily data for {no_days} days for {time_str} to {outFileDaily}")
-
-    write_data(resampDS, outFile=outFile, summary_prefix=summary_prefix)
-    logging.info(f"Wrote summary {extra_name} data for {no_days} days for {time_str} to {outFile}")
-
-    return resampDS  # return summary dataset
+    rain=xarray.concat(dailyData,dim='time')
+    # pull out no of samples and compute total number of samples in period
+    No_samples=rain['no_samples'].resample(time=period).sum() # no of samples
+    fmt_str = '%Y-%m-%dT%H'
+    start_time = rain.time.min().dt.strftime(fmt_str).values.tolist()
+    end_time = rain.time.max().dt.strftime(fmt_str).values.tolist()
 
 
+
+    # Handle Coarsening
+    resultDS=dict()
+    rain_var = "Radar_rain"
+    for coarsen in coarsens:
+        if coarsen == 1:
+            coarsened_da = rain[rain_var] # no coarsening needed!
+            key = f'{resoln}'
+        else:
+            c_dict=dict(projection_x_coordinate=coarsen,
+                        projection_y_coordinate=coarsen)
+            coarsened_da =rain[rain_var].coarsen(boundary='pad',**c_dict).mean().\
+                          assign_coords(dict(coarsen=coarsen))
+            key = f'{resoln}_c{coarsen}'
+
+        outFile = outDir / "_".join(
+            ["radar_rain", start_time,end_time, key+'.nc'])
+
+        resampDS = coarsened_da.resample(time=period).map(time_process, rolling=rolling)
+        encoding = dict()
+        comp = dict(zlib=True)
+        for v in resampDS.data_vars:
+            encoding[v] = comp
+
+        resampDS['No_samples'] = No_samples # add in the number of samples
+        resampDS.to_netcdf(outFile, encoding=encoding)
+        my_logger.info(f"Wrote summary data for {len(dailyData)} days for {resampDS.time.max().values} to {outFile}")
+        resultDS[key]=resampDS
+
+    return resultDS  # return summary dataset
+
+def init_log(log: logging.Logger,
+             level: str,
+             log_file: typing.Optional[typing.Union[pathlib.Path, str]] = None,
+             mode: str = 'a'):
+    """
+    Set up logging on a logger! Will clear any existing logging
+    :param log: logger to be changed
+    :param level: level to be set.
+    :param log_file:  if provided pathlib.Path to log to file
+    :param mode: mode to open log file with (a  -- append or w -- write)
+    :return: nothing -- existing log is modified.
+    """
+    log.handlers.clear()
+    log.setLevel(level)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s:  %(message)s',
+                                  datefmt='%Y-%m-%d %H:%M:%S')
+    ch = logging.StreamHandler(sys.stderr)
+    ch.setFormatter(formatter)
+    log.addHandler(ch)
+    # add a file handler.
+    if log_file:
+        if isinstance(log_file, str):
+            log_file = pathlib.Path(log_file)
+        log_file.parent.mkdir(exist_ok=True, parents=True)
+        fh = logging.FileHandler(log_file, mode=mode + 't')  #
+        fh.setLevel(level)
+        fh.setFormatter(formatter)
+        log.addHandler(fh)
+    log.propagate = False
 # read cmd line args.
 parser = argparse.ArgumentParser(
     description="Process UK Nimrod Radar Data to compute hourly maxes on monthly timescales")
@@ -187,12 +170,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument('year', type=int, nargs='+', help='years to process')
 parser.add_argument('--resolution', '-r', type=str,
                     help='Resolution wanted', choices=['1km', '5km'], default='5km')
-parser.add_argument('--glob', type=str, help='Pattern for glob month matching -- i.e. 0[6-8]',
-                    default='[0-1][0-9]')
+parser.add_argument('--glob', type=str, help='Pattern for glob month/day matching -- i.e. 0[6-8][0-3][0-9]',
+                    default='[0-1][0-9][0-3][0-9]')
 parser.add_argument('--test', '-t', action='store_true',
                     help='If set run in test mode -- no data read or generated')
-parser.add_argument('--verbose', '-v', action='store_true',
-                    help='If set be verbose')
 parser.add_argument('--outdir', '-o', type=str, help='Name of output directory')
 parser.add_argument('--log_level', '-l', type=str,
                     choices=['DEBUG','INFO','WARNING'],default='WARNING',
@@ -201,12 +182,16 @@ parser.add_argument('--region', nargs=4, type=float, help='Region to extract (x0
 
 parser.add_argument('--minhours', type=int,
                     help='Minium number of unique hours in data to process daily data (default 6 hours)', default=6)
-parser.add_argument("--nodaily", action='store_false',
-                    help='Do not write out daily data')
+parser.add_argument('--minsamples',type=int,help='Minimum number of samples in a time sample')
 parser.add_argument("--resample", type=str, help='Time to resample input radar data to (default = 1h)', default='1h')
 parser.add_argument("--coarsen",type=int,nargs="+",
                     help='Spatial coarsenings to apply *before* time resampling',default=[1])
+parser.add_argument("--rolling",type=int,nargs="+",help='Rolling times to apply before computing maxes',default=[1])
 args = parser.parse_args()
+
+init_log(my_logger, args.log_level)
+
+
 glob_patt = args.glob
 test = args.test
 resoln = args.resolution
@@ -215,8 +200,8 @@ if outdir is None:  # default
     outdir = CPM_rainlib.outdir / f'summary_{resoln}'
 else:
     outdir = pathlib.Path(outdir)
-writeDaily = args.nodaily
-verbose = args.verbose
+
+
 region = None
 if args.region is not None:
     region = dict(
@@ -225,106 +210,78 @@ if args.region is not None:
     )
 
 resample_prd = args.resample
-if verbose:
-    print("Command line args", args)
+# log cmd args. 
+my_logger.info("Command line args: \n"+repr(args))
 
 minhours = args.minhours
 coarsens=args.coarsen # list of coarsening values.
-logging.basicConfig(force=True,level=args.log_level)
-max_mem = 0
+
 if test:
     print(f"Would create {outdir}")
 else:
     outdir.mkdir(parents=True, exist_ok=True)  # create directory if needed
 
-# initialise -- note this means results will be a bit different on the 1st of Jan if running years indep..
+# initialise -- 
 last_month = None
 last_time = None
-dailyData = None
 for year in args.year:
     dataYr = CPM_rainlib.nimrodRootDir / f'uk-{resoln}/{year:04d}'
     # initialise the list...
-    files = sorted(list(dataYr.glob(f'metoffice*{year:02d}{glob_patt}[0-3][0-9]*-composite.dat.gz.tar')))
+    files = sorted(list(dataYr.glob(f'metoffice*{year:02d}{glob_patt}*-composite.dat.gz.tar')))
+    daily_rain=[] 
     for f in files:
         if test:  # test mode
             print(f"Would read {f} but in test mode")
             continue
         rain = CPM_rainlib.extract_nimrod_day(f, QCmax=400, check_date=True, region=region)
         if (rain is None) or (len(np.unique(rain.time.dt.hour)) <= minhours):  # want min hours hours of data
-            logging.warning(f"Not enough data for {f} ")
+            my_logger.warning(f"Not enough data for {f} ")
             if rain is None:
-                logging.warning("No data at all")
+                my_logger.warning("No data at all")
             else:
-                logging.warning(f"Only {len(np.unique(rain.time.dt.hour))} unique hours")
+                my_logger.warning(f"Only {len(np.unique(rain.time.dt.hour))} unique hours")
 
             last_time = None  # no last data for the next day
             continue  # no or not enough data so onto the next day
         # now we can process a days worth of data.    
-        no_samples = len(rain.time)
-        rain = rain.resample(time=resample_prd).mean(keep_attrs=True)  # mean rain/hour units mm/hr
-        rain.attrs["Number_samples"] = no_samples  # how many samples went in
-        # handle coarsening.
-        coarsened_da=dict() # coarsened datasets.
-        for coarsen in coarsens:
-            if coarsen == 1:
-                coarsened_da[resoln] = rain # no coarsening needed!
-            else:
-                c_dict=dict(projection_x_coordinate=coarsen,
-                            projection_y_coordinate=coarsen)
-                coarse_rain =rain.coarsen(boundary='pad',**c_dict).mean().\
-                              assign_coords(dict(coarsen=coarsen))
-                coarsened_da[f"{resoln}_c{coarsen}"]=coarse_rain
-        time = pd.to_datetime(rain.time.values[0])
-        # from https://medium.com/survata-engineering-blog/monitoring-memory-usage-of-a-running-python-program-49f027e3d1ba
-        # memory use.
-        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        max_mem = max(max_mem, mem)
-        logging.debug(f"Memory: {mem}, Max Mem {max_mem}")
-        logging.info(f"{f} @  {time}")
-
+        no_samples = rain.time.resample(time=resample_prd).count().rename('no_samples')
+        
+        rain = rain.resample(time=resample_prd).mean(keep_attrs=True).rename('Radar_rain')  # mean rain/hour units mm/hr
+        if args.minsamples:
+            rain = rain.where(no_samples >= args.minsamples)
+        ds=xarray.merge([rain,no_samples])
+        my_logger.debug(memory_use())
+        my_logger.debug(f"{f} @  {rain.time.min().values}")
 
         # this block will only be run if last_month is not None and month 
         # has changed. Taking advantage of lazy evaluation.
-        if (last_month is not None) and   (time.month != last_month): 
-             # change of month -- could be quarter etc
+        if (last_month is not None) and   (rain[0].time.dt.month != last_month): 
+            # change of month -- could be quarter etc
             # starting a new month so save data and start again.
-            logging.info("Starting a new period. Summarizing and writing data out")
-            for key,daily_data in dailyData.items():
-                # process and write out data
-                summaryDS = end_period_process(daily_data, outdir/key,
-                                               period='1M',extra_name=key,
-                                               writeDaily=writeDaily)  
+            my_logger.info("Starting a new period. Summarizing and writing data out")
+            # process and write out data
 
-            # memory use.
-            mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-            max_mem = max(max_mem, mem)
-            logging.info(f"Memory: {mem}, Max Mem {max_mem}")
+            summaryDS = end_period_process(daily_rain, outdir,resoln,period='1M',
+                                           coarsens=coarsens, rolling=args.rolling)
+
+            my_logger.info(memory_use()) # print out memory use.
 
 
-            # new month so clean up dailyData 
+            # new month so clean up daily_rain
+            daily_rain=[]
 
-            dailyData = {k:[] for k in coarsened_da.keys()} 
+        daily_rain.append(ds) # append the ds we just generated to list to process at end of next block!
 
-
-        # end of start again stuff
-        if dailyData is None: # init dailyData
-            dailyData = {k:[] for k in coarsened_da.keys()} 
-        for key,rain_processed in coarsened_da.items():
-            dailyData[key].append(process(rain_processed))  # append rain to the daily list.
         #  figure our last period and month.
-        last_time = rain_processed.time.isel(time=[-1])  # get last hour.
-        last_month = pd.to_datetime(last_time).month
+        last_time = rain.time[-1]  # get last hour.
+        last_month = last_time.dt.month
         # print("End of loop",last_month)
         # done loop over files for this year
     # end loop over years.
 
 # and we might have data to write out!
-for key,daily_data in dailyData.items():
-    summaryDS = end_period_process(daily_data, outdir/key,
-                                   period='1M',extra_name=key,
-                                   writeDaily=writeDaily)  # process and write out data
+summaryDS = end_period_process(daily_rain,outdir,resoln, period='1M',
+                               coarsens=coarsens,rolling=args.rolling) # process and write out data
 
-
-mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-max_mem = max(max_mem, mem)
-logging.info(f"Memory: {mem}, Max Mem {max_mem}")
+my_logger.info("All done")
+my_logger.info(memory_use())
