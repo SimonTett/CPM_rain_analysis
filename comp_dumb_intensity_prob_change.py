@@ -194,11 +194,9 @@ for ax in [ax_ir,ax_pr]:
 fig.show()
 commonLib.saveFig(fig)
 
-# define region
+## define region
 
-rgn_stonehaven_lst = []
-for s in CPMlib.stonehaven_rgn.values():
-    rgn_stonehaven_lst += [s.start, s.stop]
+
 
 ## plot "todays" intensity for return periods of 1:20 & 1:100
 fig_today,axis_today = plt.subplots(nrows=1,ncols=2,figsize=(8,4),clear=True,num='map_intensity_today',
@@ -212,14 +210,17 @@ norm_intensity = mcolors.BoundaryNorm(intensity_levels, ncolors=256, extend='bot
 cmap = 'RdYlBu'
 for ax,rtn_prd in zip(axis_today,[20,100]):
     intensity = dists_extra['2012-2021'].sel(pvalues=1.0/rtn_prd,method='nearest')
+    carmont = float(intensity.sel(**CPMlib.carmont_drain, method='Nearest'))
+    msk = (intensity < carmont * 1.1) * (intensity > carmont * 0.9)
     #di = di.rolling(grid_latitude=smooth,grid_longitude=smooth,center=True).mean()
-    intensity.plot(ax=ax,cmap=cmap, levels=intensity_levels,add_colorbar=False)
+    intensity.plot(ax=ax, cmap=cmap, levels=intensity_levels, add_colorbar=False, alpha=0.4)
+    intensity.where(msk).plot(ax=ax,cmap=cmap, levels=intensity_levels,add_colorbar=False,alpha=0.75)
 
-    topog_mn.plot.contour(ax=ax,colors=['blue','palegreen','green','brown'],
-                          levels=[200,300,500,800],linewidths=1)
+    # topog_mn.plot.contour(ax=ax,colors=['blue','palegreen','green','brown'],
+    #                       levels=[200,300,500,800],linewidths=1)
     ax.set_title(f'Intensity (2012-2022) rp={rtn_prd} ')
-    ax.set_extent(rgn_stonehaven_lst)
-    CPM_rainlib.std_decorators(ax,radar_col='green')
+    ax.set_extent(CPMlib.stonehaven_rgn_extent)
+    CPM_rainlib.std_decorators(ax,radar_col='green',show_railways=True)
     g = ax.gridlines(draw_labels=True)
     g.top_labels = False
     g.left_labels = False
