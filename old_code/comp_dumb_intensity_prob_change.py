@@ -206,9 +206,10 @@ label = commonLib.plotLabel()
 kw_colorbar = dict(orientation='horizontal', fraction=0.1, aspect=40, pad=0.05,
                    spacing='uniform', label='mm/h')
 intensity_levels=np.arange(15,35.,2.5)
+intensity_levels = np.arange(24,30)
 norm_intensity = mcolors.BoundaryNorm(intensity_levels, ncolors=256, extend='both')
 cmap = 'RdYlBu'
-for ax,rtn_prd in zip(axis_today,[20,100]):
+for ax,rtn_prd in zip(axis_today,[100]):
     intensity = dists_extra['2012-2021'].sel(pvalues=1.0/rtn_prd,method='nearest')
     carmont = float(intensity.sel(**CPMlib.carmont_drain, method='Nearest'))
     msk = (intensity < carmont * 1.1) * (intensity > carmont * 0.9)

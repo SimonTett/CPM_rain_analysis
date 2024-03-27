@@ -12,7 +12,7 @@ import datetime
 import scipy.stats
 from R_python import gev_r
 
-recreate=False
+recreate=True
 proj=ccrs.PlateCarree()
 projGB=ccrs.OSGB()
 stonehaven_OSGB=dict(zip(["projection_x_coordinate","projection_y_coordinate"],
@@ -24,7 +24,7 @@ stonehaven_rgn={k:slice(v-75e3,v+75e3) for k,v in stonehaven_OSGB.items()}
 # get the  summer mean CET out and force its time's to be the same.
 obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.sel(time=(obs_cet.time.dt.season == 'JJA'))
-summary_files = ['summary_5km_1hr_scotland.nc','summary_1km/1km_c5_summary.nc','summary_1km/1km_summary.nc','summary_1km/1km_c2_summary.nc',
+summary_files = ['5km_summary_2004_2023.nc','summary_1km/1km_c5_summary.nc','summary_1km/1km_summary.nc','summary_1km/1km_c2_summary.nc',
                  'summary_1km/1km_c4_summary.nc','summary_1km/1km_c8_summary.nc']
 summary_files = [CPMlib.radar_dir/f for f in summary_files]
 for path,resoln,name in zip(summary_files,
@@ -32,7 +32,8 @@ for path,resoln,name in zip(summary_files,
                           ['5km hourly','coarsened 1km  to 5km hourly','1km hourly','coarsened 1km to 2km hourly','coarsened 1km to 4km hourly','coarsened 1km to 8km hourly']):
     out_file = path.name.replace("_summary", "")
     grid = int(resoln/90.)
-    radar_dataset = CPM_rainlib.comp_event_stats(path, region=stonehaven_rgn, topog_grid=grid, height_range=slice(1, 300))
+    radar_dataset = CPM_rainlib.comp_event_stats(path, region=stonehaven_rgn, topog_grid=grid, height_range=slice(10., None))
+
     # get the CET to the right times,
     tc = np.array([f"{int(y)}-06-01" for y in radar_dataset.t.isel(quantv=0).dt.year])
     cet = obs_cet_jja.interp(time=tc).rename(dict(time='EventTime'))

@@ -22,10 +22,10 @@ stonehaven = dict(zip(var_names, stonehaven))
 stonehaven_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in stonehaven.items()}
 scalebarprops=dict(frameon=False)
 
-path = CPMlib.radar_dir / 'summary_5km_1hr_scotland.nc'
+path = CPMlib.radar_dir / 'summary_1km/1km_summary.nc'
 radar_data = xarray.load_dataset(path).monthlyMax.sel(time=slice('2020-06-01', '2020-08-31')).max('time')
 
-rseasMskmax, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, region=stonehaven_rgn, height_range=slice(1, 300))
+rseasMskmax, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, topog_grid=11,region=stonehaven_rgn, height_range=slice(20, None))
 
 cmap = 'RdYlBu'
 levels = np.linspace(5, 30, 11)
@@ -48,7 +48,7 @@ scalebar = ScaleBar(1,"m",**scalebarprops)
 axis['zoom'].add_artist(scalebar)
 # plot the topography
 top_fit_grid.plot(ax=axis['topog'],cmap='terrain',
-                  levels=[-200,-100,0,100,200,300,400,500,600,700],
+                  levels=[-200,-100,0,50,100,200,300,400,500,600,700,800],
                   cbar_kwargs=dict(label='height (m)'))
 scalebar = ScaleBar(1,"m",**scalebarprops)
 axis['topog'].add_artist(scalebar)
@@ -67,7 +67,7 @@ axBI.coastlines()
 cm = radar_data.plot(ax=axis['jja2020max'], levels=levels,transform=projGB, cmap=cmap, add_colorbar=False)
 dofyear = pd.to_datetime('2020-08-12').dayofyear
 rn_max = rseasMskmax.sel(time='2020').where(mxTime.sel(time='2020').dt.dayofyear == dofyear)
-print(f"area of 2020-08-12 event is {float(rn_max.count()) * 25} km^2")
+print(f"area of 2020-08-12 event is {float(rn_max.count()) } km^2")
 rn_max.plot(ax=axis['aug2020'], robust=True, cmap=cmap, transform=projGB, add_colorbar=False)
 
 # show 1km and 5 km grids,

@@ -15,6 +15,7 @@ import pathlib
 import cartopy
 import cartopy.feature
 import cartopy.io
+import  cartopy.io.shapereader
 import pandas as pd
 import numpy as np
 import platform
@@ -34,14 +35,17 @@ if ('jasmin.ac.uk' in machine) or ('jc.rl.ac.uk' in machine):
     nimrodRootDir = pathlib.Path("/badc/ukmo-nimrod/data/composite")  # where the nimrod data lives
     cpmDir = pathlib.Path("/badc/ukcp18/data/land-cpm/uk/2.2km/rcp85")  # where the CPM data lives
     outdir = dataDir
+
 elif 'GEOS-' in machine.upper():
     dataDir = pathlib.Path(r'C:\Users\stett2\OneDrive - University of Edinburgh\data\Scotland_extremes')
     nimrodRootDir = dataDir / 'nimrod_data'
     outdir = dataDir
+    common_data = pathlib.Path(r'C:\Users\stett2\OneDrive - University of Edinburgh\data\common_data')
 elif machine.upper().startswith('CCRC'):  # oz machine at CCRC!
     dataDir = pathlib.Path('~z3542688/data/Scotland_extremes').expanduser()
     nimrodRootDir = dataDir / 'nimrod_data'
     outdir = dataDir
+    common_data = pathlib.Path('~z3542688/data/common_data').expanduser()
 else:  # don't know what to do so raise an error.
     raise Exception(f"On platform {machine} no idea where data lives")
 # create the outdir
@@ -280,12 +284,14 @@ except fiona.errors.DriverError:
         facecolor='none')
 
 # radar stations
-metadata = pd.read_excel(dataDir / 'radar_station_metadata.xlsx', index_col=[0], na_values=['-']).T
+
+metadata = pd.read_excel(common_data / 'radar_station_metadata.xlsx', index_col=[0], na_values=['-']).T
 L = metadata.Working.str.upper() == 'Y'
 metadata = metadata[L]
-# rail netowork
-data_path = pathlib.Path(
-    r'C:\Users\stett2\OneDrive - University of Edinburgh\data\common_data\UK_railway_DS_10283_2423\UK_Railways.zip')
+# rail network
+data_path = pathlib.Path(common_data/'UK_railway_DS_10283_2423/UK_Railways.zip')
+if not data_path.exists():
+    raise FileNotFoundError(f"Can't find {data_path}")
 fname = r"zip://" + (data_path / 'Railway.shx').as_posix()
 rdr = cartopy.io.shapereader.Reader(fname)
 railways = cartopy.feature.ShapelyFeature(rdr.geometries(), crs=cartopy.crs.OSGB(),
@@ -337,7 +343,7 @@ def get_radar_data(file: pathlib.Path,
     :param file: file to be read in
     :param region: region to extract. If None is Edinburgh region
     :param height_range: Height range to use (all data strictly *between* these values will be used)
-    :param mxMeanRain: the maximum mean rain allowed (QC)
+    :param mxMeanRain: the maximum  rain allowed (QC)
     :return: Data masked for region requested & mxTime
     """
 
@@ -349,8 +355,12 @@ def get_radar_data(file: pathlib.Path,
     rseas = rseas.sel(time=(rseas.time.dt.season == 'JJA'))  # Summer max rain
     topog = read_90m_topog(region=region, resample=topog_grid)  # read in topography and regrid
     top_fit_grid = topog.interp_like(rseas.isel(time=0).squeeze())
+    htMsk = True
+    if height_range.start:
+        htMsk = htMsk & (top_fit_grid > height_range.start)
+    if height_range.stop:
+        htMsk = htMsk & (top_fit_grid < height_range.stop)
 
-    htMsk = (top_fit_grid > height_range.start) & (top_fit_grid < height_range.stop)  # in ht range
     # mask by seasonal sum < 1000.
     mskRain = ((rseas.seasonalMean * (30 + 31 + 31) / 4.) < mxMeanRain) & htMsk
     rseasMskmax = xarray.where(mskRain, rseas.seasonalMax, np.nan)
@@ -367,7 +377,7 @@ def read_90m_topog(region: typing.Optional[dict] = None, resample=None):
     :param resample: If not None then the amount to coarsen by.
     :return: topography dataset
     """
-    topog = rioxarray.open_rasterio(dataDir / "../EdinburghRainfall" / 'uk_srtm')
+    topog = rioxarray.open_rasterio(common_data/ 'uk_srtm')
     topog = topog.reindex(y=topog.y[::-1]).rename(x='projection_x_coordinate', y='projection_y_coordinate')
     if region is not None:
         topog = topog.sel(**region)
