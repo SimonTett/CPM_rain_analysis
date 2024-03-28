@@ -8,7 +8,7 @@ import functools
 import cartopy.crs as ccrs
 import CPM_rainlib
 
-# datadir=pathlib.Path(r"C:\Users\stett2\OneDrive - University of Edinburgh\data\Scotland_extremes")
+
 CPM_dir = CPM_rainlib.dataDir / "CPM_scotland"  # processed CPM data
 CPM_filt_dir = CPM_rainlib.dataDir / "CPM_scotland_filter"  # processed CPM data
 radar_dir = CPM_rainlib.dataDir / "radar"  # radar data
@@ -43,6 +43,7 @@ carmont_drain_OSGB=dict(zip(["projection_x_coordinate", "projection_y_coordinate
 carmont_drain = dict(zip(['grid_longitude', 'grid_latitude'],
                          projRot.transform_point(*carmont_drain_long_lat, ll)))
 carmont_drain['grid_longitude'] += 360.
+carmont_rgn_OSGB= {k: slice(v - 75e3, v + 75e3) for k, v in carmont_drain_OSGB.items()}
 
 kw_colorbar = dict(orientation='horizontal',fraction=0.1,aspect=40,pad=0.05,extend='both')
 def discretise(time: xarray.DataArray) -> xarray.DataArray:

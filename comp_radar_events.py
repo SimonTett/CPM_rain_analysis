@@ -15,10 +15,9 @@ from R_python import gev_r
 recreate=True
 proj=ccrs.PlateCarree()
 projGB=ccrs.OSGB()
-stonehaven_OSGB=dict(zip(["projection_x_coordinate","projection_y_coordinate"],
-                        [387171.,785865.])) # from wikipedia https://geohack.toolforge.org/geohack.php?pagename=Stonehaven&params=56.964_N_2.211_W_region:GB_type:city(11150)
 
-stonehaven_rgn={k:slice(v-75e3,v+75e3) for k,v in stonehaven_OSGB.items()}
+carmont_rgn={k:slice(v - 75e3, v + 75e3) for k,v in CPMlib.carmont_drain_OSGB.items()}
+carmont_rgn.update(time=slice('2008-01-01','2023-12-31'))
 
 
 # get the  summer mean CET out and force its time's to be the same.
@@ -32,7 +31,9 @@ for path,resoln,name in zip(summary_files,
                           ['5km hourly','coarsened 1km  to 5km hourly','1km hourly','coarsened 1km to 2km hourly','coarsened 1km to 4km hourly','coarsened 1km to 8km hourly']):
     out_file = path.name.replace("_summary", "")
     grid = int(resoln/90.)
-    radar_dataset = CPM_rainlib.comp_event_stats(path, region=stonehaven_rgn, topog_grid=grid, height_range=slice(10., None))
+    breakpoint()
+    radar_dataset = CPM_rainlib.comp_event_stats(path,
+                                                 region=carmont_rgn, topog_grid=grid, height_range=slice(50., None))
 
     # get the CET to the right times,
     tc = np.array([f"{int(y)}-06-01" for y in radar_dataset.t.isel(quantv=0).dt.year])

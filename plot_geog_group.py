@@ -16,16 +16,19 @@ import cartopy.io.img_tiles as cimgt
 
 projGB = ccrs.OSGB()
 v = tuple(CPMlib.stonehaven.values())
-stonehaven = projGB.transform_point(*v, CPMlib.projRot)
-var_names = ["projection_x_coordinate", "projection_y_coordinate"]
-stonehaven = dict(zip(var_names, stonehaven))
-stonehaven_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in stonehaven.items()}
+
+carmont_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
+big_carmont_rgn = {k: slice(v - 90e3, v + 90e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
+#big_carmont_rgn_ll = {k: slice(v - 2.5, v + 2.5) for k, v in CPMlib.carmont_drain_long_lat.items()}
+big_carmont_extent = [big_carmont_rgn['projection_x_coordinate'].start, big_carmont_rgn['projection_x_coordinate'].stop,
+                      big_carmont_rgn['projection_y_coordinate'].start, big_carmont_rgn['projection_y_coordinate'].stop]
 scalebarprops=dict(frameon=False)
 
 path = CPMlib.radar_dir / 'summary_1km/1km_summary.nc'
-radar_data = xarray.load_dataset(path).monthlyMax.sel(time=slice('2020-06-01', '2020-08-31')).max('time')
+radar_data = xarray.load_dataset(path).monthlyMax.sel(time=slice('2020-06-01', '2020-08-31')).max('time').sel(**big_carmont_rgn)
+topog = CPM_rainlib.read_90m_topog(region=big_carmont_rgn, resample=11).squeeze()  # read in topography and regrid to about 1km resoln
 
-rseasMskmax, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, topog_grid=11,region=stonehaven_rgn, height_range=slice(20, None))
+rseasMskmax, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, topog_grid=11, region=carmont_rgn, height_range=slice(50, None))
 
 cmap = 'RdYlBu'
 levels = np.linspace(5, 30, 11)
@@ -47,28 +50,42 @@ axis['zoom'].plot(*CPMlib.carmont_long_lat,color='firebrick', marker='*',
 scalebar = ScaleBar(1,"m",**scalebarprops)
 axis['zoom'].add_artist(scalebar)
 # plot the topography
-top_fit_grid.plot(ax=axis['topog'],cmap='terrain',
+topog.plot(ax=axis['topog'],cmap='terrain',
                   levels=[-200,-100,0,50,100,200,300,400,500,600,700,800],
                   cbar_kwargs=dict(label='height (m)'))
+# add circles around the radar at roughly 60 and 120 km corresponding to roughly 1 km and 2km resoln.
+import itertools
+import matplotlib.patches as mpatches
+import cartopy.crs as ccrs
+for (range,name) in itertools.product([60,120],['Hill of Dudwick','Munduff Hill']):
+    co_ords = CPM_rainlib.radar_stations.loc[name,['Easting','Northing']].astype(float)
+    # Create a circle
+    circle = mpatches.Circle(co_ords, radius=range*1000, transform=ccrs.OSGB(),
+                             edgecolor='green',linewidth=2, facecolor='none')
+    # Add the circle to the axis
+    axis['topog'].add_patch(circle)
 scalebar = ScaleBar(1,"m",**scalebarprops)
 axis['topog'].add_artist(scalebar)
-# add an inset plot of the British Isles
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import cartopy.mpl.geoaxes
-axBI = inset_axes(axis['topog'], width="45%", height="40%", loc="lower right",
-                  axes_class=cartopy.mpl.geoaxes.GeoAxes, borderpad=0.,
-                  axes_kwargs=dict(projection=ccrs.PlateCarree()))
-axBI.set_extent((-11, 2, 50, 61),crs=ccrs.PlateCarree())
-axBI.tick_params(labelleft=False, labelbottom=False)
-axBI.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(),
-        marker='o', ms=6, color='cornflowerblue')
-axBI.coastlines()
+
 
 cm = radar_data.plot(ax=axis['jja2020max'], levels=levels,transform=projGB, cmap=cmap, add_colorbar=False)
 dofyear = pd.to_datetime('2020-08-12').dayofyear
 rn_max = rseasMskmax.sel(time='2020').where(mxTime.sel(time='2020').dt.dayofyear == dofyear)
 print(f"area of 2020-08-12 event is {float(rn_max.count()) } km^2")
+(top_fit_grid < 50).where(True,np.nan).plot(cmap='gray_r',ax=axis['aug2020'],transform=projGB,add_colorbar=False)
 rn_max.plot(ax=axis['aug2020'], robust=True, cmap=cmap, transform=projGB, add_colorbar=False)
+# plot the topog over.
+
+
+# plot a box!
+xstart=carmont_rgn['projection_x_coordinate'].start
+xstop=carmont_rgn['projection_x_coordinate'].stop
+ystart=carmont_rgn['projection_y_coordinate'].start
+ystop=carmont_rgn['projection_y_coordinate'].stop
+x, y = [xstart, xstart, xstop, xstop, xstart], [ystart, ystop, ystop, ystart, ystart]
+for ax_name in ['aug2020','jja2020max']:
+    axis[ax_name].plot(x, y, color='black', linewidth=2,transform=ccrs.OSGB())
+
 
 # show 1km and 5 km grids,
 
@@ -84,13 +101,24 @@ for ax, title in zip(axis.values(), ['Accident Site','Topography','2020 JJA Max'
         pass # don't want to add anything!
 
     else:
-        ax.set_extent(CPMlib.stonehaven_rgn_extent, crs=CPMlib.projRot)
+        ax.set_extent(big_carmont_extent,crs=ccrs.OSGB())
     CPM_rainlib.std_decorators(ax, radar_col='green', radarNames=(title=='Topography'), show_railways=True)
     ax.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(),
             marker='o', ms=10, color='cornflowerblue')
 
     ax.set_title(title, size='large')
     label.plot(ax)
+
+## add an inset plot of the British Isles
+
+axBI = axis['topog'].inset_axes([0.62,0.025,0.4,0.70],
+                  projection=ccrs.OSGB())
+axBI.set_extent((-11, 2, 50, 61),crs=ccrs.PlateCarree())
+axBI.tick_params(labelleft=False, labelbottom=False)
+axBI.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(),
+        marker='o', ms=6, color='cornflowerblue')
+axBI.coastlines()
+##
 fig.colorbar(cm, ax=list(axis.values()), label='Rx1h (mm/h)', **CPMlib.kw_colorbar)
 fig.show()
 commonLib.saveFig(fig)

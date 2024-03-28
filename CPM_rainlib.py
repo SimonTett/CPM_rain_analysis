@@ -15,7 +15,7 @@ import pathlib
 import cartopy
 import cartopy.feature
 import cartopy.io
-import  cartopy.io.shapereader
+import cartopy.io.shapereader
 import pandas as pd
 import numpy as np
 import platform
@@ -68,9 +68,7 @@ def hack_nimrod_time(cube, field):
     """Add a time coord to the cube based on validity time and time-window. HACKED to ignore seconds"""
     NIMROD_DEFAULT = -32767.0
 
-    TIME_UNIT = cf_units.Unit(
-        "seconds since 1970-01-01 00:00:00", calendar=cf_units.CALENDAR_GREGORIAN
-    )
+    TIME_UNIT = cf_units.Unit("seconds since 1970-01-01 00:00:00", calendar=cf_units.CALENDAR_GREGORIAN)
 
     if field.vt_year <= 0:
         # Some ancillary files, eg land sea mask do not
@@ -78,12 +76,7 @@ def hack_nimrod_time(cube, field):
         return
     else:
         missing = field.data_header_int16_25  # missing data indicator
-        dt = [
-            field.vt_year,
-            field.vt_month,
-            field.vt_day,
-            field.vt_hour,
-            field.vt_minute,
+        dt = [field.vt_year, field.vt_month, field.vt_day, field.vt_hour, field.vt_minute,
             field.vt_second]  # set up a list with the dt cpts
         for indx in range(3, len(dt)):  # check out hours/mins/secs and set to 0 if missing
             if dt[indx] == missing:
@@ -96,19 +89,14 @@ def hack_nimrod_time(cube, field):
     period_seconds = None
     if field.period_minutes == 32767:
         period_seconds = field.period_seconds
-    elif (
-            not iris.fileformats.nimrod_load_rules.is_missing(field, field.period_minutes)
-            and field.period_minutes != 0
-    ):
+    elif (not iris.fileformats.nimrod_load_rules.is_missing(field, field.period_minutes) and field.period_minutes != 0):
         period_seconds = field.period_minutes * 60
     if period_seconds:
         bounds = np.array([point - period_seconds, point], dtype=np.int64)
     else:
         bounds = None
 
-    time_coord = iris.coords.DimCoord(
-        points=point, bounds=bounds, standard_name="time", units=TIME_UNIT
-    )
+    time_coord = iris.coords.DimCoord(points=point, bounds=bounds, standard_name="time", units=TIME_UNIT)
 
     cube.add_aux_coord(time_coord)
 
@@ -119,25 +107,21 @@ iris.fileformats.nimrod_load_rules.time = hack_nimrod_time
 print("WARNING MONKEY PATCHING iris.fileformats.nimrod_load_rules.time")
 
 
-def time_process(DS, varPrefix='daily', summary_prefix=''):
+def time_process(data_set):
     """
     Process a dataset of (daily) data
-    :param DS -- Dataset to process
-    :param outFile (default None). Name of file for summary data to output. If None  nothing will be written.
-            All times in attributes or "payload" will be converted used commonLib.convert_time
-    :param varPrefix (default 'daily') -- variable prefix on DataArrays in datasets)
-    :param summary_prefix (default '') -- prefix to be added to output maxes etc
+    :param data_set -- Dataset to process
+
     """
-    mx = DS[varPrefix + 'Max'].max('time', keep_attrs=True).rename(f'{summary_prefix}Max')  # max of maxes
-    mx_idx = DS[varPrefix + 'Max'].fillna(0.0).argmax('time', skipna=True)  # index  of max
-    mx_time = DS[varPrefix + 'MaxTime'].isel(time=mx_idx).drop_vars('time').rename(f'{summary_prefix}MaxTime')
-    time_max = DS[varPrefix + 'Max'].time.max().values
-    mn = DS[varPrefix + 'Mean'].mean('time', keep_attrs=True).rename(f'{summary_prefix}Mean')
-    # actual time. -- dropping time as has nothing and will fix later
+    mn = data_set['Radar_rain_Mean']
+    mx = data_set['Radar_rain_Max'].max('time', keep_attrs=True)  # max of maxes
+    mx_idx = data_set['Radar_rain_Max'].fillna(0.0).argmax('time', skipna=True)  # index  of max
+    mx_time = data_set['Radar_rain_MaxTime'].isel(time=mx_idx).drop_vars('time')
+    time_bounds = xarray.DataArray([mn.time.min().values,mn.time.max().values],
+                                   coords=dict(bounds=[0, 1]))
+    mn = mn.mean('time', keep_attrs=True)
 
-    ds = xarray.merge([mn, mx, mx_time])
-
-    ds.attrs['max_time'] = time_max
+    ds = xarray.merge([mn, mx, mx_time, time_bounds])
 
     return ds
 
@@ -212,8 +196,8 @@ def extract_nimrod_day(file, region=None, QCmax=None, gzip_min=85, check_date=Fa
                         rain.append(da)  # add to the list
                 except bad_data_err:
                     print(f"bad data in {tmember}")
-                pathlib.Path(fname).unlink()  # remove the temp file.
-            # end loop over members          (every 15 or 5  mins)
+                pathlib.Path(
+                    fname).unlink()  # remove the temp file.  # end loop over members          (every 15 or 5  mins)
     # end dealing with tarfile -- which will close the tar file.
     if len(rain) == 0:  # no data
         print(f"No data for {file} ")
@@ -266,9 +250,8 @@ def time_process(DS, varPrefix='daily', summary_prefix=''):
 # UK local authorities.
 
 # UK nations (and other national sub-units)
-nations = cartopy.feature.NaturalEarthFeature(
-    category='cultural', name='admin_0_map_subunits',
-    scale='10m', facecolor='none', edgecolor='black')
+nations = cartopy.feature.NaturalEarthFeature(category='cultural', name='admin_0_map_subunits', scale='10m',
+    facecolor='none', edgecolor='black')
 
 # using OS data for regions --generated by create_counties.py
 try:
@@ -276,31 +259,25 @@ try:
     regions = cartopy.feature.ShapelyFeature(regions.geometries(), crs=cartopy.crs.OSGB(), edgecolor='red',
                                              facecolor='none')
 except fiona.errors.DriverError:
-    regions = cartopy.feature.NaturalEarthFeature(
-        category='cultural',
-        name='admin_1_states_provinces_lines',
-        scale='10m',
-        edgecolor='red',
-        facecolor='none')
+    regions = cartopy.feature.NaturalEarthFeature(category='cultural', name='admin_1_states_provinces_lines',
+        scale='10m', edgecolor='red', facecolor='none')
 
 # radar stations
 
-metadata = pd.read_excel(common_data / 'radar_station_metadata.xlsx', index_col=[0], na_values=['-']).T
-L = metadata.Working.str.upper() == 'Y'
-metadata = metadata[L]
+radar_stations = pd.read_excel(common_data / 'radar_station_metadata.xlsx', index_col=[0], na_values=['-']).T
+L = radar_stations.Working.str.upper() == 'Y'
+radar_stations = radar_stations[L]
 # rail network
-data_path = pathlib.Path(common_data/'UK_railway_DS_10283_2423/UK_Railways.zip')
+data_path = pathlib.Path(common_data / 'UK_railway_DS_10283_2423/UK_Railways.zip')
 if not data_path.exists():
     raise FileNotFoundError(f"Can't find {data_path}")
 fname = r"zip://" + (data_path / 'Railway.shx').as_posix()
 rdr = cartopy.io.shapereader.Reader(fname)
-railways = cartopy.feature.ShapelyFeature(rdr.geometries(), crs=cartopy.crs.OSGB(),
-                                          linewidth=3, facecolor='none', edgecolor='purple', linestyle='solid')
+railways = cartopy.feature.ShapelyFeature(rdr.geometries(), crs=cartopy.crs.OSGB(), linewidth=3, facecolor='none',
+                                          edgecolor='purple', linestyle='solid')
 
 
-def std_decorators(ax, showregions=True,
-                   radarNames=False, radar_col='orange',
-                   grid: bool = True,
+def std_decorators(ax, showregions=True, radarNames=False, radar_col='orange', grid: bool = True,
                    show_railways: bool = False):
     """
     Add a bunch of stuff to an axis
@@ -310,7 +287,7 @@ def std_decorators(ax, showregions=True,
     :return: Nada
     """
 
-    ax.plot(metadata.Easting, metadata.Northing, marker='h', color=radar_col, ms=10, linestyle='none',
+    ax.plot(radar_stations.Easting, radar_stations.Northing, marker='h', color=radar_col, ms=10, linestyle='none',
             transform=cartopy.crs.OSGB(approx=True), clip_on=True)  # radar stations location.
     if showregions:
         ax.add_feature(regions, edgecolor='grey', linewidth=2)
@@ -322,28 +299,26 @@ def std_decorators(ax, showregions=True,
         g.left_labels = False
 
     if radarNames:
-        for name, row in metadata.iterrows():
-            ax.annotate(name, (row.Easting + 500, row.Northing + 500),
-                        transform=cartopy.crs.OSGB(approx=True),
-                        annotation_clip=True,
-                        # backgroundcolor='grey',alpha=0.5,
+        for name, row in radar_stations.iterrows():
+            ax.annotate(name, (row.Easting + 500, row.Northing + 500), transform=cartopy.crs.OSGB(approx=True),
+                        annotation_clip=True, # backgroundcolor='grey',alpha=0.5,
                         fontsize='large', fontweight='bold')
 
-    ax.add_feature(coastline)
-    # ax.add_feature(nations, edgecolor='black')
+    ax.add_feature(coastline)  # ax.add_feature(nations, edgecolor='black')
 
 
 def get_radar_data(file: pathlib.Path,
                    topog_grid: typing.Optional[int] = None,
                    region: typing.Optional[dict] = None,
-                   height_range: slice = slice(0, 200),
-                   mxMeanRain: float = 1000.) -> (xarray.DataArray, xarray.DataArray, xarray.DataArray):
+                   height_range: slice = slice(50, None),
+                   max_total_rain: float = 1000.) \
+        -> (xarray.DataArray, xarray.DataArray, xarray.DataArray):
     """
     read in radar data and mask it by heights and mean rain being reasonable.
     :param file: file to be read in
-    :param region: region to extract. If None is Edinburgh region
+    :param region: region to extract. Can include spatial and temporal co-ords
     :param height_range: Height range to use (all data strictly *between* these values will be used)
-    :param mxMeanRain: the maximum  rain allowed (QC)
+    :param max_total_rain: the maximum  rain allowed (QC)
     :return: Data masked for region requested & mxTime
     """
 
@@ -362,7 +337,7 @@ def get_radar_data(file: pathlib.Path,
         htMsk = htMsk & (top_fit_grid < height_range.stop)
 
     # mask by seasonal sum < 1000.
-    mskRain = ((rseas.seasonalMean * (30 + 31 + 31) / 4.) < mxMeanRain) & htMsk
+    mskRain = ((rseas.seasonalMean * (30 + 31 + 31) / 4.) < max_total_rain) & htMsk
     rseasMskmax = xarray.where(mskRain, rseas.seasonalMax, np.nan)
     mxTime = rseas.seasonalMaxTime
 
@@ -377,23 +352,22 @@ def read_90m_topog(region: typing.Optional[dict] = None, resample=None):
     :param resample: If not None then the amount to coarsen by.
     :return: topography dataset
     """
-    topog = rioxarray.open_rasterio(common_data/ 'uk_srtm')
-    topog = topog.reindex(y=topog.y[::-1]).rename(x='projection_x_coordinate', y='projection_y_coordinate')
+    topog = rioxarray.open_rasterio(common_data / 'uk_srtm')
+    topog = topog.reindex(y=topog.y[::-1]).rename(
+        x='projection_x_coordinate', y='projection_y_coordinate')
+    rgn = region.copy()
+    rgn.pop('time')
     if region is not None:
-        topog = topog.sel(**region)
+        topog = topog.sel(**rgn)
     topog = topog.load().squeeze()
     L = (topog > -10000) & (topog < 10000)  # fix bad data. L is where data is good!
     topog = topog.where(L)
     if resample is not None:
-        topog = topog.coarsen(projection_x_coordinate=resample,
-                              projection_y_coordinate=resample, boundary='pad').mean()
+        topog = topog.coarsen(projection_x_coordinate=resample, projection_y_coordinate=resample, boundary='pad').mean()
     return topog
 
 
-def event_stats(max_precip: xarray.Dataset,
-                max_time: xarray.Dataset,
-                group,
-                source: str = "CPM"):
+def event_stats(max_precip: xarray.Dataset, max_time: xarray.Dataset, group, source: str = "CPM"):
     if source == 'CPM':
         x_coord = 'grid_longitude'
         y_coord = 'grid_latitude'
@@ -439,22 +413,19 @@ def quants_locn(data_set: xarray.Dataset,
     return result
 
 
-def comp_event_stats(file: pathlib.Path,
-                     topog_grid: typing.Optional[int] = None,
-                     region: typing.Optional[dict] = None,
-                     height_range: slice = slice(0, 200),
-                     mxMeanRain: float = 1000.,
-                     source: str = 'radar'):
+def comp_event_stats(file: pathlib.Path, topog_grid: typing.Optional[int] = None, region: typing.Optional[dict] = None,
+                     height_range: slice = slice(0, 200), mxMeanRain: float = 1000., source: str = 'radar'):
     """
     read in radar data and then group by day.
     :param file: File to be read in
     :param region: Region to extract.
     :param height_range: Height range to use (all data strictly *between* these values will be used)
+    :param time_range: Time range to use
     :param mxMeanRain: the maximum mean rain allowed (QC)
     :return: grouped dataset
     """
     rseasMskmax, mxTime, topog = get_radar_data(file, region=region, topog_grid=topog_grid, height_range=height_range,
-                                                mxMeanRain=mxMeanRain)
+                                                max_total_rain=mxMeanRain)
 
     grp = ((mxTime.dt.dayofyear - 1) + mxTime.dt.year * 1000).rename('EventTime')
     # mask!
