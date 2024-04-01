@@ -1,6 +1,5 @@
 # compute the distribution parameters for GEV fit to radar data,
 # This is done by sampling randomly from the quantiles of each distribution
-# (though this might get changed to sample random pt from the event)
 # Then fit to that with weighting given by event size. Rise and repeat to get uncert.
 import typing
 
@@ -60,35 +59,26 @@ radar_fit_uncert=dict()
 rng = numpy.random.default_rng(123456)
 nsamps=100
 projGB = ccrs.OSGB()
-v=tuple(CPMlib.stonehaven.values())
-stonehaven = projGB.transform_point(*v,CPMlib.projRot)
-var_names = ["projection_x_coordinate","projection_y_coordinate"]
-stonehaven = dict(zip(var_names,stonehaven))
-stonehaven_rgn={k:slice(v-75e3,v+75e3) for k,v in stonehaven.items()}
+carmont = CPMlib.carmont_rgn_OSGB.copy()
+carmont.update(time='2020-06-01')
+
 for name,radar_ncfile,radar_event_ncfile in zip(
-    ['5km','1km','1km_c4','1km_c5'],
-    ["summary_5km_1hr_scotland.nc","summary_1km/1km_summary.nc","summary_1km/1km_c4_summary.nc","summary_1km/1km_c5_summary.nc"],
-    ["radar_events_summary_5km_1hr_scotland.nc","radar_events_1km.nc","radar_events_1km_c4.nc","radar_events_1km_c5.nc"]
+    ['5km','1km','1km_c4','1km_c5'][0],
+    ["5km_summary_2004_2023.nc","summary_1km/1km_summary.nc","summary_1km/1km_c4_summary.nc","summary_1km/1km_c5_summary.nc"],
+    ["5km_events_2008_2023.nc","radar_events_1km.nc","radar_events_1km_c4.nc","radar_events_1km_c5.nc"]
 
 ):
 
     path = CPMlib.radar_dir / radar_ncfile
-    rain, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, region=stonehaven_rgn,
-                                                                   height_range=slice(1, 300))
+    rain, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, region= carmont,
+                                                                   height_range=slice(50, None))
     rain = rain.where(mxTime.dt.strftime('%Y-%m-%d') == '2020-08-12').sel(time='2020-06')
-    if name == '1km_c4':
-        c=dict(projection_x_coordinate=rain.projection_x_coordinate + 2000,
-            projection_y_coordinate=rain.projection_y_coordinate + 2000)
-        rain = rain.assign_coords(c)
-    elif name == '1km_c5':
-        c = dict(projection_x_coordinate=rain.projection_x_coordinate + 2500,
-                 projection_y_coordinate=rain.projection_y_coordinate + 2500)
-        rain = rain.assign_coords(c)
+
     rain_aug2020[name]=rain
 
     radar_rain[name]=float(rain.sel(**CPMlib.carmont_drain_OSGB,method='nearest').
                             load().values)
-    radar_events = xarray.load_dataset(CPMlib.radar_dir/radar_event_ncfile)
+    radar_events = xarray.load_dataset(CPMlib.radar_dir/'radar_events'/radar_event_ncfile)
     radar_fit[name]=comp_fits(rng,radar_events,nsamps= nsamps)
     print(f"Computed fits for {name}")
     ps = scipy.stats.multivariate_normal(mean=radar_fit[name].Parameters.mean('sample'), cov=radar_fit[name].Cov.mean('sample'))

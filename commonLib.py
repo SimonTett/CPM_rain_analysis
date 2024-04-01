@@ -40,7 +40,7 @@ def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_typ
     mo_cet_root = 'https://www.metoffice.gov.uk/hadobs/hadcet/data/'
     # ALL but seasonal likely need updating.
     urls = dict(dailymean='cetdl1772on.dat',
-                monthlymean='cetml1659on.dat',
+                monthlymean='meantemp_monthly_totals.txt',
                 seasonalmean='meantemp_seasonal_totals.txt',
                 dailymin='cetmindly1878on_urbadj4.dat',
                 monthlymin='cetminmly1878on_urbadj4.dat',
@@ -50,7 +50,7 @@ def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_typ
                 seasonalmax='sn_HadCET_max.txt',
                 )
 
-    nskip = dict(monthly=8, seasonal=9, daily=0)
+    nskip = dict(monthly=4, seasonal=9, daily=0)
     month_lookups = dict(JAN=1, FEB=2, MAR=3, APR=4, MAY=5, JUN=6, JUL=7, AUG=8, SEP=9, OCT=10, NOV=11, DEC=12,
                          DJF=1, MAM=4, JJA=7, SON=10,Win=1,Spr=4, Sum=7, Aut=10)  # month
 
@@ -59,8 +59,8 @@ def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_typ
     path = pathlib.Path(direct) / file
     if (not path.exists()) or retrieve:
         # retrieve data from MO.
-        url = mo_cet_root + '/' + urls[
-            mean + temp_type]  # will trigger an error mean or temp_type not as expected though error won't be very helpful...
+        url = mo_cet_root + '/' + urls[mean + temp_type]
+        # will trigger an error if mean or temp_type not as expected though error won't be very helpful...
         print(f"Retrieving data from {url}")
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:77.0) Gecko/20190101 Firefox/77.0'}  # fake we are interactive...
@@ -71,15 +71,16 @@ def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_typ
         dates = []
         values = []
         for c in data.columns:
-            month = month_lookups.get(c)
+            month = month_lookups.get(c.upper())
             if month is None:
                 continue
             if temp_type == 'daily':
                 raise Exception(f"Can't handle {temp_type} data")
             else:
-                dates.extend([cftime.datetime(yr, month, 1, calendar='gregorian') for yr in data.Year])
+                dates.extend([cftime.datetime(yr, month, 1, calendar='proleptic_gregorian') for yr in data.Year])
                 values.extend(data.loc[:, c].values)
         ts = xarray.DataArray(values, coords=dict(time=dates)).rename(f'CET{mean}{temp_type}').sortby('time')
+        breakpoint()
         pathlib.Path(direct).mkdir(parents=True, exist_ok=True)  # make (if needed directory to put the data
         ts.to_netcdf(path)  # write out the data.
     else:
