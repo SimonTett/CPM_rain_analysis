@@ -9,9 +9,43 @@ import requests
 import io
 import platform
 import shutil
-import functools # for cache
+import functools  # for cache
 import xarray
 import matplotlib.pyplot as plt
+import logging
+import typing
+import sys
+
+
+def init_log(log: logging.Logger,
+             level: typing.Union[typing.Literal['DEBUG','INFO','WARNING','ERROR'],int] = 'WARNING',
+             log_file: typing.Optional[typing.Union[pathlib.Path, str]] = None,
+             mode: str = 'a') -> None:
+    """
+    Set up logging on a logger! Will clear any existing logging
+    :param log: logger to be changed
+    :param level: level to be set.
+    :param log_file:  if provided pathlib.Path to log to file
+    :param mode: mode to open log file with (a  -- append or w -- write). Only used in log_file provided.
+    :return: nothing -- existing log is modified.
+    """
+    log.handlers.clear()
+    log.setLevel(level)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s:  %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    ch = logging.StreamHandler(sys.stderr)
+    ch.setFormatter(formatter)
+    log.addHandler(ch)
+    # add a file handler.
+    if log_file:
+        if isinstance(log_file, str):
+            log_file = pathlib.Path(log_file)
+        log_file.parent.mkdir(exist_ok=True, parents=True)
+        fh = logging.FileHandler(log_file, mode=mode + 't')  #
+        fh.setLevel(level)
+        fh.setFormatter(formatter)
+        log.addHandler(fh)
+    log.propagate = False
+
 
 
 def high_resoln():
@@ -22,7 +56,8 @@ def high_resoln():
     :return: nada
     """
     plt.close('all')
-    plt.matplotlib.rcParams['figure.dpi'] = 175 # make figures 75% bigger.
+    plt.matplotlib.rcParams['figure.dpi'] = 175  # make figures 75% bigger.
+
 
 def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_type='mean'):
     """
@@ -39,20 +74,15 @@ def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_typ
     mo_cet_root = 'https://www.metoffice.gov.uk/hadobs/hadcet'
     mo_cet_root = 'https://www.metoffice.gov.uk/hadobs/hadcet/data/'
     # ALL but seasonal likely need updating.
-    urls = dict(dailymean='cetdl1772on.dat',
-                monthlymean='meantemp_monthly_totals.txt',
-                seasonalmean='meantemp_seasonal_totals.txt',
-                dailymin='cetmindly1878on_urbadj4.dat',
-                monthlymin='cetminmly1878on_urbadj4.dat',
-                seasonalmin='sn_HadCET_min.txt',
-                dailymax='cetmaxdly1878on_urbadj4.dat',
-                monthlymax='cetmaxmly1878on_urbadj4.dat',
-                seasonalmax='sn_HadCET_max.txt',
-                )
+    urls = dict(dailymean='cetdl1772on.dat', monthlymean='meantemp_monthly_totals.txt',
+                seasonalmean='meantemp_seasonal_totals.txt', dailymin='cetmindly1878on_urbadj4.dat',
+                monthlymin='cetminmly1878on_urbadj4.dat', seasonalmin='sn_HadCET_min.txt',
+                dailymax='cetmaxdly1878on_urbadj4.dat', monthlymax='cetmaxmly1878on_urbadj4.dat',
+                seasonalmax='sn_HadCET_max.txt', )
 
     nskip = dict(monthly=4, seasonal=9, daily=0)
-    month_lookups = dict(JAN=1, FEB=2, MAR=3, APR=4, MAY=5, JUN=6, JUL=7, AUG=8, SEP=9, OCT=10, NOV=11, DEC=12,
-                         DJF=1, MAM=4, JJA=7, SON=10,Win=1,Spr=4, Sum=7, Aut=10)  # month
+    month_lookups = dict(JAN=1, FEB=2, MAR=3, APR=4, MAY=5, JUN=6, JUL=7, AUG=8, SEP=9, OCT=10, NOV=11, DEC=12, DJF=1,
+                         MAM=4, JJA=7, SON=10, Win=1, Spr=4, Sum=7, Aut=10)  # month
 
     if file is None:
         file = f"cet_{mean}_{temp_type}.nc"
@@ -182,36 +212,40 @@ class plotLabel:
         else:
             (x, y) = where
 
-        plt_axis.text(x, y, text, transform=plt_axis.transAxes,
-                      horizontalalignment='right', verticalalignment='bottom', fontdict=self.fontdict)
+        plt_axis.text(x, y, text, transform=plt_axis.transAxes, horizontalalignment='right', verticalalignment='bottom',
+                      fontdict=self.fontdict)
+
 
 # cache handling
-cache_dirs=dict()
+cache_dirs = dict()
+
+
 def setup_cache(config_dict):
     cache_dirs.update(config_dict)
 
-def gen_cache_file(filepath,verbose=False):
+
+def gen_cache_file(filepath, verbose=False):
     """
     Generate a cache file path from filepath
     :param filepath: filepath on slow file system
     :return:cached filepath.
     """
 
-    #cache_dir =
-    fileName=str(filepath)
-    cache_file= filepath # if nothing found then we just return the filepath
-    for dir_name,cache_name in cache_dirs.items():
+    # cache_dir =
+    fileName = str(filepath)
+    cache_file = filepath  # if nothing found then we just return the filepath
+    for dir_name, cache_name in cache_dirs.items():
         if dir_name in fileName:
-            cache_file = fileName.replace(dir_name,cache_name)
+            cache_file = fileName.replace(dir_name, cache_name)
             cache_file = pathlib.Path(cache_file)
             if verbose:
                 print(f"Replaced {dir_name} with {cache_name} for {fileName}")
-            continue # no need to process more
+            continue  # no need to process more
     return cache_file
 
 
 @functools.cache
-def cache_filename(filepath:pathlib.Path,verbose=False,use_cache=None):
+def cache_filename(filepath: pathlib.Path, verbose=False, use_cache=None):
     """
     Generate local cache. If the local cache does not exist then copy filepath to it.
     Returns the cache filename (which might be the same as filepath)
@@ -222,24 +256,24 @@ def cache_filename(filepath:pathlib.Path,verbose=False,use_cache=None):
     :return: file read
     """
     if use_cache is None:
-         use_cache = (platform.node() in  ['geos-w-048'] ) # list of platforms where want to cache
-    if not use_cache: # not using cache -- just return the input
+        use_cache = (platform.node() in ['geos-w-048'])  # list of platforms where want to cache
+    if not use_cache:  # not using cache -- just return the input
         if verbose:
             print("Not using cache ")
         return filepath
 
     cache_file = gen_cache_file(filepath)
 
-    if cache_file.exists() and (not filepath.exists()): # cache exists and filepath doesn't.
+    if cache_file.exists() and (not filepath.exists()):  # cache exists and filepath doesn't.
         if verbose:
             print(f"Cache file: {cache_file} exists while {filepath} does not")
     elif not (cache_file.exists() and (cache_file.stat().st_mtime > filepath.stat().st_mtime)):
         # Want to use cache_file if it exists and its mtime is greater than the mtime of the file being cached
         if verbose:
             print(f"Copying data from {filepath} to {cache_file}")
-        cache_file.parent.mkdir(parents=True,exist_ok=True) # make the cache dir if neeed.
-        shutil.copy(filepath,cache_file)
+        cache_file.parent.mkdir(parents=True, exist_ok=True)  # make the cache dir if neeed.
+        shutil.copy(filepath, cache_file)
     if verbose:
         print(f"Cache file is {cache_file}")
 
-    return cache_file # return cached file.
+    return cache_file  # return cached file.
