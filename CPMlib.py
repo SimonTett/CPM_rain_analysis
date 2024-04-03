@@ -44,7 +44,7 @@ carmont_drain = dict(zip(['grid_longitude', 'grid_latitude'],
                          projRot.transform_point(*carmont_drain_long_lat, ll)))
 carmont_drain['grid_longitude'] += 360.
 carmont_rgn_OSGB= {k: slice(v - 75e3, v + 75e3) for k, v in carmont_drain_OSGB.items()}
-
+carmont_rgn= {k: slice(v - 0.75, v + 0.75) for k, v in carmont_drain.items()}
 kw_colorbar = dict(orientation='horizontal',fraction=0.1,aspect=40,pad=0.05,extend='both')
 def discretise(time: xarray.DataArray) -> xarray.DataArray:
     """

@@ -378,7 +378,7 @@ def read_90m_topog(region: typing.Optional[dict] = None, resample=None):
     topog = rioxarray.open_rasterio(common_data / 'uk_srtm')
     topog = topog.reindex(y=topog.y[::-1]).rename(x='projection_x_coordinate', y='projection_y_coordinate')
     rgn = region.copy()
-    rgn.pop('time')
+    rgn.pop('time',None)
     if region is not None:
         topog = topog.sel(**rgn)
     topog = topog.load().squeeze()

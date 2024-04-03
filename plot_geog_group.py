@@ -12,7 +12,9 @@ import commonLib
 import pandas as pd
 import CPM_rainlib
 import cartopy.io.img_tiles as cimgt
-
+import itertools
+import matplotlib.patches as mpatches
+import cartopy.crs as ccrs
 
 projGB = ccrs.OSGB()
 v = tuple(CPMlib.stonehaven.values())
@@ -24,14 +26,16 @@ big_carmont_extent = [big_carmont_rgn['projection_x_coordinate'].start, big_carm
                       big_carmont_rgn['projection_y_coordinate'].start, big_carmont_rgn['projection_y_coordinate'].stop]
 scalebarprops=dict(frameon=False)
 
-path = CPMlib.radar_dir / 'summary_1km/1km_summary.nc'
-radar_data = xarray.load_dataset(path).monthlyMax.sel(time=slice('2020-06-01', '2020-08-31')).max('time').sel(**big_carmont_rgn)
+path = CPMlib.radar_dir / 'summary/summary_2008_1km.nc'
+
+radar_data = xarray.open_dataset(path).Radar_rain_Max.sel(rolling=4,time=slice('2020-06-01', '2020-08-31')).max('time').sel(**big_carmont_rgn)*4
 topog = CPM_rainlib.read_90m_topog(region=big_carmont_rgn, resample=11).squeeze()  # read in topography and regrid to about 1km resoln
 
 rseasMskmax, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, topog_grid=11, region=carmont_rgn, height_range=slice(50, None))
 
 cmap = 'RdYlBu'
-levels = np.linspace(5, 30, 11)
+levels = [25,50,75,100,125,150]
+levels=np.linspace(5,60,12)
 
 fig, axis = plt.subplot_mosaic([['zoom','topog'],['jja2020max','aug2020']],
                                figsize=[8, 7], clear=True,layout='constrained',
@@ -54,9 +58,7 @@ topog.plot(ax=axis['topog'],cmap='terrain',
                   levels=[-200,-100,0,50,100,200,300,400,500,600,700,800],
                   cbar_kwargs=dict(label='height (m)'))
 # add circles around the radar at roughly 60 and 120 km corresponding to roughly 1 km and 2km resoln.
-import itertools
-import matplotlib.patches as mpatches
-import cartopy.crs as ccrs
+
 for (range,name) in itertools.product([60,120],['Hill of Dudwick','Munduff Hill']):
     co_ords = CPM_rainlib.radar_stations.loc[name,['Easting','Northing']].astype(float)
     # Create a circle
@@ -70,10 +72,10 @@ axis['topog'].add_artist(scalebar)
 
 cm = radar_data.plot(ax=axis['jja2020max'], levels=levels,transform=projGB, cmap=cmap, add_colorbar=False)
 dofyear = pd.to_datetime('2020-08-12').dayofyear
-rn_max = rseasMskmax.sel(time='2020').where(mxTime.sel(time='2020').dt.dayofyear == dofyear)
+rn_max = rseasMskmax.sel(time='2020',rolling=4).where(mxTime.sel(rolling=4,time='2020').dt.dayofyear == dofyear)*4
 print(f"area of 2020-08-12 event is {float(rn_max.count()) } km^2")
 (top_fit_grid < 50).where(True,np.nan).plot(cmap='gray_r',ax=axis['aug2020'],transform=projGB,add_colorbar=False)
-rn_max.plot(ax=axis['aug2020'], robust=True, cmap=cmap, transform=projGB, add_colorbar=False)
+rn_max.plot(ax=axis['aug2020'], cmap=cmap, transform=projGB, add_colorbar=False,levels=levels)
 # plot the topog over.
 
 
@@ -89,10 +91,10 @@ for ax_name in ['aug2020','jja2020max']:
 
 # show 1km and 5 km grids,
 
-for file,color in zip(["summary_1km/1km_summary.nc","summary_5km_1hr_scotland.nc"],
+for file,color in zip(["summary/summary_2008_1km.nc","summary/summary_2008_5km.nc"],
                       ['red','black']):
 
-    ds=xarray.open_dataset(CPMlib.radar_dir/file).monthlyMax
+    ds=xarray.open_dataset(CPMlib.radar_dir/file).Radar_rain_Mean
     X,Y= np.meshgrid(ds.projection_x_coordinate,ds.projection_y_coordinate)
     axis['zoom'].scatter(X,Y,marker='+',s=100,transform=ccrs.OSGB(),color=color)
 label=commonLib.plotLabel()
@@ -104,7 +106,7 @@ for ax, title in zip(axis.values(), ['Accident Site','Topography','2020 JJA Max'
         ax.set_extent(big_carmont_extent,crs=ccrs.OSGB())
     CPM_rainlib.std_decorators(ax, radar_col='green', radarNames=(title=='Topography'), show_railways=True)
     ax.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(),
-            marker='o', ms=10, color='cornflowerblue')
+            marker='o', ms=6, color='cornflowerblue')
 
     ax.set_title(title, size='large')
     label.plot(ax)
@@ -119,7 +121,7 @@ axBI.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(),
         marker='o', ms=6, color='cornflowerblue')
 axBI.coastlines()
 ##
-fig.colorbar(cm, ax=list(axis.values()), label='Rx1h (mm/h)', **CPMlib.kw_colorbar)
+fig.colorbar(cm, ax=list(axis.values()), label='Rx4h Accumulation (mm)', **CPMlib.kw_colorbar)
 fig.show()
 commonLib.saveFig(fig)
 
