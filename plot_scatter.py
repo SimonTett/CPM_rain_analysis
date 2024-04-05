@@ -1,0 +1,101 @@
+# plot scatters between CET and Regional Temp and CET & regional SVP (Pa)
+import logging
+import math
+import pathlib
+import typing
+
+import scipy.stats
+
+import CPM_rainlib
+import CPMlib
+import xarray
+import commonLib
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+def get_jja_ts(path: pathlib.Path) -> xarray.Dataset:
+    """
+    Get the JJA time series from monthly-mean data in netcdf file
+    :param path: path to data
+    :return: dataset containing JJA data
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"{path} does not exist")
+    ts = xarray.open_dataset(path)
+    ts = ts.resample(time='QS-DEC').mean()
+    ts = ts.where(ts.time.dt.season == 'JJA', drop=True)
+    return ts
+
+def regress(x:xarray.DataArray,y:xarray.DataArray):
+    # compute fit using statsmodels.
+    X = x.values.flatten()
+    X = np.column_stack((X, X ** 2))
+    X = sm.add_constant(X)
+    Y = y.values.flatten()
+    model = sm.RLM(Y, X)
+    fit = model.fit()
+    return fit
+
+
+
+ts_dir = CPM_rainlib.dataDir / 'CPM_ts'
+sim_cet = get_jja_ts(ts_dir / 'cet_tas.nc').tas
+sim_reg_es = get_jja_ts(ts_dir / 'rgn_svp.nc').tas
+sim_reg_tas = get_jja_ts(ts_dir / 'reg_tas.nc').tas
+sim_reg_pr = get_jja_ts(ts_dir / 'reg_pr.nc').pr
+
+# now compute the regression coefficient.
+fit_es = regress(sim_cet, sim_reg_es)
+fit_reg = regress(sim_cet, sim_reg_tas)
+fit_pr = regress(sim_cet, sim_reg_pr)
+fit_es_reg = regress(sim_reg_tas, sim_reg_es)
+# compute today's values
+obs_cet = commonLib.read_cet()  # read in the obs CET
+obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA',drop=True)
+t_today = obs_cet_jja.sel(**CPMlib.today_sel).mean()
+t_PI = obs_cet_jja.sel(**CPMlib.PI_sel).mean()
+
+label=commonLib.plotLabel()
+fig_scatter, axis = plt.subplots(nrows=2, ncols=2, num='cet_scatter', clear=True, figsize=[8, 5], layout='constrained')
+for var,ax in zip([sim_reg_tas,sim_reg_es,sim_reg_pr],axis.flat):
+    ax.scatter(sim_cet, var,color='grey',s=6)
+    label.plot(ax)
+axis[-1][-1].scatter(sim_reg_tas, sim_reg_es, color='grey', s=6)
+label.plot(axis[-1][-1])
+# plot best fit lines...
+npts = 50
+for fit, ax,title in zip([fit_reg, fit_es,fit_pr,fit_es_reg], axis.flat,
+                         ["CET vs Reg. Temp", "CET vs Reg. SVP", "CET vs Reg. Precip","Reg T vs Reg SVP"]):
+    if title.startswith('CET'):
+        x = np.linspace(12, 24, num=npts)
+        units='K CET'
+    else:
+        x=np.linspace(9.5, 19.5, num=npts)
+        units = 'K Reg. T'
+    x = np.column_stack((x, x ** 2))
+    best_fit = fit.predict(sm.add_constant(x))
+    ax.plot(x[:,0], best_fit, color='black', linewidth=3)
+    fit_PI = fit.predict([[1.0, t_PI, t_PI ** 2]])[0]
+    fit_today = fit.predict([[1.0,t_today,t_today**2]])[0]
+    fit_p1k = fit.predict([[1.0, t_today+1, (t_today+1) ** 2]])[0]
+    ax.plot(t_today,fit_today,marker='h',ms=10,color='red')
+    ax.plot(t_PI, fit_PI, marker='h', ms=10, color='green')
+    # work out fractional change per K CET increase
+    if 'Temp' in title:
+        fract_increase = (fit_p1k-fit_today)
+        err = fit.bse[1]
+    else:
+        fract_increase = 100*((fit_p1k-fit_today) / fit_today)
+        err = 100*(fit.bse[1]/ fit_today)
+    print(f"Change per {units} = {fract_increase:4.1f}, Err: {err:4.2f} (%)")
+    ax.set_title(title)
+
+
+
+for a,ylabel in zip(axis.flat[0:3],[r"Temp ($^\circ$C)",'SVP (Pa)','Precip (mm/day)']):
+    a.set_xlabel(r"CET ($^\circ$C)")
+    a.set_ylabel(ylabel)
+
+
+fig_scatter.show()
+commonLib.saveFig(fig_scatter)

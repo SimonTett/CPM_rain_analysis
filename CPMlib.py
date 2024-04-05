@@ -45,7 +45,13 @@ carmont_drain = dict(zip(['grid_longitude', 'grid_latitude'],
 carmont_drain['grid_longitude'] += 360.
 carmont_rgn_OSGB= {k: slice(v - 75e3, v + 75e3) for k, v in carmont_drain_OSGB.items()}
 carmont_rgn= {k: slice(v - 0.75, v + 0.75) for k, v in carmont_drain.items()}
+carmont_rgn_extent = []
+for v in carmont_rgn.values():
+    carmont_rgn_extent.extend([v.start,v.stop])
 kw_colorbar = dict(orientation='horizontal',fraction=0.1,aspect=40,pad=0.05,extend='both')
+
+today_sel=dict(time=slice('2012', '2021')) # so "today" is common throughout!
+PI_sel=dict(time=slice('1851', '1900')) # so "PI" is common throughout!
 def discretise(time: xarray.DataArray) -> xarray.DataArray:
     """
 

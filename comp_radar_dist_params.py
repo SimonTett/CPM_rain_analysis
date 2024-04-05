@@ -15,8 +15,9 @@ import numpy.random
 import CPMlib
 import scipy.stats
 import cartopy.crs as ccrs
-
-
+my_logger=CPM_rainlib.logger
+commonLib.init_log(my_logger)
+use_cache = True # if True  just read in the saved fits (if they exist) otherwise generate the fits and save them
 def comp_fits(rng, radar_events, nsamps: int = 100) -> xarray.DataArray:
     n_events = radar_events.EventTime.shape[0]
     rand_index = rng.integers(len(radar_events.quantv), size=(n_events, nsamps))
@@ -65,41 +66,62 @@ def plot_rp(
                     x=rv_q.return_period, alpha=0.5, color=color
                     )
 
-
-rain_aug2020 = dict()
+radar_fit_dir = CPMlib.radar_dir/'radar_rgn_fit'
+radar_fit_dir.mkdir(exist_ok=True,parents=True) # make sure the directory exists
 radar_fit = dict()
 radar_rain = dict()
 radar_fit_uncert = dict()
-radar_rain_time = dict()
-rng = numpy.random.default_rng(123456)
-nsamps = 100
-projGB = ccrs.OSGB()
-carmont = CPMlib.carmont_rgn_OSGB.copy()
-carmont.update(time=slice('2020-06-01','2020-08-31')) # include summer 2020
-radar_events = list((CPMlib.radar_dir/'radar_events').glob('*.nc'))
-for  path in radar_events:
-    summary_path = path.parent.parent / 'summary' / path.name.replace('events', 'summary')
-    name = "_".join(path.stem.split("_")[2:])
-    radar_events = xarray.load_dataset(path)
-    rain, rainMx, topog = CPM_rainlib.get_radar_data(summary_path, region=carmont,height_range=slice(50., None),
-                                                     topog_grid=radar_events.attrs['topog_grid'])
-    rain = rain.where(rainMx.dt.strftime('%Y-%m-%d') == '2020-08-12')
-    rain_aug2020[name] = rain
-    radar_rain[name] = rain.sel(**CPMlib.carmont_drain_OSGB, method='nearest')
-    radar_rain_time[name] = rain.sel(**CPMlib.carmont_drain_OSGB, method='nearest')
+rain_aug2020 = dict()
+if use_cache: # use the cached data
+    for path in radar_fit_dir.glob('*.nc'):
+        name = path.stem
+        if name.endswith('_fit'):
+            radar_fit[name.replace('_fit','')] = xarray.load_dataset(path)
+        elif name.endswith('_fit_uncert'):
+            radar_fit_uncert[name.replace('_fit_uncert','')] = xarray.load_dataarray(path)
+        elif name.endswith('_carmont_rain'):
+            radar_rain[name.replace('_carmont_rain','')] = xarray.load_dataarray(path)
+        elif name.endswith('_aug2020'):
+            rain_aug2020[name.replace('_aug2020','')] = xarray.load_dataarray(path)
+        else:
+            my_logger.warning(f"Unknown file {path}. Ignoring")
+else: # generate the data.
+    rng = numpy.random.default_rng(123456)
+    nsamps = 100
+    projGB = ccrs.OSGB()
+    carmont = CPMlib.carmont_rgn_OSGB.copy()
+    carmont.update(time=slice('2020-06-01','2020-08-31')) # include summer 2020
+    radar_events = list((CPMlib.radar_dir/'radar_events').glob('*.nc'))
+    for  path in radar_events:
+        summary_path = path.parent.parent / 'summary' / path.name.replace('events', 'summary')
+        name = "_".join(path.stem.split("_")[2:])
+        radar_events = xarray.load_dataset(path)
+        rain, rainMx, topog = CPM_rainlib.get_radar_data(summary_path, region=carmont,height_range=slice(50., None),
+                                                         topog_grid=radar_events.attrs['topog_grid'])
+        rain = rain.where(rainMx.dt.strftime('%Y-%m-%d') == '2020-08-12')
+        rain_aug2020[name] = rain
+        radar_rain[name] = rain.sel(**CPMlib.carmont_drain_OSGB, method='nearest')
 
-    radar_fit[name] = comp_fits(rng, radar_events, nsamps=nsamps)
-    print(f"Computed fits for {name}")
-    rolling_uncert=[]
-    for r in radar_fit[name]['rolling']:
-        mean = radar_fit[name].Parameters.sel(rolling=r).mean('sample')
-        cov = radar_fit[name].sel(rolling=r).Cov.mean('sample')
-        ps = scipy.stats.multivariate_normal(mean=mean,cov=cov)
-        coords = dict(sample=np.arange(0, nsamps), parameter=['location', 'scale', 'shape'])
-        uncert = xarray.DataArray(ps.rvs(size=nsamps), coords=coords).assign_coords(rolling=r)
-        rolling_uncert.append(uncert)
-    radar_fit_uncert[name] = xarray.concat(rolling_uncert, dim='rolling')
+        radar_fit[name] = comp_fits(rng, radar_events, nsamps=nsamps)
+        print(f"Computed fits for {name}")
+        rolling_uncert=[]
+        for r in radar_fit[name]['rolling']:
+            mean = radar_fit[name].Parameters.sel(rolling=r).mean('sample')
+            cov = radar_fit[name].sel(rolling=r).Cov.mean('sample')
+            ps = scipy.stats.multivariate_normal(mean=mean,cov=cov)
+            coords = dict(sample=np.arange(0, nsamps), parameter=['location', 'scale', 'shape'])
+            uncert = xarray.DataArray(ps.rvs(size=nsamps), coords=coords).assign_coords(rolling=r)
+            rolling_uncert.append(uncert)
+        radar_fit_uncert[name] = xarray.concat(rolling_uncert, dim='rolling')
 
+    # save the fits, uncertainties and Carmont rain
+
+    for key in radar_fit.keys():
+        radar_fit[key].to_netcdf(radar_fit_dir / f'{key}_fit.nc')
+        radar_fit_uncert[key].to_netcdf(radar_fit_dir / f'{key}_fit_uncert.nc')
+        radar_rain[key].to_netcdf(radar_fit_dir / f'{key}_carmont_rain.nc')
+        rain_aug2020[key].to_netcdf(radar_fit_dir / f'{key}_aug2020.nc')
+# now have data -- either because we generated it or because we read it back in!
 # mn_fit = fits.mean('sample')Radar_rain_Mean
 ## now to plot return periods and their uncertainties.
 import matplotlib.ticker
@@ -145,7 +167,8 @@ fig, axis = plt.subplots(nrows=2, ncols=2, num='map_rtn_prds', clear=True,
 levels = [2, 5, 10, 20, 50, 100, 200]
 label = commonLib.plotLabel()
 rolling=4 # 4 hour rolling extremes
-for ax, key in zip(axis.flatten(), ['1km','5km','1km_c4','1km_c5']):
+import itertools
+for ax, (key,rolling) in zip(axis.flatten(), itertools.product(['1km','5km'],[1,4])):
     mnp = radar_fit_uncert[key].sel(rolling=rolling).mean('sample')
     params = [mnp.sel(parameter=p) for p in ['shape', 'location', 'scale']]
     dist = scipy.stats.genextreme(*params)
@@ -154,7 +177,7 @@ for ax, key in zip(axis.flatten(), ['1km','5km','1km_c4','1km_c5']):
     ax.set_extent(CPMlib.stonehaven_rgn_extent, crs=CPMlib.projRot)
     cm = rp.plot(levels=levels, cmap='RdYlBu', add_colorbar=False, ax=ax)
     CPM_rainlib.std_decorators(ax, radar_col='green',radarNames=True,show_railways=True)
-    ax.set_title(key)
+    ax.set_title(key+f' Rx{rolling:d}h Return Period')
     ax.plot(*CPMlib.carmont_drain_OSGB.values(), marker='*', color='black',
             ms=10, transform=ccrs.OSGB()
             )

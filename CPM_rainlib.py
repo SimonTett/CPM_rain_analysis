@@ -255,12 +255,13 @@ radar_stations = pd.read_excel(common_data / 'radar_station_metadata.xlsx', inde
 L = radar_stations.Working.str.upper() == 'Y'
 radar_stations = radar_stations[L]
 # rail network
-data_path = pathlib.Path(common_data / 'UK_railway_DS_10283_2423/UK_Railways.zip')
+data_path = common_data / 'UK_railway_DS_10283_2423/UK_Railways.zip'
 if not data_path.exists():
     raise FileNotFoundError(f"Can't find {data_path}")
 fname = r"zip://" + (data_path / 'Railway.shx').as_posix()
 rdr = cartopy.io.shapereader.Reader(fname)
-railways = cartopy.feature.ShapelyFeature(rdr.geometries(), crs=cartopy.crs.OSGB(), linewidth=3, facecolor='none',
+geoms = [ r.geometry for r in rdr.records() if 'Standard Gauge' in r.attributes['LEGEND'] ]
+railways = cartopy.feature.ShapelyFeature(geoms, crs=cartopy.crs.OSGB(), linewidth=3, facecolor='none',
                                           edgecolor='purple', linestyle='solid')
 
 
