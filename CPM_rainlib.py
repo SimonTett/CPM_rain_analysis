@@ -525,6 +525,47 @@ def quants_locn(
     result = result.drop_vars(coords_to_drop)
     return result
 
+def comp_params(param: xarray.DataArray,
+                temperature: float = 0.0,
+                log10_area: typing.Optional[float] = None,
+                hour: typing.Optional[float] = None,
+                height: typing.Optional[float] = None):
+    """
+    Compute the location and scale parameters for a given set of covariate values
+    :param param:
+    :type param:
+    :param temperature:
+    :type temperature:
+    :param log10_area:
+    :type log10_area:
+    :param hour:
+    :type hour:
+    :param height:
+    :type height:
+    :return:
+    :rtype:
+    """
+    if log10_area is None:
+        log10_area = np.log10(150.)
+    if hour is None:
+        hour = 13.0
+    if height is None:
+        height = 100.
+    result = [param.sel(parameter='shape')]  # start with shape
+    param_names = dict(log10_area=log10_area, hour=hour, hour_sqr=hour ** 2, height=height,
+                 CET=temperature, CET_sqr=temperature ** 2)
+    for k in ['location', 'scale']:
+        r = param.sel(parameter=k)
+        for pname, v in param_names.items():
+            p = f"D{k}_{pname}"
+            try:
+                r = r + v * param.sel(parameter=p)
+            except KeyError:
+                logger.warning(f"{k} missing {p} so ignoring")
+        r = r.assign_coords(parameter=k)  #  rename
+        result.append(r)
+    result = xarray.concat(result, 'parameter')
+    return result
 
 
 

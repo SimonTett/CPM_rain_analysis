@@ -1,7 +1,5 @@
-# compute hte probability and intensity ratios for carmont
+# compute the  probability and intensity ratios for carmont
 
-
-## now let's compute the intensity and PR's
 import logging
 import math
 import numpy as np
@@ -12,109 +10,198 @@ import CPM_rainlib
 import commonLib
 import CPMlib
 from R_python import gev_r
-import itertools
+import scipy.stats
 
 
-def comp_params(fit: xarray.Dataset,
+def comp_params(param: xarray.DataArray,
                 temperature: float = 0.0,
-               log10_area: typing.Optional[float]=None,
-               hour:typing.Optional[float] = None,
-               height:typing.Optional[float] = None):
+                log10_area: typing.Optional[float] = None,
+                hour: typing.Optional[float] = None,
+                height: typing.Optional[float] = None):
     if log10_area is None:
         log10_area = math.log10(150.)
     if hour is None:
         hour = 13.0
     if height is None:
         height = 100.
-    result = [fit.Parameters.sel(parameter='shape')] # start with shape
-    param=dict(log10_area=log10_area,hour=hour,hour_sqr=hour**2,height=height,
-                   CET=temperature,CET_sqr=temperature**2)
+    result = [param.sel(parameter='shape')]  # start with shape
+    param_names = dict(log10_area=log10_area, hour=hour, hour_sqr=hour ** 2, height=height,
+                 CET=temperature, CET_sqr=temperature ** 2)
     for k in ['location', 'scale']:
-        r = fit.Parameters.sel(parameter=k)
-        for pname,v in param.items():
+        r = param.sel(parameter=k)
+        for pname, v in param_names.items():
             p = f"D{k}_{pname}"
             try:
-                r = r + v * fit.Parameters.sel(parameter=p)
+                r = r + v * param.sel(parameter=p)
             except KeyError:
                 logging.warning(f"{k} missing {p} so ignoring")
         r = r.assign_coords(parameter=k)  #  rename
         result.append(r)
-    result=xarray.concat(result,'parameter')
+    result = xarray.concat(result, 'parameter')
     return result
+
+def xarray_samp_cov(da:xarray.DataArray,
+                    dim:str,
+                    param_dim:str = 'parameter',
+                    param_dim2:typing.Optional[str] = None) -> xarray.DataArray:
+    """ Compute the sample covariance of the data array"""
+    def cov_matrix(arr):
+        return np.cov(arr, rowvar=False)
+    if param_dim2 is None:
+        param_dim2 = param_dim + '2'
+    output_core_dims = [[param_dim,   param_dim2]]
+    input_core_dims= [[dim,param_dim]]
+    cov = xarray.apply_ufunc(cov_matrix, da, input_core_dims=input_core_dims,
+                            output_core_dims=output_core_dims, vectorize=True)
+    cov = cov.assign_coords({param_dim2: da[param_dim].values})
+    return cov
+
+def xarray_gen_cov_samp(mean,cov,rng,nsamp):
+    """ Generate  samples from the covariance matrix"""
+    def gen_cov(mean,cov,rng=123456):
+        return scipy.stats.multivariate_normal(mean,cov).rvs(nsamp,random_state=rng).T
+    input_core_dims=[['parameter'],['parameter','parameter2']]
+    output_core_dims=[['parameter','sample',]]
+    samps = xarray.apply_ufunc(gen_cov,mean,cov,kwargs=dict(rng=rng),
+                              input_core_dims=input_core_dims,
+                              output_core_dims=output_core_dims,vectorize=True)
+    samps  = samps.assign_coords(sample=np.arange(nsamp))
+    return samps
+
+def comp_scaling_cet_samps(fits:xarray.Dataset,rng,nsamp,temperature:float=0.0):
+    """
+       Compute an estimate of the scaling factor for the CET relative to today.
+    :param fits: fits array -- want the parameters and covariance.
+
+    :return:cov change per frac
+    :rtype:
+    """
+    samps = xarray_gen_cov_samp(fits.Parameters,fits.Cov,rng,nsamp)
+    params=comp_params(samps,temperature=temperature)
+    return params
+
+
+
 
 
 # read in the radar data
-radar_fit_dir = CPMlib.radar_dir/'radar_rgn_fit'
-radar_fit_dir.mkdir(exist_ok=True,parents=True) # make sure the directory exists
+radar_fit_dir = CPMlib.radar_dir / 'radar_rgn_fit'
+radar_fit_dir.mkdir(exist_ok=True, parents=True)  # make sure the directory exists
 radar_fit = dict()
 radar_rain = dict()
 radar_fit_uncert = dict()
 rain_aug2020 = dict()
-my_logger=CPM_rainlib.logger
+my_logger = CPM_rainlib.logger
 commonLib.init_log(my_logger)
 for path in radar_fit_dir.glob('*.nc'):
     name = path.stem
     if name.endswith('_fit'):
-        radar_fit[name.replace('_fit','')] = xarray.load_dataset(path)
+        radar_fit[name.replace('_fit', '')] = xarray.load_dataset(path)
     elif name.endswith('_fit_uncert'):
-        radar_fit_uncert[name.replace('_fit_uncert','')] = xarray.load_dataarray(path)
+        radar_fit_uncert[name.replace('_fit_uncert', '')] = xarray.load_dataarray(path)
     elif name.endswith('_carmont_rain'):
-        radar_rain[name.replace('_carmont_rain','')] = xarray.load_dataarray(path)
+        radar_rain[name.replace('_carmont_rain', '')] = xarray.load_dataarray(path)
     elif name.endswith('_aug2020'):
-        rain_aug2020[name.replace('_aug2020','')] = xarray.load_dataarray(path)
+        rain_aug2020[name.replace('_aug2020', '')] = xarray.load_dataarray(path)
     else:
         my_logger.warning(f"Unknown file {path}. Ignoring")
 
 ## get in the model fits and work out ratios for today and PI
 fit_dir = CPM_rainlib.dataDir / 'CPM_scotland_filter' / "fits"
 fit_file = fit_dir / 'rgn_fit_cet.nc'
-cpm_gev_params = xarray.load_dataset(fit_file).coarsen(grid_latitude=5,grid_longitude=5,boundary='pad').mean().sel(**CPMlib.carmont_drain,method='nearest')
+cpm_gev_params = xarray.load_dataset(fit_file).coarsen(grid_latitude=5, grid_longitude=5, boundary='pad').mean().sel(
+    **CPMlib.carmont_drain, method='nearest')
+cpm_gev_params['Cov']= cpm_gev_params['Cov']/ 25.
+
 obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA', drop=True)
 t_today = obs_cet_jja.sel(**CPMlib.today_sel).mean()
 t_PI = obs_cet_jja.sel(**CPMlib.PI_sel).mean()
-delta = t_PI-t_today
-params_PI = comp_params(cpm_gev_params, temperature=delta)
-params_p2k = comp_params(cpm_gev_params, temperature=delta+2)
-params_today = comp_params(cpm_gev_params)
-ratio = params_PI/params_today
-ratio_p2k = params_p2k/params_today
-mn_radar = {key:fit.mean('sample') for key,fit in radar_fit_uncert.items()}
+delta = t_PI - t_today
+params_PI = comp_params(cpm_gev_params.Parameters, temperature=delta)
+params_p2k = comp_params(cpm_gev_params.Parameters, temperature=delta + 2)
+params_today = comp_params(cpm_gev_params.Parameters)
+ratio = params_PI / params_today
+ratio_p2k = params_p2k / params_today
 
 
+## compute the uncertainties from the various covariances we have...
+# CPM uncerts first -- note the same rng for all
+params_today_uncerts = comp_scaling_cet_samps(cpm_gev_params, 123456, 100)
+params_PI_uncerts = comp_scaling_cet_samps(cpm_gev_params, 123456, 100, temperature=delta)
+params_p2k_uncerts = comp_scaling_cet_samps(cpm_gev_params, 123456, 100, temperature=delta + 2)
+ratio_uncerts = params_PI_uncerts / params_today_uncerts
+ratio_p2k_uncerts = params_p2k_uncerts/params_today_uncerts
 
+mn_radar = {key: fit.mean('sample') for key, fit in radar_fit_uncert.items()}
+# sampling uncert.
+cov_radar_fit_uncert = {key: xarray_samp_cov(fit,'sample') for key, fit in radar_fit_uncert.items()}
+# and the mean cov.
+cov_radar_fit = {key: fit.Cov.mean('sample') for key, fit in radar_fit.items()}
+cov_total_radar = {key: cov_radar_fit[key] + cov_radar_fit_uncert[key] for key in radar_fit.keys()}
+radar_uncerts = {key: xarray_gen_cov_samp(mn_radar[key], cov_total_radar[key], rng=123456, nsamp=100)
+                 for key in radar_fit.keys()}
 ## now plot the data
-fig,axis = plt.subplots(num='PR',clear=True,nrows=2,ncols=2,layout='constrained',figsize=(8,5),sharex='col',sharey='col')
-
+fig, axis = plt.subplots(num='PR', clear=True, nrows=2, ncols=2, layout='constrained', figsize=(8, 5), sharex='col',
+                         sharey='col')
 
 #for ax,(name,rolling) in zip(axis.flat,itertools.product(['1km','5km'],[1,4])):
-rain=np.geomspace(2,100)
-rtn_period=np.geomspace(10,200)
-for (ax_pr, ax_intensity),name in zip(axis,['1km', '5km']):
-    mnp  = mn_radar[name]
+rain = np.geomspace(2, 30)
+rtn_period = np.geomspace(10, 200)
+for (ax_pr, ax_intensity), name in zip(axis, ['1km', '5km']):
+    mnp = mn_radar[name]
     # now compute the return periods for the PI and today
     p_pi = gev_r.xarray_gev_sf(mnp * ratio, rain)
     p_today = gev_r.xarray_gev_sf(mnp, rain)
     p_p2k = gev_r.xarray_gev_sf(mnp * ratio_p2k, rain)
     pr = 100 * (p_today / p_pi)
     pr_p2k = 100 * (p_p2k / p_pi)
+    # compute uncerts
+    p_pi_uncert = gev_r.xarray_gev_sf(radar_fit_uncert[name] * ratio_uncerts, rain)
+    p_today_uncert = gev_r.xarray_gev_sf(radar_fit_uncert[name], rain)
+    p_p2k_uncert = gev_r.xarray_gev_sf(radar_fit_uncert[name] * ratio_p2k_uncerts, rain)
+    pr_uncert = 100 * (p_today_uncert / p_pi_uncert).quantile([0.05, 0.95], dim='sample')
+    pr_p2k_uncert=100 *(p_p2k_uncert/p_pi_uncert).quantile([0.05,0.95],dim='sample')
     # and the intensity changes as a fun of rp
-    i_pi = gev_r.xarray_gev_isf(mnp * ratio, 1.0/rtn_period)
-    i_today = gev_r.xarray_gev_isf(mnp, 1.0/rtn_period)
-    i_p2k = gev_r.xarray_gev_isf(mnp * ratio_p2k, 1.0/rtn_period)
-    ir = 100 * (i_today / i_pi)-100
-    ir_p2k = 100 * (i_p2k / i_pi)-100
+    pv = 1.0/rtn_period
+    i_pi = gev_r.xarray_gev_isf(mnp * ratio, pv)
+    i_today = gev_r.xarray_gev_isf(mnp, pv)
+    i_p2k = gev_r.xarray_gev_isf(mnp * ratio_p2k, pv)
+    ir = 100 * (i_today / i_pi) - 100
+    ir_p2k = 100 * (i_p2k / i_pi) - 100
+    i_pi_uncert = gev_r.xarray_gev_isf(radar_fit_uncert[name] * ratio_uncerts, pv)
+    i_today_uncert = gev_r.xarray_gev_isf(radar_fit_uncert[name], pv)
+    i_p2k_uncert = gev_r.xarray_gev_isf(radar_fit_uncert[name] * ratio_p2k_uncerts, pv)
+    ir_uncert = (100 * (i_today_uncert / i_pi_uncert) - 100).quantile([0.05, 0.95], dim='sample')
+    ir_p2k_uncert = (100 * (i_p2k_uncert / i_pi_uncert) - 100).quantile([0.05, 0.95], dim='sample')
+    # and the uncertainties.
     for rolling, linestyle in zip([1, 4], ['dashed', 'solid']):
-        event_rp =float(1.0/(gev_r.xarray_gev_sf(mnp.sel(rolling=rolling),float(radar_rain[name].sel(rolling=rolling)))))
-        pr.sel(rolling=rolling).plot(ax=ax_pr,label=f'Rx{rolling:d}h PR (today)',linestyle=linestyle,color='blue',linewidth=2)
-        pr_p2k.sel(rolling=rolling).plot(ax=ax_pr,label=f'Rx{rolling:d}h PR (+2K)',linestyle=linestyle,color='red',linewidth=2)
-        ax_pr.axvline(radar_rain[name].sel(rolling=rolling), linestyle=linestyle,color='black',linewidth=2)
-        ir.sel(rolling=rolling).plot(ax=ax_intensity,x='return_period',label=f'Rx{rolling:d}h IR (today)',linestyle=linestyle,color='blue',linewidth=2)
-        ir_p2k.sel(rolling=rolling).plot(ax=ax_intensity,x='return_period',label=f'Rx{rolling:d}h IR (+2K)',linestyle=linestyle,color='red',linewidth=2)
-        ax_intensity.axvline(event_rp, linestyle=linestyle,color='black',linewidth=2)
+        event_rp = float(
+            1.0 / (gev_r.xarray_gev_sf(mnp.sel(rolling=rolling), float(radar_rain[name].sel(rolling=rolling)))))
+        pr.sel(rolling=rolling).plot(ax=ax_pr, label=f'Rx{rolling:d}h PR (today)', linestyle=linestyle, color='blue',
+                                     linewidth=2)
+        ax_pr.fill_between(rain, pr_uncert.sel(quantile=0.05,rolling=rolling),
+                           pr_uncert.sel(quantile=0.95,rolling=rolling),
+                           alpha=0.5,color='blue')
+        #pr_p2k.sel(rolling=rolling).plot(ax=ax_pr, label=f'Rx{rolling:d}h PR (+2K)', linestyle=linestyle, color='red',
+        #                                 linewidth=2)
+
+        #ax_pr.fill_between(rain, pr_p2k_uncert.sel(quantile=0.05,rolling=rolling),
+        #                   pr_p2k_uncert.sel(quantile=0.95,rolling=rolling),
+        #                   alpha=0.5,color='red')
+        ax_pr.axvline(radar_rain[name].sel(rolling=rolling), linestyle=linestyle, color='black', linewidth=2)
+        ir.sel(rolling=rolling).plot(ax=ax_intensity, x='return_period', label=f'Rx{rolling:d}h IR (today)',
+                                     linestyle=linestyle, color='blue', linewidth=2)
+        #ir_p2k.sel(rolling=rolling).plot(ax=ax_intensity, x='return_period', label=f'Rx{rolling:d}h IR (+2K)',
+        #                                 linestyle=linestyle, color='red', linewidth=2)
+        ax_intensity.fill_between(ir_uncert['return_period'], ir_uncert.sel(quantile=0.05,rolling=rolling),
+                           ir_uncert.sel(quantile=0.95,rolling=rolling),
+                           alpha=0.5,color='blue')
+        ax_intensity.axvline(event_rp, linestyle=linestyle, color='black', linewidth=2)
     ax_pr.set_title(f'Prob Ratio -- {name} Carmont')
     ax_pr.set_xlabel('Rain (mm/h)')
     ax_pr.set_ylabel('PR (%)')
+    ax_pr.axhline(100,linestyle='dashed',color='black')
 
     ax_intensity.set_title(f'Int. Ratio -- {name} Carmont')
     ax_intensity.set_xlabel('Return Period (summers)')

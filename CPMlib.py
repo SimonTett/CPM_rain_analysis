@@ -8,7 +8,7 @@ import functools
 import cartopy.crs as ccrs
 import CPM_rainlib
 
-
+CPM_coords = ['grid_longitude', 'grid_latitude']
 CPM_dir = CPM_rainlib.dataDir / "CPM_scotland"  # processed CPM data
 CPM_filt_dir = CPM_rainlib.dataDir / "CPM_scotland_filter"  # processed CPM data
 radar_dir = CPM_rainlib.dataDir / "radar"  # radar data
@@ -19,30 +19,30 @@ projRot = ccrs.RotatedPole(pole_longitude=177.5, pole_latitude=37.5)
 projOSGB = ccrs.OSGB()
 ll = ccrs.PlateCarree()
 # compute various stonehaven co-ords
-stonehaven_long_lat = ( -2.211,56.964)
-stonehaven = dict(zip(['grid_longitude', 'grid_latitude'], projRot.transform_point(*stonehaven_long_lat, ll)))
-stonehaven['grid_longitude'] += 360.
-
-stonehaven_OSGB = dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
-                        projOSGB.transform_point(*stonehaven_long_lat, ll)))
-stonehaven_rgn = {k: slice(v - 0.75, v + 0.75) for k, v in stonehaven.items()}
-stonehaven_rgn_extent = []
-for v in stonehaven_rgn.values():
-    stonehaven_rgn_extent.extend([v.start,v.stop])
+# stonehaven_long_lat = ( -2.211,56.964)
+# stonehaven = dict(zip(['grid_longitude', 'grid_latitude'], projRot.transform_point(*stonehaven_long_lat, ll)))
+# stonehaven['grid_longitude'] += 360.
+#
+# stonehaven_OSGB = dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
+#                         projOSGB.transform_point(*stonehaven_long_lat, ll)))
+# stonehaven_rgn = {k: slice(v - 0.75, v + 0.75) for k, v in stonehaven.items()}
+# stonehaven_rgn_extent = []
+# for v in stonehaven_rgn.values():
+#     stonehaven_rgn_extent.extend([v.start,v.stop])
 # and carmont co-ords
 
 carmont_long_lat= (-2.32094,56.95248) # location of derailment from openstreetmap.
 carmont_drain_long_lat = (-2.3266852553075017,56.951548724582096) # "field" where rainfell
-carmont = dict(zip(['grid_longitude', 'grid_latitude'], projRot.transform_point(*carmont_long_lat, ll)))
-carmont['grid_longitude'] += 360.
+carmont = dict(zip(CPM_coords, projRot.transform_point(*carmont_long_lat, ll)))
+carmont[CPM_coords[0]] += 360.
 
 carmont_OSGB = dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
                         projOSGB.transform_point(*carmont_long_lat, ll)))
 carmont_drain_OSGB=dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
                         projOSGB.transform_point(*carmont_drain_long_lat, ll)))
-carmont_drain = dict(zip(['grid_longitude', 'grid_latitude'],
+carmont_drain = dict(zip(CPM_coords,
                          projRot.transform_point(*carmont_drain_long_lat, ll)))
-carmont_drain['grid_longitude'] += 360.
+carmont_drain[CPM_coords[0]] += 360.
 carmont_rgn_OSGB= {k: slice(v - 75e3, v + 75e3) for k, v in carmont_drain_OSGB.items()}
 carmont_rgn= {k: slice(v - 0.75, v + 0.75) for k, v in carmont_drain.items()}
 carmont_rgn_extent = []
@@ -52,6 +52,7 @@ kw_colorbar = dict(orientation='horizontal',fraction=0.1,aspect=40,pad=0.05,exte
 
 today_sel=dict(time=slice('2012', '2021')) # so "today" is common throughout!
 PI_sel=dict(time=slice('1851', '1900')) # so "PI" is common throughout!
+
 def discretise(time: xarray.DataArray) -> xarray.DataArray:
     """
 
