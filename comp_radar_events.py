@@ -91,7 +91,7 @@ for path in summary_files:
     logger.warning(f'Processing {path} to {outpath} at {resoln} km resolution with coarsening {coarsen}.')
     grid = int(resoln * 1000. / 90.)
     radar_dataset = CPM_rainlib.comp_event_stats(path, region=carmont, topog_grid=grid,
-                                                 height_range=slice(50., None),
+                                                 height_range=slice(1., None),
                                                  samples_per_day=samples_per_day, sample_fract_limit=(0.8, 1.)
                                                  )
 

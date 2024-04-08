@@ -17,7 +17,7 @@ import matplotlib.patches as mpatches
 import cartopy.crs as ccrs
 
 projGB = ccrs.OSGB()
-v = tuple(CPMlib.stonehaven.values())
+
 
 carmont_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
 big_carmont_rgn = {k: slice(v - 90e3, v + 90e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
@@ -31,7 +31,7 @@ path = CPMlib.radar_dir / 'summary/summary_2008_1km.nc'
 radar_data = xarray.open_dataset(path).Radar_rain_Max.sel(rolling=4,time=slice('2020-06-01', '2020-08-31')).max('time').sel(**big_carmont_rgn)*4
 topog = CPM_rainlib.read_90m_topog(region=big_carmont_rgn, resample=11).squeeze()  # read in topography and regrid to about 1km resoln
 
-rseasMskmax, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, topog_grid=11, region=carmont_rgn, height_range=slice(50, None))
+rseasMskmax, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, topog_grid=11, region=carmont_rgn, height_range=slice(1, None))
 
 cmap = 'RdYlBu'
 levels = [25,50,75,100,125,150]
@@ -74,7 +74,7 @@ cm = radar_data.plot(ax=axis['jja2020max'], levels=levels,transform=projGB, cmap
 dofyear = pd.to_datetime('2020-08-12').dayofyear
 rn_max = rseasMskmax.sel(time='2020',rolling=4).where(mxTime.sel(rolling=4,time='2020').dt.dayofyear == dofyear)*4
 print(f"area of 2020-08-12 event is {float(rn_max.count()) } km^2")
-(top_fit_grid < 50).where(True,np.nan).plot(cmap='gray_r',ax=axis['aug2020'],transform=projGB,add_colorbar=False)
+#(top_fit_grid < 50).where(True,np.nan).plot(cmap='gray_r',ax=axis['aug2020'],transform=projGB,add_colorbar=False)
 rn_max.plot(ax=axis['aug2020'], cmap=cmap, transform=projGB, add_colorbar=False,levels=levels)
 # plot the topog over.
 

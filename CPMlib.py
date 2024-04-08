@@ -18,18 +18,9 @@ time_unit = 'hours since 1980-01-01'
 projRot = ccrs.RotatedPole(pole_longitude=177.5, pole_latitude=37.5)
 projOSGB = ccrs.OSGB()
 ll = ccrs.PlateCarree()
-# compute various stonehaven co-ords
-# stonehaven_long_lat = ( -2.211,56.964)
-# stonehaven = dict(zip(['grid_longitude', 'grid_latitude'], projRot.transform_point(*stonehaven_long_lat, ll)))
-# stonehaven['grid_longitude'] += 360.
-#
-# stonehaven_OSGB = dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
-#                         projOSGB.transform_point(*stonehaven_long_lat, ll)))
-# stonehaven_rgn = {k: slice(v - 0.75, v + 0.75) for k, v in stonehaven.items()}
-# stonehaven_rgn_extent = []
-# for v in stonehaven_rgn.values():
-#     stonehaven_rgn_extent.extend([v.start,v.stop])
-# and carmont co-ords
+cc_scale = 5.4
+cc_uncert = 0.6
+# compute various carmont co-ords
 
 carmont_long_lat= (-2.32094,56.95248) # location of derailment from openstreetmap.
 carmont_drain_long_lat = (-2.3266852553075017,56.951548724582096) # "field" where rainfell

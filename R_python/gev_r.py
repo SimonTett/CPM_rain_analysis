@@ -30,7 +30,7 @@ base = rpackages.importr('base')  # to give us summary
 
 
 def gev_fit(*args: typing.List[np.ndarray],
-            weights:typing.Optional[np.ndarray]=None,
+            use_weights: bool = False,
             shapeCov: bool = False, **kwargs):
     """
     Do GEV fit using R and return named tuple of relevant values.
@@ -45,7 +45,13 @@ def gev_fit(*args: typing.List[np.ndarray],
     #TODO rewrite this to directly call the R fn.
     """
     x = args[0]
+    if use_weights:
+        weights = args[-1]
+        args=args[0:-1]
+    else:
+        weights = None # to stop complaints from IDE about possibly undefined var
     ncov = len(args) - 1
+
     L = ~np.isnan(x)
     df_data = [x[L]]  # remove nan from data]
     cols = ['x']
@@ -62,13 +68,13 @@ def gev_fit(*args: typing.List[np.ndarray],
         r_code = r_code + ",location.fun=" + cov_expr + ",scale.fun=" + cov_expr
         if shapeCov:
             r_code += ',shape.fun=' + cov_expr
-    if weights is not None:# got weights so include that in the R code.
+    if use_weights:# got weights so include that in the R code.
         r_code += ',weights=wt'
+        wts = robjects.vectors.FloatVector(weights[L])  # convert to a R vector.
+        robjects.globalenv['wt'] = wts  # and push into the R environment.
+
     r_code += ')'  # add on the trailing bracket.
     df = pd.DataFrame(np.array(df_data).T, columns=cols)
-    if weights is not None:
-        wts = robjects.vectors.FloatVector(weights)  # convert to a R vector.
-        robjects.globalenv['wt'] = wts  # and push into the R environment.
     with (robjects.default_converter + rpandas2ri.converter+numpy2ri.converter).context():
         robjects.globalenv['df'] = df  # push the dataframe with info into R
 
@@ -201,6 +207,10 @@ def xarray_gev(data_array: xarray.DataArray,
     input_core_dims = [[dim]] * (1 + ncov)
     output_core_dims = [['parameter']] * 2 + [['parameter', 'parameter2'], ['NegLog'], ['AIC']]
     args = [data_array] + cov
+    if weights is not None:
+        args +=[weights]
+        input_core_dims += [[dim]]
+        kwargs.update(use_weights=True)
     params, std_err, cov_param, nll, AIC = xarray.apply_ufunc(gev_fit, *args,
                                                               input_core_dims=input_core_dims,
                                                               output_core_dims=output_core_dims,

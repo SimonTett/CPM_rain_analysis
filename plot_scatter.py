@@ -69,17 +69,23 @@ for fit, ax,title in zip([fit_reg, fit_es,fit_pr,fit_es_reg], axis.flat,
     if title.startswith('CET'):
         x = np.linspace(12, 24, num=npts)
         units='K CET'
+        ref_t = t_today
+        ref_p1k= t_today+1
+        ref_pi = t_PI
     else:
         x=np.linspace(9.5, 19.5, num=npts)
         units = 'K Reg. T'
+        ref_pi = fit_reg.predict([[1.0, t_PI, t_PI ** 2]])[0]
+        ref_t = fit_reg.predict([[1.0, t_today, t_today ** 2]])[0]
+        ref_p1k = fit_reg.predict([[1.0, t_today+1, (t_today+1) ** 2]])[0]
     x = np.column_stack((x, x ** 2))
     best_fit = fit.predict(sm.add_constant(x))
     ax.plot(x[:,0], best_fit, color='black', linewidth=3)
-    fit_PI = fit.predict([[1.0, t_PI, t_PI ** 2]])[0]
-    fit_today = fit.predict([[1.0,t_today,t_today**2]])[0]
-    fit_p1k = fit.predict([[1.0, t_today+1, (t_today+1) ** 2]])[0]
-    ax.plot(t_today,fit_today,marker='h',ms=10,color='red')
-    ax.plot(t_PI, fit_PI, marker='h', ms=10, color='green')
+    fit_PI = fit.predict([[1.0, ref_pi, ref_pi ** 2]])[0]
+    fit_today = fit.predict([[1.0,ref_t,ref_t**2]])[0]
+    fit_p1k = fit.predict([[1.0, ref_p1k, ref_p1k ** 2]])[0]
+    ax.plot(ref_t,fit_today,marker='h',ms=10,color='red')
+    ax.plot(ref_pi, fit_PI, marker='h', ms=10, color='green')
     # work out fractional change per K CET increase
     if 'Temp' in title:
         fract_increase = (fit_p1k-fit_today)
@@ -95,7 +101,8 @@ for fit, ax,title in zip([fit_reg, fit_es,fit_pr,fit_es_reg], axis.flat,
 for a,ylabel in zip(axis.flat[0:3],[r"Temp ($^\circ$C)",'SVP (Pa)','Precip (mm/day)']):
     a.set_xlabel(r"CET ($^\circ$C)")
     a.set_ylabel(ylabel)
-
+axis.flat[-1].set_xlabel(r"Regional Temp ($^\circ$C)")
+axis.flat[-1].set_ylabel(r"SVP (Pa)")
 
 fig_scatter.show()
 commonLib.saveFig(fig_scatter)

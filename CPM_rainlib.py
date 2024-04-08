@@ -303,7 +303,7 @@ def get_radar_data(
         file: pathlib.Path,
         topog_grid: typing.Optional[int] = None,
         region: typing.Optional[dict] = None,
-        height_range: slice = slice(50, None),
+        height_range: slice = slice(None, None),
         max_total_rain: float = 1000.,
         samples_per_day: int = None,
         sample_fract_limit: typing.Tuple[float, float] = (0., 1.)
@@ -473,8 +473,7 @@ def event_stats(max_precip: xarray.Dataset, max_time: xarray.Dataset, group, sou
     grper = ds.groupby(group)
     quantiles = np.linspace(0, 1, 21)
     dataSet = grper.map(quants_locn, quantiles=quantiles, x_coord=x_coord, y_coord=y_coord).rename(quant='max_precip')
-    grper2 = max_precip.groupby(group)
-    count = grper2.count().rename("# Cells")
+    count = grper.count().maxV.rename("# Cells")
     dataSet['count_cells'] = count
     return dataSet
 
@@ -561,7 +560,7 @@ def comp_params(param: xarray.DataArray,
             try:
                 r = r + v * param.sel(parameter=p)
             except KeyError:
-                logger.warning(f"{k} missing {p} so ignoring")
+                logger.debug(f"{k} missing {p} so ignoring")
         r = r.assign_coords(parameter=k)  #  rename
         result.append(r)
     result = xarray.concat(result, 'parameter')
