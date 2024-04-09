@@ -22,7 +22,7 @@ cc_scale = 5.4
 cc_uncert = 0.6
 # compute various carmont co-ords
 
-carmont_long_lat= (-2.32094,56.95248) # location of derailment from openstreetmap.
+carmont_long_lat= (-2.3197,56.95248) # location of derailment from openstreetmap.
 carmont_drain_long_lat = (-2.3266852553075017,56.951548724582096) # "field" where rainfell
 carmont = dict(zip(CPM_coords, projRot.transform_point(*carmont_long_lat, ll)))
 carmont[CPM_coords[0]] += 360.

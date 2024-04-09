@@ -44,7 +44,7 @@ def comp_params(fit: xarray.Dataset,
     result=xarray.concat(result,'parameter')
     return result
 # do the GEV calculations
-recreate_fit = False # set False to use cache
+recreate_fit = True # set False to use cache
 fit_dir = CPM_rainlib.dataDir / 'CPM_scotland_filter' / "fits"
 obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA', drop=True)
@@ -67,38 +67,38 @@ stack_dim = dict(t_e=['time', "ensemble_member"])
 fit = gev_r.xarray_gev(maxRain.stack(**stack_dim), cov=[(cpm_cet_jja-t_today).rename('CET').stack(**stack_dim)], dim='t_e',
                        name='Rgn_c', file=fit_dir / 'rgn_fit_cet.nc',recreate_fit=recreate_fit)
 
-pv=1.0/50.
+pv=1.0/100.
 intensity = gev_r.xarray_gev_isf(comp_params(fit),[pv])
 intensity_p1k = gev_r.xarray_gev_isf(comp_params(fit,temperature=1.0),[pv])
 i_percent = (100*intensity_p1k/intensity)-100.
 ## plot the results
 
-fig_today, axes = plt.subplots(nrows=3, ncols=2, figsize=(7, 9), clear=True,
-                                                   num='map_intensity',layout='constrained',
+fig_today, axes = plt.subplots(nrows=2, ncols=2, figsize=(7, 7), clear=True,
+                                                   num='cpm_intensity_delta',layout='constrained',
                                                    subplot_kw=dict(projection=CPMlib.projRot))
 
 label = commonLib.plotLabel()
 cmap = 'RdYlBu'
-for (axis_today, axis_delta),rolling in zip(axes, [1, 2,4]):
+for (axis_today, axis_delta),rolling in zip(axes, [1, 4]):
     carmont = float(intensity.sel(**CPMlib.carmont_drain, method='Nearest').sel(rolling=rolling))
     carmont_ip = float(i_percent.sel(**CPMlib.carmont_drain, method='Nearest').sel(rolling=rolling))
 
 
     print(f"CPM Carmont drain Rx{rolling:d}h rp={math.floor(1.0/pv):d} "
           f"i {carmont:3.1f} mm/h change {carmont_ip:3.1f} %")
-    delta=math.ceil(carmont*0.2)/5
-    intensity_levels = np.arange(math.floor(carmont*0.9), math.ceil(carmont*1.1+delta),delta)
+    delta=math.ceil(carmont*rolling*0.3)/5
+    intensity_levels = np.arange(math.ceil(carmont*0.85*rolling), math.floor(carmont*1.15*rolling+delta),delta)
     ratio_levels = np.arange(2,14)
     #intensity.plot(ax=axis_today, cmap=cmap, levels=intensity_levels, add_colorbar=False, alpha=0.4)
     kw_colorbar = CPMlib.kw_colorbar.copy()
-    kw_colorbar.update(label='mm/h')
-    intensity.sel(rolling=rolling).plot(ax=axis_today, cmap=cmap, levels=intensity_levels, cbar_kwargs=kw_colorbar, alpha=1.0)
+    kw_colorbar.update(label='mm')
+    (intensity.sel(rolling=rolling)*rolling).plot(ax=axis_today, cmap=cmap, levels=intensity_levels, cbar_kwargs=kw_colorbar, alpha=1.0)
     kw_colorbar.update(label='% change')
     #i_percent.plot(ax=axis_delta, cmap=cmap, levels=ratio_levels, add_colorbar=False, alpha=0.4)
     i_percent.sel(rolling=rolling).plot(ax=axis_delta, cmap=cmap, levels=ratio_levels, cbar_kwargs=kw_colorbar)
-    i_percent.sel(rolling=rolling).squeeze(drop=True).plot.contour(ax=axis_delta, levels=[5.4], colors='black', linewidths=1,linestyles='dashed')
-    axis_today.set_title(f'Rx{rolling:d}h Intensity (2012-22)')
-    axis_delta.set_title(f'Rx{rolling:d}h Intensity $\Delta$ %/K')
+    i_percent.sel(rolling=rolling).squeeze(drop=True).plot.contour(ax=axis_delta, levels=[5.5], colors='black', linewidths=1,linestyles='dashed')
+    axis_today.set_title(f'Rx{rolling:d}h Total (2012-22)')
+    axis_delta.set_title(f'Rx{rolling:d}h Total $\Delta$ %/K')
 carmont_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
 xstart=carmont_rgn['projection_x_coordinate'].start
 xstop=carmont_rgn['projection_x_coordinate'].stop
@@ -118,7 +118,7 @@ for ax in axes.flat:
 
     label.plot(ax)
     # add on carmont
-    ax.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(), marker='*', ms=10, color='black')
+    ax.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(), marker='o', ms=6, color='cornflowerblue')
     ax.plot(x, y, color='black', linewidth=2, transform=CPMlib.projOSGB)
 
 fig_today.show()

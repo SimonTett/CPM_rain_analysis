@@ -28,9 +28,8 @@ def comp_fits(rng, radar_events, nsamps: int = 100) -> xarray.DataArray:
                                coords=dict(EventTime=radar_events.coords['EventTime'])
                                )
         sample = radar_events.max_precip.isel(quantv=ind).drop_vars('quantv').assign_coords(sample=indx)
-        #sample = sample[sample.notnull()] # drop missing values.
         fits.append(gev_r.xarray_gev(sample, dim='EventTime', weights=wt))
-
+        #fits.append(gev_r.xarray_gev(sample, dim='EventTime'))
     fits = xarray.concat(fits, dim='sample')
     return fits
 

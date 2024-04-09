@@ -52,7 +52,7 @@ def comp_ratio_gev(
     return xarray.merge([ratios.rename('Quant_ratio'), ratios_spatial.rename('Mean_ratio')])
 
 
-use_cache = True # if True load data from Cache
+use_cache = False # if True load data from Cache
 nsamp = 100
 
 logger = CPM_rainlib.logger

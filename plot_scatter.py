@@ -56,7 +56,7 @@ t_today = obs_cet_jja.sel(**CPMlib.today_sel).mean()
 t_PI = obs_cet_jja.sel(**CPMlib.PI_sel).mean()
 
 label=commonLib.plotLabel()
-fig_scatter, axis = plt.subplots(nrows=2, ncols=2, num='cet_scatter', clear=True, figsize=[8, 5], layout='constrained')
+fig_scatter, axis = plt.subplots(nrows=2, ncols=2, num='scatter', clear=True, figsize=[8, 5], layout='constrained')
 for var,ax in zip([sim_reg_tas,sim_reg_es,sim_reg_pr],axis.flat):
     ax.scatter(sim_cet, var,color='grey',s=6)
     label.plot(ax)

@@ -8,12 +8,16 @@ import pandas as pd
 import os
 import numpy as np
 import typing
+import logging
 
+my_logger = logging.getLogger(__name__)
+use_weights_warn = True
 import rpy2.robjects as robjects
 import rpy2.robjects.packages as rpackages
 import rpy2.robjects.pandas2ri as rpandas2ri
 import rpy2.rinterface_lib
 from rpy2.robjects import numpy2ri
+
 utils = rpackages.importr('utils')
 utils.chooseCRANmirror(ind=1)
 # R package names
@@ -28,10 +32,75 @@ for package in packnames:
 
 base = rpackages.importr('base')  # to give us summary
 
+type_array_or_float = typing.Union[np.ndarray, float]
 
-def gev_fit(*args: typing.List[np.ndarray],
-            use_weights: bool = False,
-            shapeCov: bool = False, **kwargs):
+
+def ks_fit(
+        shape: float,
+        location: type_array_or_float,
+        scale: type_array_or_float,
+        data: np.ndarray,
+        dist: scipy.stats.rv_continuous = scipy.stats.genextreme
+) -> float:
+    """
+    Do a Kolmogorov-Smirnov test on  data with varying location and scale params
+    Data is normalised by subtracting location and dividing by scale. Not obvious how to normalise for varying shape!
+    Answer is to use a constant shape!
+    :param shape: shape parameter -- constant value
+    :param location: location parameter  either a float or array of floats
+    :param scale: scale parameter either a float or array of floats
+    :param data: data to be tested
+    :param dist: distribution to be tested against. Default is genextreme.
+    :return: p-value of the test.
+    TODO: extend to allow non constant data weights. See https://github.com/scipy/scipy/issues/12315.
+     Issue seems to be test-stat rather than weighted calc.
+     See https://doi.org/10.1017/CBO9780511977176.014 p358 for potential method.
+    """
+    data_norm = (data - location) / scale  # normalise to a standard distribution.
+    dist = dist(shape, loc=0.0, scale=1.0)
+    ks_stat = scipy.stats.kstest(data_norm, dist.cdf) # TODO -- modify kstest to allow weights
+    return ks_stat.pvalue
+
+
+def gen_params(
+        shape: float, location: float, scale: float,
+        covariates: np.ndarray,
+        d_shape: typing.Optional[np.ndarray] = None,
+        d_location: typing.Optional[np.ndarray] = None,
+        d_scale: typing.Optional[np.ndarray] = None,
+) -> \
+        (type_array_or_float, type_array_or_float, type_array_or_float):
+    """
+    Generate parameters for a GEV fit with co-variates.
+    :param shape: shape parameter
+    :param location: location parameter
+    :param scale: scale parameter
+    :param covariates: The co-variates.
+    :param d_shape: change in shape parameter with covariates
+    :param d_location: change in location parameter with covariates
+    :param d_scale: change in scale parameter with covariates
+
+    :return: shape, location, scale .
+    """
+    ncovariates = covariates.shape[0]
+    result = dict(shape=shape, location=location, scale=scale)
+    for name, array in zip(['d_shape', 'd_location', 'd_scale'], [d_shape, d_location, d_scale]):
+        if array is None:
+            continue  # skip processing.
+        if array.size != ncovariates:
+            breakpoint()
+            raise ValueError(f"Expected {ncovariates} {name} values got {array.size}")
+        key = name.replace('d_', '')
+        result[key] += covariates.T.dot(array)
+
+    return result["shape"], result["location"], result["scale"]
+
+
+def gev_fit(
+        *args: typing.List[np.ndarray],
+        use_weights: bool = False,
+        shapeCov: bool = False, **kwargs
+):
     """
     Do GEV fit using R and return named tuple of relevant values.
     :param x: Data to be fit
@@ -44,12 +113,13 @@ def gev_fit(*args: typing.List[np.ndarray],
     :return: A dataset of the parameters of the fit.
     #TODO rewrite this to directly call the R fn.
     """
+    global use_weights_warn # used to control printing out a warning message
     x = args[0]
     if use_weights:
         weights = args[-1]
-        args=args[0:-1]
+        args = args[0:-1]
     else:
-        weights = None # to stop complaints from IDE about possibly undefined var
+        weights = None  # to stop complaints from IDE about possibly undefined var
     ncov = len(args) - 1
 
     L = ~np.isnan(x)
@@ -68,16 +138,21 @@ def gev_fit(*args: typing.List[np.ndarray],
         r_code = r_code + ",location.fun=" + cov_expr + ",scale.fun=" + cov_expr
         if shapeCov:
             r_code += ',shape.fun=' + cov_expr
-    if use_weights:# got weights so include that in the R code.
+    if use_weights:  # got weights so include that in the R code.
         r_code += ',weights=wt'
         wts = robjects.vectors.FloatVector(weights[L])  # convert to a R vector.
         robjects.globalenv['wt'] = wts  # and push into the R environment.
 
     r_code += ')'  # add on the trailing bracket.
     df = pd.DataFrame(np.array(df_data).T, columns=cols)
-    with (robjects.default_converter + rpandas2ri.converter+numpy2ri.converter).context():
+    with (robjects.default_converter + rpandas2ri.converter + numpy2ri.converter).context():
         robjects.globalenv['df'] = df  # push the dataframe with info into R
-
+    params = np.broadcast_to(np.nan, npts)
+    se = np.broadcast_to(np.nan, npts)
+    cov_params = np.broadcast_to(np.nan, [npts, npts])
+    nllh = np.array([np.nan])
+    aic = np.array([np.nan])
+    ks = np.array([np.nan])
     try:
         r_fit = robjects.r(r_code)  # do the fit
         fit = base.summary(r_fit, silent=True)  # get the summary fit info
@@ -107,15 +182,34 @@ def gev_fit(*args: typing.List[np.ndarray],
         params[start_shape:] = params[start_shape:] * (-1)
         nllh = np.array(fit.rx2('nllh'))
         aic = np.array(fit.rx2('AIC'))
-    except rpy2.rinterface_lib.embedded.RRuntimeError:
-        # some problem in R with the fit. Set everything to nan.
-        params = np.broadcast_to(np.nan, npts)
-        se = np.broadcast_to(np.nan, npts)
-        cov_params = np.broadcast_to(np.nan, [npts, npts])
-        nllh = np.array([np.nan])
-        aic = np.array([np.nan])
+        #TODO extend python ks-test to cope with weights see https://doi.org/10.1017/CBO9780511977176.014 p358 for method.
+        if not use_weights:        # compute the k-s fit if we are not weighting
+            if ncov != 0:  # got some covariance
+                if shapeCov:
+                    d_shape = params[3 + 2 * ncov:]
+                else:
+                    d_shape = None
+                d_location = params[1:1 + ncov]
+                d_scale = params[2 + ncov:2 + 2 * ncov]
+            else:
+                d_shape = None
+                d_location = None
+                d_scale = None
+            shape, location, scale = gen_params(float(params[start_shape]), float(params[0]), float(params[1 + ncov])
+                                                ,np.array(df_data[1:]), # covariates
+                                                d_shape=d_shape, d_location=d_location, d_scale=d_scale
+                                                )
+            ks = np.array(ks_fit(shape, location, scale, df_data[0]))
+        elif use_weights_warn:
+            my_logger.warning("Weights are not used in KS test")
+            use_weights_warn = False # only want the message once!
 
-    return (params, se, cov_params, nllh, aic)  # return the data.
+    except rpy2.rinterface_lib.embedded.RRuntimeError:
+        # some problem in R with the fit. Complain
+
+        my_logger.warning("Runtime error with R when doing GEV fit")
+
+    return (params, se, cov_params, nllh, aic, ks)  # return the data.
 
 
 import scipy.stats
@@ -148,7 +242,8 @@ def xarray_gev_python(ds, dim='time_ensemble', file=None, recreate_fit=False, ve
 
     params = xarray.apply_ufunc(gev_fit_python, ds, input_core_dims=[[dim]],
                                 output_core_dims=[['parameter']],
-                                vectorize=True, kwargs=kwargs)
+                                vectorize=True, kwargs=kwargs
+                                )
     pnames = ['location', 'scale', 'shape', 'Dlocation', 'Dscale', 'Dshape']
 
     params = params.rename("Parameters")
@@ -160,15 +255,17 @@ def xarray_gev_python(ds, dim='time_ensemble', file=None, recreate_fit=False, ve
     return ds
 
 
-def xarray_gev(data_array: xarray.DataArray,
-               cov: typing.Optional[typing.List[xarray.DataArray]] = None,
-               shape_cov=False,
-               dim: [typing.List[str], str] = 'time_ensemble',
-               file=None, recreate_fit: bool = False,
-               verbose: bool = False,
-               name: typing.Optional[str] = None,
-               weights: typing.Optional[xarray.DataArray] = None,
-               **kwargs):
+def xarray_gev(
+        data_array: xarray.DataArray,
+        cov: typing.Optional[typing.List[xarray.DataArray]] = None,
+        shape_cov=False,
+        dim: [typing.List[str], str] = 'time_ensemble',
+        file=None, recreate_fit: bool = False,
+        verbose: bool = False,
+        name: typing.Optional[str] = None,
+        weights: typing.Optional[xarray.DataArray] = None,
+        **kwargs
+):
     #
     """
     Fit a GEV to xarray data using R.
@@ -188,6 +285,7 @@ def xarray_gev(data_array: xarray.DataArray,
         StdErr -- the standard error of the fit -- same parameters as Parameters
         nll -- negative log likelihood of the fit -- measure of the quality of the fit
         AIC -- aitkin information criteria.
+        ks -- KS test result
     """
     if (file is not None) and file.exists() and (
             not recreate_fit):  # got a file specified, it exists and we are not recreating fit
@@ -205,16 +303,18 @@ def xarray_gev(data_array: xarray.DataArray,
 
     ncov = len(cov)
     input_core_dims = [[dim]] * (1 + ncov)
-    output_core_dims = [['parameter']] * 2 + [['parameter', 'parameter2'], ['NegLog'], ['AIC']]
+    #output_core_dims = [['parameter']] * 2 + [['parameter', 'parameter2'], ['NegLog'], ['AIC'],['KS']]
+    output_core_dims = [['parameter']] * 2 + [['parameter', 'parameter2'], [], [], []]
     args = [data_array] + cov
     if weights is not None:
-        args +=[weights]
+        args += [weights]
         input_core_dims += [[dim]]
         kwargs.update(use_weights=True)
-    params, std_err, cov_param, nll, AIC = xarray.apply_ufunc(gev_fit, *args,
-                                                              input_core_dims=input_core_dims,
-                                                              output_core_dims=output_core_dims,
-                                                              vectorize=True, kwargs=kwargs)
+    params, std_err, cov_param, nll, AIC, ks = xarray.apply_ufunc(gev_fit, *args,
+                                                                  input_core_dims=input_core_dims,
+                                                                  output_core_dims=output_core_dims,
+                                                                  vectorize=True, kwargs=kwargs
+                                                                  )
     pnames = []
     for n in ['location', 'scale', 'shape']:
         pnames += [n]
@@ -230,8 +330,11 @@ def xarray_gev(data_array: xarray.DataArray,
     cov_param = cov_param.rename("Cov")
     nll = nll.rename('nll').squeeze()
     AIC = AIC.rename('AIC').squeeze()
-    data_array = xarray.Dataset(dict(Parameters=params, StdErr=std_err, Cov=cov_param, nll=nll, AIC=AIC)).assign_coords(
-        parameter=pnames, parameter2=pnames)
+    ks = ks.rename('ks').squeeze()
+    data_array = xarray.Dataset(dict(Parameters=params, StdErr=std_err, Cov=cov_param, nll=nll, AIC=AIC, KS=ks)
+                                ).assign_coords(
+        parameter=pnames, parameter2=pnames
+    )
     if name:
         data_array.attrs.update(name=name)
     if file is not None:
@@ -284,7 +387,8 @@ def xarray_sf(x, params, output_dim_name='value'):
     sf = xarray.apply_ufunc(fn_sf, params.sel(parameter='shape'), params.sel(parameter='location'),
                             params.sel(parameter='scale'),
                             output_core_dims=[[output_dim_name]],
-                            vectorize=True, kwargs=dict(x=x))
+                            vectorize=True, kwargs=dict(x=x)
+                            )
     sf = sf.assign_coords({output_dim_name: x}).rename('sf')
 
     return sf
@@ -300,17 +404,20 @@ def xarray_interval(alpha, params):
     interval = xarray.apply_ufunc(fn_interval, params.sel(parameter='shape'), params.sel(parameter='location'),
                                   params.sel(parameter='scale'),
                                   output_core_dims=[['interval']],
-                                  vectorize=True, kwargs=dict(alpha=alpha))
+                                  vectorize=True, kwargs=dict(alpha=alpha)
+                                  )
     offset = (1 - alpha) / 2
     interval = interval.Parameters.assign_coords(interval=[offset, 1 - offset]).rename('interval')
 
     return interval
 
 
-def xarray_isf(p: np.ndarray,
-               params: xarray.DataArray,
-               output_dim_name: typing.Optional[str] = None,
-               input_dim_name: typing.Optional[str] = None) -> xarray.DataArray:
+def xarray_isf(
+        p: np.ndarray,
+        params: xarray.DataArray,
+        output_dim_name: typing.Optional[str] = None,
+        input_dim_name: typing.Optional[str] = None
+) -> xarray.DataArray:
     """
     Compute the inverse survival function for specified probability values
     :param output_dim_name: name of output_dim -- default is probability
@@ -328,7 +435,8 @@ def xarray_isf(p: np.ndarray,
     aa = tuple([params.sel(parameter=k, drop=True) for k in ['shape', 'location', 'scale']])
     x = xarray.apply_ufunc(fn_isf, *aa, input_core_dims=[[input_dim_name]] * len(aa),
                            output_core_dims=[[output_dim_name, input_dim_name]],
-                           vectorize=True, kwargs=dict(p=p))
+                           vectorize=True, kwargs=dict(p=p)
+                           )
     x = x.assign_coords({output_dim_name: p}).rename('isf')
     return x
 
@@ -348,9 +456,10 @@ def param_at_cov(params, cov):
     return params_c
 
 
-def xarray_gev_isf(params: xarray.DataArray,
-                   pvalues: typing.Union[np.ndarray, typing.List[float]],
-                   distribution: typing.Optional[scipy.stats.rv_continuous] = None, ) -> xarray.DataArray:
+def xarray_gev_isf(
+        params: xarray.DataArray,
+        pvalues: typing.Union[np.ndarray, typing.List[float]],
+        distribution: typing.Optional[scipy.stats.rv_continuous] = None, ) -> xarray.DataArray:
     """
 
     :param distribution: distribution to be used for fit
@@ -376,14 +485,15 @@ def xarray_gev_isf(params: xarray.DataArray,
     dims.append('pvalues')
     result = xarray.DataArray(data=result, coords=coords, dims=dims, name='isf')
     # add on another co-ord -- the return_value.
-    result = result.assign_coords(return_period=('pvalues',1.0/pvalues))
+    result = result.assign_coords(return_period=('pvalues', 1.0 / pvalues))
     # could do more with meta-data but that is for another time,
     return result
 
 
-def xarray_gev_sf(params: xarray.DataArray,
-                  thresholds: typing.Union[np.ndarray, typing.List[float],float],
-                  distribution: typing.Optional[scipy.stats.rv_continuous] = None, ) -> xarray.DataArray:
+def xarray_gev_sf(
+        params: xarray.DataArray,
+        thresholds: typing.Union[np.ndarray, typing.List[float], float],
+        distribution: typing.Optional[scipy.stats.rv_continuous] = None, ) -> xarray.DataArray:
     """
 
     :param distribution: distribution to be used for fit
@@ -394,7 +504,7 @@ def xarray_gev_sf(params: xarray.DataArray,
     if distribution is None:
         distribution = scipy.stats.genextreme
     # convert list to np.ndarray
-    if isinstance(thresholds, (list,float)):
+    if isinstance(thresholds, (list, float)):
         thresholds = np.array(thresholds)  # convert to a numpy array
     thresholds = np.unique(thresholds)  # get the unique values.
     # extract data expanding dimension and generate frozen dist.
