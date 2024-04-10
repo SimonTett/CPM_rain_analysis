@@ -3,8 +3,10 @@ import CPM_rainlib
 import CPMlib
 import xarray
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib_scalebar.scalebar import ScaleBar
 import cartopy.crs as ccrs
-
+import itertools
 import commonLib
 
 rolling=4
@@ -37,10 +39,18 @@ for ax in axis:
     g=ax.gridlines(draw_labels=True)
     g.top_labels = False
     g.left_labels = False
-    ax.plot(*tuple(CPMlib.carmont_drain_OSGB.values()), transform=ccrs.OSGB(), marker='o', ms=8, color='black')
-    # cs=topog.plot.contour(ax=ax,colors=['blue','palegreen','green','brown'],
-    #                       levels=[200,300,500,800],linewidths=1)
-    # cs.clabel(inline=True, fontsize=10)
+    ax.plot(*tuple(CPMlib.carmont_drain_OSGB.values()), transform=ccrs.OSGB(), marker='o', ms=8, color='cornflowerblue')
+    # add circles around the radar at roughly 60 and 120 km corresponding to roughly 1 km and 2km resoln.
+
+    for (range, name) in itertools.product([60, 120], ['Hill of Dudwick', 'Munduff Hill']):
+        co_ords = CPM_rainlib.radar_stations.loc[name, ['Easting', 'Northing']].astype(float)
+        # Create a circle
+        circle = mpatches.Circle(co_ords, radius=range * 1000, transform=ccrs.OSGB(),
+                                 edgecolor='green', linewidth=2, facecolor='none'
+                                 )
+        # Add the circle to the axis
+        ax.add_patch(circle)
+
 
 axis[0].set_title("Mean JJA rain")
 axis[1].set_title("Mean JJA Monthly Max rain")

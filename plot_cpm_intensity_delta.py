@@ -44,7 +44,7 @@ def comp_params(fit: xarray.Dataset,
     result=xarray.concat(result,'parameter')
     return result
 # do the GEV calculations
-recreate_fit = True # set False to use cache
+recreate_fit = False # set False to use cache
 fit_dir = CPM_rainlib.dataDir / 'CPM_scotland_filter' / "fits"
 obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA', drop=True)
@@ -82,8 +82,6 @@ cmap = 'RdYlBu'
 for (axis_today, axis_delta),rolling in zip(axes, [1, 4]):
     carmont = float(intensity.sel(**CPMlib.carmont_drain, method='Nearest').sel(rolling=rolling))
     carmont_ip = float(i_percent.sel(**CPMlib.carmont_drain, method='Nearest').sel(rolling=rolling))
-
-
     print(f"CPM Carmont drain Rx{rolling:d}h rp={math.floor(1.0/pv):d} "
           f"i {carmont:3.1f} mm/h change {carmont_ip:3.1f} %")
     delta=math.ceil(carmont*rolling*0.3)/5

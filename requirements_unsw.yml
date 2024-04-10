@@ -9,7 +9,7 @@ channels:
     - defaults
 dependencies:
    - r-base>=4.0.5
-   - python~=3.9
+   - python~=3.11
    - ipython~=8.18
    - xarray~=2023.8 # neeed to fix anoying numpy error.
    - flox~=0.8
@@ -17,7 +17,7 @@ dependencies:
    - pandas~=1.4 # reduced version as want compatability with 2022 xarray.
    - numpy~=1.21
    - rpy2==3.5.11
-   - matplotlib~=3.6
+   - matplotlib~=3.8.1
    - cartopy~=0.22
    - rioxarray~=0.15
    - statsmodels~=0.13

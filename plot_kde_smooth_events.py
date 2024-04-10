@@ -5,74 +5,79 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray
+
+import CPM_rainlib
 import CPMlib
 import seaborn as sns
-import statsmodels.api as sm
+from matplotlib.ticker import MaxNLocator
 
 import commonLib
-import  pandas as pd
-import cftime
 
+import cftime
+my_logger = CPM_rainlib.logger
+commonLib.init_log(my_logger,level='DEBUG')
 filter = True
-dataset = xarray.load_dataset(CPMlib.CPM_filt_dir/"CPM_filter_all_events.nc") # load the processed events
+dataset = xarray.open_dataset(CPMlib.CPM_filt_dir/"CPM_filter_all_events.nc",chunks={}) # load the processed events
 radar_dataset = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_5km.nc") # load the processed radar
-rolling= 1
-fig, axs = plt.subplots(nrows=2, ncols=2, figsize=[8, 6],clear=True, num='CPM_radar_comp',
-                                                                         layout='constrained')
-for (q,rolling),linestyle in zip(itertools.product([0.5],[1,4]),['solid','dashed']):
+radar_dataset_c4 = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_1km_c4.nc") # load the processed radar
+radar_dataset_c5 = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_1km_c5.nc") # load the processed radar
+my_logger.debug(f"Loaded datasets")
+fig, axs = plt.subplots(nrows=2, ncols=4, figsize=[8, 6],clear=True,
+                        num='kde_smooth_events',sharex='col', layout='constrained')
+
+fig.get_layout_engine().set(rect=[0.05,0.0,0.95,1.0])#.execute(fig)
+
+labels = commonLib.plotLabel()
+plot_col_titles=True
+for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
 
     quant = dataset.sel(quantv=q,rolling=rolling).stack(idx=['EventTime','ensemble_member']).dropna('idx') # select the quantile and rolling period
-    fit = sm.OLS(quant['CET'].values, sm.add_constant(np.log10(quant['count_cells'].values))).fit()
-    print(rolling,fit.summary())
+    my_logger.debug(f"Loaded model data for quantile {q} rolling {rolling}")
+    #fit = sm.OLS(quant['CET'].values, sm.add_constant(np.log10(quant['count_cells'].values))).fit()
+    #print(rolling,fit.summary())
+
     # Extract  for radar period
-    L= ((cftime.datetime(2008,1,1,calendar='360_day') <= quant.t) &
-        (quant.t <= cftime.datetime(2023,12,30,calendar='360_day')) )
-    quant=quant.where(L,drop=True).dropna('idx')
-    area = (quant.count_cells*(4.4)**2).rename("Area")
-    log10_area = np.log10(area).rename("log10 Area")
-
+    time = quant.t.load()
+    L= ((cftime.datetime(2008,1,1,calendar='360_day') <= time) &
+        (time <= cftime.datetime(2023,12,30,calendar='360_day')) )
+    quant = quant.where(L,drop=True).dropna('idx').load()
+    my_logger.debug(f"Extracted to 2008-2023")
     radar_quant = radar_dataset.sel(quantv=q,rolling=rolling).rename(EventTime='idx').dropna('idx')
-    radar_area = (radar_quant.count_cells*(5.0)**2).rename("Rdr Area")
-    radar_log10_area = np.log10(radar_area).rename("Rdr log10 Area")
+    radar_c4_quant = radar_dataset_c4.sel(quantv=q,rolling=rolling).rename(EventTime='idx').dropna('idx')
+    radar_c5_quant = radar_dataset_c5.sel(quantv=q,rolling=rolling).rename(EventTime='idx').dropna('idx')
+    my_logger.debug(f"Loaded radar")
+    for ds,area in zip([radar_quant,radar_c4_quant,radar_c5_quant,quant],[25.0,16.0,25,4.4*4.4]):
+        ds['log10 area'] = np.log10(ds.count_cells*area)
+        ds['Hour'] = ds.t.dt.hour
+        ds['Accum'] = ds.max_precip*rolling
+    my_logger.debug(f"Computed log10_area, hour, accum")
+    pos = axis[0].get_position()
+    y=(pos.ymax+pos.ymin)/2
+    x=0.02
+    fig.text(x,y,f'Rx{rolling:d}h',
+             ha='left', va='center', rotation=90,fontsize=10)
 
-    labels = commonLib.plotLabel()
-    for ax,var,obs_var,bins,xlabel in zip(axs.flatten(),
-                        [quant.t.dt.hour,log10_area,quant.height,quant.max_precip*rolling],
-                        [radar_quant.t.dt.hour,radar_log10_area,radar_quant.height,
-                         radar_quant.max_precip*rolling],
+
+
+    for ax,var,bins,xlabel in zip(axis.flatten(),
+                        ['Hour','log10 area','height','Accum'],
                         [24,20,20,20], # bin sizes
-                        ['Hour','Log10(Area (km^2))','Height (m)','Max Total precip (mm)']     ):
+                        ['Hour',r'$\log_{10}$ Area','Height (m)','Accum precip (mm)']     ):
 
-        #edges = np.histogram_bin_edges(var, bins)
-        sns.kdeplot(var,ax=ax,linestyle=linestyle,label=f'CPM Rx{rolling:d}h',
-                    color='orange',linewidth=2,cut=0)
-        sns.kdeplot(obs_var,ax=ax,linestyle=linestyle,label=f'RADAR Rx{rolling:d}h',
-                    color='green',linewidth=2,cut=0)
-
+        for ds,color,name in zip([quant,radar_quant,radar_c4_quant,radar_c5_quant],
+                                 ['orange','green','blue','cornflowerblue'],['CPM','RADAR 5km','RADAR 1km-c4','RADAR 1km-c5']):
+            sns.kdeplot(ds[var],ax=ax,label=f'{name} ',
+                        color=color,linewidth=2,cut=0)
 
 
-        # sns.histplot(var,bins=edges,kde=True,ax=ax,stat='density',line_kws=dict(linewidth=4,label='CPM'),
-        #              alpha=0.7,color='orange')
-        # sns.histplot(obs_var,bins=edges,kde=True,ax=ax,color='green',alpha=0.7,stat='density',
-        #              line_kws=dict(linewidth=4,label='RADAR'))
-        ax.set_xlabel(xlabel)
+
+        ax.set_xlabel(xlabel,fontsize='small')
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
         labels.plot(ax)
 
-axs[-1][-1].legend()
-axs[-1][-1].set_xlim(0,40)
+
+axs[-1][-1].set_xlim(0,50)
+axs[0][1].legend(fontsize='small',loc='lower left')
 fig.show()
 commonLib.saveFig(fig)
 
-# # plto combined distributions -- largely to show no systematic change
-# #Will do one plot per figure as using jointplot
-# plt.close('all') # close all exisiting figures
-# if filter:
-#     fname='_filter'
-# else:
-#     fname = ''
-# g=sns.jointplot(x=quant.CET,y=quant.t.dt.hour,kind='kde',fill=True,height=3,xlim=[12.5,23.5],ylim=[0,23],cut=0)
-# g.fig.savefig(f'figures/cet_hour{fname}.png')
-# g=sns.jointplot(x=quant.CET,y=log10_area,kind='kde',fill=True,height=3,xlim=[12.5,23.5],ylim=[1.2,4.],cut=5)
-# g.fig.savefig(f'figures/cet_log10_area{fname}.png')
-# g=sns.jointplot(x=quant.CET,y=quant.height,kind='kde',fill=True,height=3,xlim=[12.5,23.5],ylim=[0,300.],cut=0)
-# g.fig.savefig(f'figures/cet_height{fname}.png')

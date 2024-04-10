@@ -21,6 +21,9 @@ lab = commonLib.plotLabel()
 fig, axs = plt.subplots(nrows=2, ncols=1, figsize=(5, 3), num='radar_carmont', clear=True, sharex=True,
                         layout='constrained'
                         )
+
+
+fig.get_layout_engine().execute(fig)
 for radar, label, color in zip([radar_1km, radar_5km], ['1km/5min', '5km/15min'], ['red', 'blue']):
     r = radar.sel(time=slice('2020-08-12T02:45', '2020-08-12T10:15'))
     r.plot(ax=axs[0], drawstyle='steps-mid', label=label, color=color)
@@ -33,4 +36,4 @@ for a, title in zip(axs, ['Raw', '1h']):
     lab.plot(a)
     a.set_ylim(0.0, None)
 fig.show()
-commonLib.saveFig(fig)
+#commonLib.saveFig(fig)

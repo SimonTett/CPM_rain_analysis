@@ -73,7 +73,7 @@ Both the filtered ("Filt CPM") and raw ("Raw CPM") data were then aggregated to 
 Radar data is available in daily files with  1km 5-minute and 5km 15-minute available.  Both datasets  were aggregated to hourly means requiring, for any day, data from at least 6  unique hours. As a crude form of quality control data was set missing if the rain rate was greater than 400 mm/hour.  The 1km data was then aggregated to 4 and 5km resolution by averaging 16 or 25 cells respectively. The daily maximum and time of maximum were computed and then the seasonal maxima and maxima time/date calculated. This gives three radar datasets (radar 5km, radar 1kmc4 and radar 1kmc5). I use these radar datasets to give a qualitative uncertainty estimate.
 
 Radar datasets can suffer from various artefacts \parencite{artefacts}.
-For the Stonehave region, both the mean summer rainfall and the summer mean 1-hour maximum rainfall are largely free of artefacts (Fig~\ref{fig:mean_rain}). There are two artefacts associated with the Munduff hill site on the southern end of the domain visible in the summer mean rain. Beyond these the clearest signal is a strong land/sea contrast in both the mean and maximum rain. 
+For the Stonehaven region, both the mean summer rainfall and the summer mean 1-hour maximum rainfall are largely free of artefacts (Fig~\ref{fig:mean_rain}). There are two artefacts associated with the Munduff hill site on the southern end of the domain visible in the summer mean rain. Beyond these the clearest signal is a strong land/sea contrast in both the mean and maximum rain. 
 
 \subsection{Event Definition}
 
@@ -153,6 +153,11 @@ I am grateful to the Met Office for funding accommodation and subsistence costs 
 	\caption{Summary event statistics for radar and CPM events. }
 \end{table}
 
+\begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{radar_jja}
+	\caption{a) Mean radar rainfall (mm/day) b) Mean monthly maximum 4h rain total (mm/h). Means are for summers (June-July-August) from 2008 to 2023 inclusive. Circles are  60 and 120 km from radar stations (Green hexagons). Pale blue circle shows point ("Carmont drain") where rain occurred, purple lines show railways and grey lines local authority boundaries. }
+\end{figure}
 \begin{figure}[tp]
 	\centering
 	\includegraphics[width=0.5\linewidth]{radar_carmont.png}
@@ -164,7 +169,7 @@ I am grateful to the Met Office for funding accommodation and subsistence costs 
 	
 	\centering
 	\includegraphics[width=\linewidth]{carmont_geog_group.png}
-	\caption{a) Map of Carmont Accident site -- brickred star shows where train derailed. Main features are contour lines every 10 meters, railway (black line ) and woods (green) (Map crown copyright Ordinance Survey). b) Topography of North East Scotland. Inset shows Great Britain and Ireland. Colour scale on bar to right. Circles are  60 and 120 km from radar stations.  c) Maximum 4 hour accumulation  for JJA 2020. d) Event of 2020-8-21. In all plots  corn blue circle shows point ("Carmont drain") where rain occurred. In plots b-d purple lines show railways and grey lines local authority boundaries. Black box in c \& d shows 150x150 km region of interest. Scale bars are shown in a and b.   }
+	\caption{a) Map of Carmont Accident site -- brickred star shows where train derailed. Main features are contour lines every 10 meters, railway (black line ) and woods (green) (Map crown copyright Ordinance Survey). b) Topography of North East Scotland. Inset shows Great Britain and Ireland. Colour scale on bar to right. Circles are  60 and 120 km from radar stations.  c) Maximum 4 hour accumulation  for JJA 2020. d) Event of 2020-8-21.  Black box in c \& d shows 150x150 km region of interest. Scale bars are shown in a and b.   }
 	\label{fig:carmont_geog_group}
 \end{figure}
 
@@ -181,13 +186,13 @@ I am grateful to the Met Office for funding accommodation and subsistence costs 
 
 
 
-
-
 \begin{figure}
 	\centering
-	\includegraphics[width=\linewidth]{CPM_radar_comp}
-	\caption{Kernel Density Estimates from radar (green) and CPM (orange) events at 50\% quantile for 2008-2022 period. Shown are day-hour (a),$\log_{10}$ of event area (b),  topographic height (c) and maximum Rainfall accumulation. All plots show 1 (solid) and 4 hour (dashed) values.  }
-\end{figure}
+	\includegraphics[width=\linewidth]{kde_smooth_events}
+	\caption{Kernel Density Estimates from  CPM (orange), 5km radar (green), 1km-c4 (blue) and 1km-c5 (pale blue) events at 50\% quantile for 2008-2022 period. Shown are day-hour (a \& e),$\log_{10}$ of event area (b \& f),  topographic height (c \& g ) and maximum Rainfall accumulation (d \& h). Top row shows Rx1h while bottom row shows Rx4h values.}
+	\end{figure}
+
+
 
 
     
@@ -205,7 +210,7 @@ I am grateful to the Met Office for funding accommodation and subsistence costs 
 
 \begin{figure}
 	\centering
-	\includegraphics[width=1\linewidth]{PR}
+	\includegraphics[width=1\linewidth]{intens_prob_ratios}
 	\caption{a: Changes in filtered CPM Rx1h intensity (\% of PI values) as function of return period. b) Probability ratio (\%) relative to Pre-industrial as a function of summer seasonal Rx1h. Shown are changes for +2K world (red), 2012-2021 (dark blue) and 1980-1989 (pale blue). Also shown are 5-95\% range from regional fits (shaded regions) and median regional intensity change and probability ratios (dot-dashed lines).}
 	\label{fig:int_pr}
 \end{figure}
