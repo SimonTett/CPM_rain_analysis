@@ -12,6 +12,8 @@ import gzip
 import zlib  # so we can trap an error
 import tempfile
 import shutil
+
+import scipy
 import xarray
 import pathlib
 import cartopy
@@ -298,7 +300,23 @@ def std_decorators(ax, showregions=True, radarNames=False, radar_col='orange', g
 
 
 ## stuff for event computation
+def xarray_gen_cov_samp(mean:xarray.DataArray,
+                        cov:xarray.DataArray,
+                        rng:typing.Any=123456,
+                        nsamp:int=100) -> xarray.DataArray:
+    """ Generate  samples from the covariance matrix"""
 
+    def gen_cov(mean, cov, rng=123456):
+        return scipy.stats.multivariate_normal(mean, cov).rvs(nsamp, random_state=rng).T
+
+    input_core_dims = [['parameter'], ['parameter', 'parameter2']]
+    output_core_dims = [['parameter', 'sample', ]]
+    samps = xarray.apply_ufunc(gen_cov, mean, cov, kwargs=dict(rng=rng),
+                               input_core_dims=input_core_dims,
+                               output_core_dims=output_core_dims, vectorize=True
+                               )
+    samps = samps.assign_coords(sample=np.arange(nsamp))
+    return samps
 def get_radar_data(
         file: pathlib.Path,
         topog_grid: typing.Optional[int] = None,

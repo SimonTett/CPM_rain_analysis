@@ -135,7 +135,7 @@ Rather than computing saturated humidity from the monthly mean time series I wil
 \printbibliography %Prints bibliography
 
 \subsection{Acknowledgments}
-I am grateful to the Met Office for funding accommodation and subsistence costs for my two week visit to the Met Office (on which much of the work that forms this report was done.) I would also like to thank Fraser Lott for looking after me and lots of useful discussions as well as Simon Brown, Elizabeth Kendon and Chris Short for  taking the time to discuss the convection permitting model with me.
+Tett acknowledges  Met Office support for accommodation and subsistence costs for a two week visit to the Met Office (on which preliminary work on model evaluation was done.) We thank Fraser Lott, Simon Brown, Elizabeth Kendon and Chris Short. Much of the  work carried out while Tett visiting UNSW while on Sabbatical. Preliminary version of this formed Long's MSC thesis. 
 
 \begin{table}
 	\begin{tabular}{ccccc}
@@ -153,28 +153,29 @@ I am grateful to the Met Office for funding accommodation and subsistence costs 
 	\caption{Summary event statistics for radar and CPM events. }
 \end{table}
 
-\begin{figure}
-	\centering
-	\includegraphics[width=\linewidth]{radar_jja}
-	\caption{a) Mean radar rainfall (mm/day) b) Mean monthly maximum 4h rain total (mm/h). Means are for summers (June-July-August) from 2008 to 2023 inclusive. Circles are  60 and 120 km from radar stations (Green hexagons). Pale blue circle shows point ("Carmont drain") where rain occurred, purple lines show railways and grey lines local authority boundaries. }
-\end{figure}
+
 \begin{figure}[tp]
 	\centering
 	\includegraphics[width=0.5\linewidth]{radar_carmont.png}
 	\caption{a) Radar rainfall rates at Carmont (mm/h) for 1km/5 min (red) and 5km/15 min; b) Hourly mean rates for 1km (red) and 5km (blue) radar data. Data is shown from 2020-08-12T02:45 to 10:15. }
-	\label{fig:mean_rain}
+	\label{fig:aug2020_rain}
 \end{figure}
 
 \begin{figure}[tp]
 	
 	\centering
 	\includegraphics[width=\linewidth]{carmont_geog_group.png}
-	\caption{a) Map of Carmont Accident site -- brickred star shows where train derailed. Main features are contour lines every 10 meters, railway (black line ) and woods (green) (Map crown copyright Ordinance Survey). b) Topography of North East Scotland. Inset shows Great Britain and Ireland. Colour scale on bar to right. Circles are  60 and 120 km from radar stations.  c) Maximum 4 hour accumulation  for JJA 2020. d) Event of 2020-8-21.  Black box in c \& d shows 150x150 km region of interest. Scale bars are shown in a and b.   }
+	\caption{a) Map of Carmont Accident site -- brickred star shows where train derailed. Main features are contour lines every 10 meters, railway (black line ) and woods (green) (Map crown copyright Ordinance Survey). b) Topography of North East Scotland (at 1km resolution). Inset shows Great Britain and Ireland. Colour scale on bar to right. Circles are  60 and 120 km from radar stations.  c) Maximum 4 hour accumulation  for JJA 2020. d) Event of 2020-8-21.  Black box in c \& d shows 150x150 km region of interest. Scale bars are shown in a and b.   }
 	\label{fig:carmont_geog_group}
 \end{figure}
 
 
-
+\begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{radar_jja}
+	\caption{a) Mean radar rainfall (mm/day) b) Mean monthly maximum 4h rain total (mm/h). Means are for summers (June-July-August) from 2008 to 2023 inclusive. Circles are  60 and 120 km from radar stations (Green hexagons). Pale blue circle shows point ("Carmont drain") where rain occurred, purple lines show railways and grey lines local authority boundaries. }
+	\label{fig:mean_rain}
+\end{figure}
 
 
 \begin{figure}[tp]
@@ -184,13 +185,33 @@ I am grateful to the Met Office for funding accommodation and subsistence costs 
 	\label{fig:cet_scatter}
 \end{figure}
 
+\begin{figure}
+	\centering
+	\includegraphics[width=1\linewidth]{cpm_intensity_delta}
+	\caption{One in a hundred year CPM maximum rainfall accumulation for 1 and 4 hour rainfall (a \& c) and percentage sensitivity to 1 degree CET increase. Dashed lines shows intensity increase of 5.4\%/degree CET corresponding to CC. Other elements as Figure~\ref{fig:mean_rain}.  }
+	\label{fig:map_intensity}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{radar_return_prds}
+	\caption{Estimated return values for  JJA maximum accumulated radar rainfall. Shown are Rx1h (a) and Rx4h (b) for 1km  (black),  5km (green), 1km-c4 (blue) and 1km-c5 (pale blue) radar rain. Symbols in left hand of sub plots show radar rain at nearest gridpoint to Carmont drain. Horizontal error bars show return periods range for those values. }
+	\label{fig:radar_rtn_prd}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{map_return_prds}
+	\caption{Best estimate Return periods for Carmont region. Plots a \& b show Rx1h while plots c \& d show Rx1h. Color bar at bottom refers to all plots. Other elements as Figure~\ref{fig:mean_rain}. } 
+	\label{fig:map_rtn_prd}
+\end{figure}
 
 
 \begin{figure}
 	\centering
 	\includegraphics[width=\linewidth]{kde_smooth_events}
 	\caption{Kernel Density Estimates from  CPM (orange), 5km radar (green), 1km-c4 (blue) and 1km-c5 (pale blue) events at 50\% quantile for 2008-2022 period. Shown are day-hour (a \& e),$\log_{10}$ of event area (b \& f),  topographic height (c \& g ) and maximum Rainfall accumulation (d \& h). Top row shows Rx1h while bottom row shows Rx4h values.}
-	\end{figure}
+\end{figure}
 
 
 
@@ -201,17 +222,12 @@ I am grateful to the Met Office for funding accommodation and subsistence costs 
 %    	\includegraphics[width=\linewidth]{fit_ratio.png}
 %    	\caption{a) \% change per degree CET change in location parameter between 2061-2080  and 1981-2000 for all events in the filtered UKCP ensemble. b) as a) but for scale parameter. c) Shape parameter for 1981-2000 (blue) and 2061-2018 (orange) data. All results are shown as a function of event quantile and errors bars are $\pm2\sigma$. Dotted lines in a) \& b) show mean value of the parameter. Dashed horizontal line in c shows shape value of 0.}
 %    \end{figure}
-\begin{figure}
-\centering
-\includegraphics[width=1\linewidth]{cpm_intensity_delta}
-\caption{One in a hundred year CPM maximum rainfall accumulation for 1 and 4 hour rainfall (a \& c) and percentage sensitivity to 1 degree CET increase. Dashed lines shows intensity increase of 5.5\%/degree CET corresponding to CC. Other elements as Figure~\ref{fig:carmont_geog_group}  }
-\label{fig:map_intensity}
-\end{figure}
+
 
 \begin{figure}
 	\centering
 	\includegraphics[width=1\linewidth]{intens_prob_ratios}
-	\caption{a: Changes in filtered CPM Rx1h intensity (\% of PI values) as function of return period. b) Probability ratio (\%) relative to Pre-industrial as a function of summer seasonal Rx1h. Shown are changes for +2K world (red), 2012-2021 (dark blue) and 1980-1989 (pale blue). Also shown are 5-95\% range from regional fits (shaded regions) and median regional intensity change and probability ratios (dot-dashed lines).}
+	\caption{a \& d:Probability ratio, relative to Pre-industrial, at Carmont drain as function of accumulated rainfall for 1km radar rainfall. b \& e) As a but for 5km radar rainfall. c \& f: Intensity ratio at Carmont drain  as function of  return period. Also shown are median (horizontal dashed line) and 5-95\% uncertainties (vertical shading) for changes expected from Clausius-Clapyron. Upper plots (a-c) show Rx1h accumulations while lower plots (d-f) show Rx4h accumulations. All plots show changes for +2C world (red), 2012-2021 (dark blue) and 1980-1989 (pale blue). Solid lines are median changes with 5-95\% uncertainty range the shaded regions.}
 	\label{fig:int_pr}
 \end{figure}
 

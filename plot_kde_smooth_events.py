@@ -64,8 +64,9 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
                         [24,20,20,20], # bin sizes
                         ['Hour',r'$\log_{10}$ Area','Height (m)','Accum precip (mm)']     ):
 
-        for ds,color,name in zip([quant,radar_quant,radar_c4_quant,radar_c5_quant],
-                                 ['orange','green','blue','cornflowerblue'],['CPM','RADAR 5km','RADAR 1km-c4','RADAR 1km-c5']):
+        for ds,name in zip([quant,radar_quant,radar_c4_quant,radar_c5_quant],
+                                 ['CPM','RADAR 5km','RADAR 1km-c4','RADAR 1km-c5']):
+            color = CPMlib.radar_cols.get(name.split(" ")[-1].replace('-','_'),'orange')
             sns.kdeplot(ds[var],ax=ax,label=f'{name} ',
                         color=color,linewidth=2,cut=0)
 

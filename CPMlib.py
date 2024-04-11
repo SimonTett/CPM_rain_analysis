@@ -7,6 +7,7 @@ import pathlib
 import functools
 import cartopy.crs as ccrs
 import CPM_rainlib
+import scipy.stats
 
 CPM_coords = ['grid_longitude', 'grid_latitude']
 CPM_dir = CPM_rainlib.dataDir / "CPM_scotland"  # processed CPM data
@@ -18,10 +19,12 @@ time_unit = 'hours since 1980-01-01'
 projRot = ccrs.RotatedPole(pole_longitude=177.5, pole_latitude=37.5)
 projOSGB = ccrs.OSGB()
 ll = ccrs.PlateCarree()
-cc_scale = 5.4
+cc_scale = 5.4 # computed in plot_scatter
 cc_uncert = 0.6
+cc_dist = scipy.stats.norm(loc=cc_scale, scale=cc_uncert)
+# colours for different radars.
+radar_cols={'1km':'black','5km':'green','1km_c4':'blue','1km_c5':'cornflowerblue'}
 # compute various carmont co-ords
-
 carmont_long_lat= (-2.3197,56.95248) # location of derailment from openstreetmap.
 carmont_drain_long_lat = (-2.3266852553075017,56.951548724582096) # "field" where rainfell
 carmont = dict(zip(CPM_coords, projRot.transform_point(*carmont_long_lat, ll)))

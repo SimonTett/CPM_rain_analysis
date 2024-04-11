@@ -94,7 +94,7 @@ for (axis_today, axis_delta),rolling in zip(axes, [1, 4]):
     kw_colorbar.update(label='% change')
     #i_percent.plot(ax=axis_delta, cmap=cmap, levels=ratio_levels, add_colorbar=False, alpha=0.4)
     i_percent.sel(rolling=rolling).plot(ax=axis_delta, cmap=cmap, levels=ratio_levels, cbar_kwargs=kw_colorbar)
-    i_percent.sel(rolling=rolling).squeeze(drop=True).plot.contour(ax=axis_delta, levels=[5.5], colors='black', linewidths=1,linestyles='dashed')
+    i_percent.sel(rolling=rolling).squeeze(drop=True).plot.contour(ax=axis_delta, levels=[CPMlib.cc_dist.mean()], colors='black', linewidths=1,linestyles='dashed')
     axis_today.set_title(f'Rx{rolling:d}h Total (2012-22)')
     axis_delta.set_title(f'Rx{rolling:d}h Total $\Delta$ %/K')
 carmont_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
