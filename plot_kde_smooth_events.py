@@ -16,8 +16,9 @@ import commonLib
 import cftime
 my_logger = CPM_rainlib.logger
 commonLib.init_log(my_logger,level='DEBUG')
-filter = True
+
 dataset = xarray.open_dataset(CPMlib.CPM_filt_dir/"CPM_filter_all_events.nc",chunks={}) # load the processed events
+raw_dataset = xarray.open_dataset(CPMlib.CPM_dir/"CPM_all_events.nc",chunks={}) # load the processed events
 radar_dataset = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_5km.nc") # load the processed radar
 radar_dataset_c4 = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_1km_c4.nc") # load the processed radar
 radar_dataset_c5 = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_1km_c5.nc") # load the processed radar
@@ -32,6 +33,8 @@ plot_col_titles=True
 for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
 
     quant = dataset.sel(quantv=q,rolling=rolling).stack(idx=['EventTime','ensemble_member']).dropna('idx') # select the quantile and rolling period
+    raw_quant = raw_dataset.sel(quantv=q, rolling=rolling).stack(idx=['EventTime', 'ensemble_member']).dropna('idx'
+                                                                                                              )  # select the quantile and rolling period
     my_logger.debug(f"Loaded model data for quantile {q} rolling {rolling}")
     #fit = sm.OLS(quant['CET'].values, sm.add_constant(np.log10(quant['count_cells'].values))).fit()
     #print(rolling,fit.summary())
@@ -40,13 +43,17 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
     time = quant.t.load()
     L= ((cftime.datetime(2008,1,1,calendar='360_day') <= time) &
         (time <= cftime.datetime(2023,12,30,calendar='360_day')) )
-    quant = quant.where(L,drop=True).dropna('idx').load()
+    quant= quant.where(L,drop=True).dropna('idx').load()
+    time = raw_quant.t.load()
+    L= ((cftime.datetime(2008,1,1,calendar='360_day') <= time) &
+        (time <= cftime.datetime(2023,12,30,calendar='360_day')) )
+    raw_quant = raw_quant.where(L, drop=True).dropna('idx').load()
     my_logger.debug(f"Extracted to 2008-2023")
     radar_quant = radar_dataset.sel(quantv=q,rolling=rolling).rename(EventTime='idx').dropna('idx')
     radar_c4_quant = radar_dataset_c4.sel(quantv=q,rolling=rolling).rename(EventTime='idx').dropna('idx')
     radar_c5_quant = radar_dataset_c5.sel(quantv=q,rolling=rolling).rename(EventTime='idx').dropna('idx')
     my_logger.debug(f"Loaded radar")
-    for ds,area in zip([radar_quant,radar_c4_quant,radar_c5_quant,quant],[25.0,16.0,25,4.4*4.4]):
+    for ds,area in zip([radar_quant, radar_c4_quant, radar_c5_quant, quant, raw_quant], [25.0, 16.0, 25, 4.4 * 4.4, 4.4 * 4.4]):
         ds['log10 area'] = np.log10(ds.count_cells*area)
         ds['Hour'] = ds.t.dt.hour
         ds['Accum'] = ds.max_precip*rolling
@@ -64,9 +71,11 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
                         [24,20,20,20], # bin sizes
                         ['Hour',r'$\log_{10}$ Area','Height (m)','Accum precip (mm)']     ):
 
-        for ds,name in zip([quant,radar_quant,radar_c4_quant,radar_c5_quant],
-                                 ['CPM','RADAR 5km','RADAR 1km-c4','RADAR 1km-c5']):
+        for ds,name in zip([quant, raw_quant, radar_quant, radar_c4_quant, radar_c5_quant],
+                                 ['CPM','CPM-Raw','5km','1km-c4','1km-c5']):
             color = CPMlib.radar_cols.get(name.split(" ")[-1].replace('-','_'),'orange')
+            if 'Raw' in name:
+               color='brown'
             sns.kdeplot(ds[var],ax=ax,label=f'{name} ',
                         color=color,linewidth=2,cut=0)
 

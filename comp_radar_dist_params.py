@@ -9,12 +9,10 @@ import xarray
 import CPM_rainlib
 import commonLib
 from R_python import gev_r
-import matplotlib.pyplot as plt
-import numpy as np
+
 import numpy.random
 import CPMlib
-import scipy.stats
-import cartopy.crs as ccrs
+
 my_logger=CPM_rainlib.logger
 commonLib.init_log(my_logger)
 use_cache = False # if True  just read in the saved fits (if they exist) otherwise generate the fits and save them

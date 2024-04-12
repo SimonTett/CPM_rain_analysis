@@ -1,11 +1,6 @@
 # plot scatters between CET and Regional Temp and CET & regional SVP (Pa)
-import logging
-import math
+
 import pathlib
-import typing
-
-import scipy.stats
-
 import CPM_rainlib
 import CPMlib
 import xarray

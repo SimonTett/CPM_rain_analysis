@@ -10,10 +10,15 @@ import CPM_rainlib
 import scipy.stats
 
 CPM_coords = ['grid_longitude', 'grid_latitude']
+
 CPM_dir = CPM_rainlib.dataDir / "CPM_scotland"  # processed CPM data
 CPM_filt_dir = CPM_rainlib.dataDir / "CPM_scotland_filter"  # processed CPM data
+table_dir = pathlib.Path('paper/tables')
 radar_dir = CPM_rainlib.dataDir / "radar"  # radar data
 fit_dir = CPM_rainlib.outdir / 'fits'  # where the fits go
+# make all the directories
+for direct in [CPM_dir, CPM_filt_dir,table_dir,radar_dir,fit_dir]:
+    direct.mkdir(exist_ok=True, parents=True)
 fit_dir.mkdir(exist_ok=True, parents=True)
 time_unit = 'hours since 1980-01-01'
 projRot = ccrs.RotatedPole(pole_longitude=177.5, pole_latitude=37.5)
@@ -44,7 +49,7 @@ for v in carmont_rgn.values():
     carmont_rgn_extent.extend([v.start,v.stop])
 kw_colorbar = dict(orientation='horizontal',fraction=0.1,aspect=40,pad=0.05,extend='both')
 
-today_sel=dict(time=slice('2012', '2021')) # so "today" is common throughout!
+today_sel=dict(time=slice('2008', '2023')) # so "today" is common throughout!
 PI_sel=dict(time=slice('1851', '1900')) # so "PI" is common throughout!
 
 def discretise(time: xarray.DataArray) -> xarray.DataArray:

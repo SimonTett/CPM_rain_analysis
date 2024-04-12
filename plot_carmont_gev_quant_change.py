@@ -52,7 +52,7 @@ def comp_ratio_gev(
     return xarray.merge([ratios.rename('Quant_ratio'), ratios_spatial.rename('Mean_ratio')])
 
 
-use_cache = False # if True load data from Cache
+use_cache = True # if True load data from Cache
 nsamp = 100
 
 logger = CPM_rainlib.logger
@@ -110,11 +110,12 @@ else:  # read in data and process.
     sample_ratio_nofilt = xarray.concat(samp, dim='sample')
     sample_ratio_nofilt.to_netcdf(nofilt_rand_carmont_file)
 
-cc = 5.5  # CC is roughly 5.5%/K CET
+cc = CPMlib.cc_dist.mean()  # CC is roughly 5.5%/K CET
 ## now plot 1, 2 % 4 hr param changes
-fig, axs = plt.subplots(1, 3, figsize=(8, 5), clear=True, num='carmot_gev_params_sens', layout='constrained',
+fig, axs = plt.subplots(1, 3, figsize=(8, 3.25), clear=True, num='carmont_gev_quant_change', layout='constrained',
                         sharey=True, sharex=True
                         )
+label   = commonLib.plotLabel()
 delta_rand_quand_filt = (sample_ratio_filt.Quant_ratio - sample_ratio_filt.Quant_ratio.isel(quantile=5))
 mn_delta = delta_rand_quand_filt.mean('sample')
 std_delta = delta_rand_quand_filt.std('sample')
@@ -161,6 +162,7 @@ for roll, ax in zip([1, 2, 4], axs):
     ax.axhline(cc, color='k', linestyle='--')
     ax.axvline(cc, color='k', linestyle='--')
     ax.set_ylim(0., 14)
+    label.plot(ax)
 fig.show()
 fig.colorbar(cm, ax=axs, label='quantile', **CPMlib.kw_colorbar)
 commonLib.saveFig(fig)

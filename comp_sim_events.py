@@ -19,7 +19,7 @@ cpm_cet_jja = cpm_cet.where(cpm_cet.time.dt.season=='JJA',drop=True) # and pull 
 # Load up CPM extreme rainfall data, select to region of interest and mask
 rgn_all=dict(longitude=slice(357.5,361.0),latitude=slice(1.5,7.5)) # region for which extraction was done.
 rgn = CPMlib.carmont_rgn
-filtered=True
+filtered=False
 if filtered:
     paths = sorted(CPMlib.CPM_filt_dir.glob('CPM*/*11_30_23.nc'))
     outpath = CPMlib.CPM_filt_dir/"CPM_filter_all_events.nc"
