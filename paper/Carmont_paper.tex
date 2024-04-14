@@ -10,6 +10,7 @@
 \usepackage[style=authoryear,backend=biber]{biblatex} %Imports biblatex package
 \addbibresource{ed_extra.bib} %Import the bibliography file
 \addbibresource{database.bib}
+\addbibresource{ref.bib}
 \usepackage[pdftex]{graphicx} % Required for including pictures
 \usepackage[pdftex,linkcolor=black,pdfborder={0 0 0}]{hyperref} % Format links for pdf
 \usepackage{calc} % To reset the counter in the document after title page
@@ -49,13 +50,90 @@ pdfauthor = {}
 
 \section{Introduction}
 
-On August 12th 2020 a passenger train running from Aberdeen to Glasgow derailed at Carmont near Stonehaven. The train was lightly loaded due to COVID restrictions but three people died and the remaining six people on the train  were injured. The proximate cause of the derailment was gravel being washed out of a drain \parencite{carmontReport2024}. Radar estimates of  rain at 1km x 1km resolution was 51.5 mm of rain falling between 05:50 to 09:00 which was estimated at around a 1-in-a-100 year event. The drain should have been able to deal with that volume of water but because the drain had not been built to design requirements gravel and other debris was washed out of it and onto the tracks. 
+On August 12th 2020 a passenger train running from Aberdeen to Glasgow derailed at Carmont near Stonehaven. The train was lightly loaded due to COVID restrictions but three people died and the remaining six people on the train  were injured. The proximate cause of the derailment was gravel being washed out of a drain \parencite{carmontReport2024}. Radar estimates of  rain at 1km x 1km resolution was 51.5 mm of rain falling between 05:50 to 09:00 which was estimated at around a 1-in-a-100 year event. The drain should have been able to deal with that volume of water but because the drain had not been built to design requirements gravel and other debris was washed out of it and onto the tracks. This in turn caused the derailment.
 
-Given the small size of the drainage area, then how climate change might have changed the risk of hourly extreme rainfall is a relevant scientific question. My goal was to apply a similar methodology to that of  \textcite{Tett2023} which used a combination of radar rainfall and simulated data from the Convective Permitting Models (CPMs) ran for the UKCP18 project\parencite{ukcp2019cpm} to estimate return periods and change in return period. The aim of my work at the Met Office was to work with colleagues there, refine my definition of events and carry out some evaluation of the CPM ensemble through comparison of it with radar data. While I was visiting the Met Office a bug with the simulations had been discovered and an empirical technique to filter out the impact of that error been developed. Part of this report will examine the effect of filtering on the response of extreme precipitation to warming. 
+Theory\parencite{allen02insight} suggests that extreme rainfall occurs when the entire column of atmospheric water precipitates. This, in turn,  suggests that extreme precipitation increases fractionally at the same rate as saturated humidity, or for fixed atmospheric pressure, saturated vapour pressure (Clausius-Clapyron; CC). This is about 7\%/K. However, some studies suggest that sub-daily extreme rainfall  could increase  at rates  up to twice CC\parencite{Kendon_Fischer_Short_2023}. WHAT OTHER EVENT ATTRIBUTION OF SUB-DAILY DATA BEEN DONE.
 
-Theory\parencite{allen02insight} suggests that extreme rainfall occurs when the entire column of atmospheric water precipitates. This, in turn,  suggests that extreme precipitation increases fractionally at the same rate as saturated humidity, or for fixed atmospheric pressure, saturated vapour pressure. This is about 7\%/K. However, some studies suggest that sub-daily extreme rainfall  will increase  ar rates faster than this. 
+ The goal of this study is to develop the methodology of  \textcite{tett2023edinburgh}  to estimate extreme rainfall return periods for the current climate and change in return period, and rain fall intensity, due to climate change since the late 19th century. This allows us to estimate how much climate change has changed the probability of the Carmont rainfall.
+ 
+   As part of the UKCP18 project\parencite{ukcp2019cpm} a 12 member ensemble from 1980 to 2080, at a resolution of 2.2 km, was ran.  This ensemble, unfortunately, has a software error which occurs when raining systems are advected exactly along the model grid.  Data, after filtering out the impact of this error, are used to estimate how extreme rainfall
 
 
+
+
+\section{Rail Accident Inquiry Findings}\label{sec:stonederail}
+In the morning of the 12th of August 2020,
+after several hours of extreme rainfall,
+the 06:38 service from Aberdeen to Glasgow travelled past Carmont,
+between Stonehaven and Montrose.
+Due to a landslip reported ahead,
+the train reverses to return to Stonehaven.
+On this journey,
+the train impacts debris washed out from a drain.
+The train derailed,
+resulting in three fatalities,
+with the other six passengers being injured.
+
+As per the Rail Accident Investigation Branch report on the event~\parencite{RAIB_2022},
+the extreme rainfall caused flows of surface water that the drain was unable to safely manage.
+The RAIB report was created with the intention of preventing railway accidents by finding the causal
+factors contributing to the Stonehaven Derailment that are under the control of the railway
+and those associated with it.
+Therefore,
+the report finds that the causal factors are that the drain was not designed to specification
+and that railway operations did not fully account for the risks posed by the extreme rainfall.
+However,
+as the crash was caused by an extreme weather event,
+there is a potential additional human-driven causal factor, Anthropogenic Climate Change.
+
+Due to the COVID-19 pandemic,
+the train had an extremely low loading of only nine people.
+Had this not been the case,
+it has been estimated (\cite{RAIB_2022} para. 461) that between 25 and 50 passengers would have been on the train,
+which had a capacity of around 300.
+With this larger passenger loading,
+the derailment would have resulted in a far higher number of casualties,
+although the potential number of casualties cannot be assumed due to the variability of casualty risk throughout the train.
+
+A report released by the UK Government in the aftermath of the derailment~\cite{NR_DfT_2021}
+was made to discuss the resilience of the UK's rail infrastructure.
+This report notes that the signal of climate change is becoming more significant,
+and dedicates a section to the impacts climate change will have on rail infrastructure.
+It is with this consideration that the attribution analysis for the Stonehaven Event is performed here.
+
+This analysis will proceed by considering the rainfall as the cause of the event.
+As the modelling necessary for either the landslip or the drain debris washout is beyond the scope of this report,
+the intensity of the extreme rainfall itself will be used to define the event.
+
+\section{Rainfall in a warmer world}\label{sec:warmerrainfall}
+
+It is reasonable to expect that climate change had an impact on the extreme rainfall on 12 August 2020.
+One example of this in the UK is the estimated 40\% increase
+in the likelihood of one-day events as intense as Storm Desmond~\cite{Desmond_2015}.
+Another event in Scotland was the 2021 Edinburgh cloudburst~\cite{tett2023edinburgh},
+which found an increase in the likelihood of around 30\%,
+increasing to approximately 70\% after 2 Kelvin of warming,
+with the event spanning a 15-minute time period.
+As the Stonehaven Event is in a similar climate to these two events,
+with a time period in between,
+sub-daily but not sub-hourly,
+it would not be unreasonable to find similar results.
+
+A warmer climate,
+through thermodynamic effects captured by the Clausius-Clapeyron relation,
+gives the air a greater saturation humidity,
+expected to scale by approximately 7\% per degree of warming~\cite{Fowler_2021}.
+As the air is holding more water,
+the intensity of precipitation would be expected to scale similarly.
+
+Working Group 1 of the IPCC~\cite{IPCC_2021} states that sub-daily precipitation intensities,
+such as that of the Stonehaven Event,
+would be expected to scale between one and two times that expected by Clausius-Clapeyron scaling.
+This is as other properties of the event may also change in a warmer climate.
+For example,
+if storms move slower in a warmer climate,
+the rainfall in locations under the storm would scale more greatly than saturation humidity,
+as the time that the location is exposed to the storm is lengthened.
 
 \section{Methods}
 In this section we describe the methods used in the analysis. They are split into processing of the Convective Permitting Model to remove unphysical rain events  and computation of maxima, how the radar is analysed, definition of an event and, finally, how probabilities of exceeding thresholds are computed. 
@@ -82,7 +160,7 @@ Figure~\ref{fig:example_event} shows maximum hourly precipitation for summer 202
 
 \subsection{Statistical Models}
 
-I fit several different statistical models to the simulated  extreme event data. Each event quantile has a  statistical model fit independent of any other quantile value and I use the Akaike Information Criteria (AIC) to decide on the best model\parencite{akaike74aic}. These models were fit using the extRemes R library\parencite{gilleland2016extremes} giving, with uncertainties, the parameters for a Generalised Extreme Value (GEV) distribution.   This library allows covariates to be included in the fit. I assumed a fixed shape with the location and scale parameters changing linearly with covariates selected from  Central England Temperature (CET), CET$^2$,  $\log_{10}$ of the event area, and the event area.  Use of CET was based on my earlier work\parencite{Tett2023} and, for the ensemble, CET correlates well with regional saturated vapour pressure~(Fig.~\ref{fig:cet_scatter}). 
+I fit several different statistical models to the simulated  extreme event data. Each event quantile has a  statistical model fit independent of any other quantile value and I use the Akaike Information Criteria (AIC) to decide on the best model\parencite{akaike74aic}. These models were fit using the extRemes R library\parencite{gilleland2016extremes} giving, with uncertainties, the parameters for a Generalised Extreme Value (GEV) distribution.   This library allows covariates to be included in the fit. I assumed a fixed shape with the location and scale parameters changing linearly with covariates selected from  Central England Temperature (CET), CET$^2$,  $\log_{10}$ of the event area, and the event area.  Use of CET was based on my earlier work\parencite{tett2023edinburgh} and, for the ensemble, CET correlates well with regional saturated vapour pressure~(Fig.~\ref{fig:cet_scatter}). 
 
  
  Use of CET$^2$ allows non-linear impacts to be examined while use of  event area or $\log_{10}$ event area is plausible as one would expect the large quantiles to be larger for big events - though how much depends on the correlation scale between extreme rainfall within an event. 

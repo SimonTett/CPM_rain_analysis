@@ -25,8 +25,14 @@ fig, axs = plt.subplots(nrows=2, ncols=1, figsize=(5, 3), num='radar_carmont', c
 
 fig.get_layout_engine().execute(fig)
 for radar, label, color in zip([radar_1km, radar_5km], ['1km/5min', '5km/15min'], ['red', 'blue']):
+    if label.startswith('1km'):
+        scale=  12.
+    else:
+        scale = 4.
     r = radar.sel(time=slice('2020-08-12T02:45', '2020-08-12T10:15'))
     r.plot(ax=axs[0], drawstyle='steps-mid', label=label, color=color)
+    (r.cumsum('time')/scale).plot(ax=axs[0], drawstyle='steps-mid',
+                                   color=color, linestyle='dotted',label=None)
     r.resample(time='1h').mean().plot(ax=axs[1], drawstyle='steps-mid', label=label, color=color)
 
 axs[0].legend()
