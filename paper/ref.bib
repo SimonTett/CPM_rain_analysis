@@ -1,3 +1,4 @@
+% Encoding: UTF-8
 %% references from Chris Long's MSc thesis
 @article{van_Oldenborgh_et_al_2021, title={Pathways and pitfalls in Extreme event attribution}, volume={166}, DOI={10.1007/s10584-021-03071-7}, number={1–2}, journal={Climatic Change}, author={van Oldenborgh, G. J. and van der Wiel, K. and Kew, S. and Philip, S. and Otto, F. and Vautard, R. and King, A. and Lott, F. and Arrighi, J. and Singh, R. and van Aalst, M.}, year={2021}}
 
@@ -19,12 +20,6 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 @article{Kendon_Fischer_Short_2023, title={Variability conceals emerging trend in 100yr projections of UK local hourly rainfall extremes}, volume={14}, DOI={10.1038/s41467-023-36499-9}, number={1}, journal={Nature Communications}, author={Kendon, E. J. and Fischer, E. M. and Short, C. J.}, year={2023}}
 
 @article{Allen_2003, title={Liability for climate change}, volume={421}, DOI={10.1038/421891a}, number={6926}, journal={Nature}, author={Allen, M.}, year={2003}, pages={891–892}}
-
-@report{RAIB_2022,
-     author = {Rail Accident Investigation Branch, Department for Transport},
-     title = {Report 02/2022: Derailment of a passenger train at Carmont},
-     year = {2022},
-}
 
 @misc{Me_Code, title={{https://github.com/chrisroblong/StonehavenRain Software for MSc Project on extreme rainfall event of August 12 2020}}, url={https://github.com/chrisroblong/StonehavenRain}, publisher={GitHub}, author={Long, C.}, year={2023}, month={Aug}}
 
@@ -112,17 +107,6 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 
 @article{Alduchov_Eskridge_1996, title={Improved Magnus form approximation of saturation vapor pressure}, volume={35}, DOI={10.1175/1520-0450(1996)035&lt;0601:imfaos&gt;2.0.co;2}, number={4}, journal={Journal of Applied Meteorology}, author={Alduchov, O. A. and Eskridge, R. E.}, year={1996}, pages={601–609}}
 
-@article{AIC_1974,
-  title={A new look at the statistical model identification},
-  author={Akaike, Hirotugu},
-  journal={IEEE transactions on automatic control},
-  volume={19},
-  number={6},
-  pages={716--723},
-  year={1974},
-  publisher={{IEEE}}
-}
-
 @article{AIC_Info,
   title={Multimodel inference: understanding AIC and BIC in model selection},
   author={Burnham, Kenneth P and Anderson, David R},
@@ -159,21 +143,23 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   publisher={SocArXiv}
 }
 
-@report{NR_DfT_2021,
-     author = {Network Rail and Department for Transport},
-     title = {Resilience of rail infrastructure: final report},
-     year = {2021},
+@Report{NR_DfT_2021,
+  author = {{Network Rail and Department for Transport}},
+  title  = {Resilience of rail infrastructure: final report},
+  year   = {2021},
+  url    = {https://www.networkrail.co.uk/who-we-are/our-approach-to-safety/stonehaven},
 }
 
-@article{Fowler_2021,
-  title={Anthropogenic intensification of short-duration rainfall extremes},
-  author={Fowler, H. J and Lenderink, G. and Prein, A. F. and Westra, S. and Allan, R. P and Ban, N. and Barbero, R. and Berg, P. and Blenkinsop, S. and Do, H. X. and others},
-  journal={Nature Reviews Earth \& Environment},
-  volume={2},
-  number={2},
-  pages={107--122},
-  year={2021},
-  publisher={Nature Publishing Group UK London}
+@Article{Fowler_2021,
+  author    = {Fowler, H. J and Lenderink, G. and Prein, A. F. and Westra, S. and Allan, R. P and Ban, N. and Barbero, R. and Berg, P. and Blenkinsop, S. and Do, H. X. and others},
+  title     = {Anthropogenic intensification of short-duration rainfall extremes},
+  journal   = {Nature Reviews Earth \& Environment},
+  year      = {2021},
+  volume    = {2},
+  number    = {2},
+  pages     = {107--122},
+  doi       = {10.1038/s43017-020-00128-6},
+  publisher = {Nature Publishing Group UK London},
 }
 
 @article{Desmond_2015,
@@ -209,17 +195,19 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 }
 
 @Report{SEPA2020report_floods,
-  date        = {2020},
-  institution = {SEPA},
+  author      = {SEPA},
   title       = {The Flash Floods of 11 and 12 August 2020 in Central and Eastern Scotland},
+  institution = {Scottish Enviornmental Protection Agency},
+  date        = {2020},
   url         = {https://www.sepa.org.uk/media/536333/the-flash-floods-of-11-and-12-august-2020.pdf},
 }
 
-@Report{Kendo2020thunderstrorms_report,
-  author      = {Mike Kendon},
-  date        = {2020-09-10},
-  institution = {Met Office National Climate Information Centre},
+@Report{Kendon2020thunderstrorms_report,
+  author      = {Kendon, Mike},
   title       = {Thunderstorms north-east Scotland 11-12 August 2020},
+  institution = {Met Office National Climate Information Centre},
+  year        = {2020},
+  date        = {2020-09-10},
   url         = {https://www.metoffice.gov.uk/binaries/content/assets/metofficegovuk/pdf/weather/learn-about/uk-past-events/interesting/2020/2020_07_august_rain.pdf},
 }
 
@@ -273,17 +261,17 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   publisher    = {IOP Publishing},
 }
 
-@Article{zhang2024attrib_infroastrcture,
+@Article{zhang2024attrib_infrastrcture,
   author       = {Yating Zhang and Bilal M. Ayyub and Juan F. Fung and Zachary M. Labe},
-  date         = {2024},
-  journaltitle = {Resilient Cities and Structures},
   title        = {Incorporating extreme event attribution into climate change adaptation for civil infrastructure: Methods, benefits, and research needs},
-  doi          = {https://doi.org/10.1016/j.rcns.2024.03.002},
-  issn         = {2772-7416},
+  journaltitle = {Resilient Cities and Structures},
+  date         = {2024},
+  volume       = {3},
   number       = {1},
   pages        = {103-113},
+  issn         = {2772-7416},
+  doi          = {https://doi.org/10.1016/j.rcns.2024.03.002},
   url          = {https://www.sciencedirect.com/science/article/pii/S277274162400005X},
-  volume       = {3},
   abstract     = {In the last decade, the detection and attribution science that links climate change to extreme weather and climate events has emerged as a growing field of research with an increasing body of literature. This paper overviews the methods for extreme event attribution (EEA) and discusses the new insights that EEA provides for infrastructure adaptation. We found that EEA can inform stakeholders about current climate risk, support vulnerability-based and hazard-based adaptations, assist in the development of cost-effective adaptation strategies, and enhance justice and equity in the allocation of adaptation resources. As engineering practice shifts from a retrospective approach to a proactive, forward-looking risk management strategy, EEA can be used together with climate projections to enhance the comprehensiveness of decision making, including planning and preparing for unprecedented extreme events. Additionally, attribution assessment can be more useful for adaptation planning when the exposure and vulnerability of communities to past events are analyzed, and future changes in the probability of extreme events are evaluated. Given large uncertainties inherent in event attribution and climate projections, future research should examine the sensitivity of engineering design to climate model uncertainties, and adapt engineering practice, including building codes, to uncertain future conditions. While this study focuses on adaptation planning, EEA can also be a useful tool for informing and enhancing decisions related to climate mitigation.},
   keywords     = {Climate change, Extreme weather and climate events, Extreme event attribution, Infrastructure adaptation, Uncertainties},
 }
@@ -343,17 +331,16 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   publisher    = {Elsevier BV},
 }
 
- 
 @Article{akaike74aic,
-  author       = {Akaike, H.},
-  date         = {1974-12},
-  journaltitle = {IEEE Transactions on Automatic Control},
+  author       = {Akaike, Hirotugu},
   title        = {A new look at the statistical model identification},
-  doi          = {10.1109/tac.1974.1100705},
-  issn         = {0018-9286},
+  journaltitle = {IEEE Transactions on Automatic Control},
+  date         = {1974-12},
+  volume       = {19},
   number       = {6},
   pages        = {716--723},
-  volume       = {19},
+  issn         = {0018-9286},
+  doi          = {10.1109/tac.1974.1100705},
   publisher    = {Institute of Electrical and Electronics Engineers (IEEE)},
 }
 
@@ -365,9 +352,10 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 }
 
 @Misc{ukcp2019cpm,
-  date      = {2019},
-  title     = {UKCP18 Convection-Permitting Model Projections for the UK at 2.2km resolution. NERC EDS Centre for Environmental Data Analysis, date of citation},
-  url       = {https://catalogue.ceda.ac.uk/uuid/ad2ac0ddd3f34210b0d6e19bfc335539.},
+  author    = {{Met Office Hadley Centre}},
+  title     = {UKCP18 Convection-Permitting Model Projections for the UK at 2.2km resolution. NERC EDS Centre for Environmental Data Analysis},
+  year      = {2019},
+  url       = {http://catalogue.ceda.ac.uk/uuid/ad2ac0ddd3f34210b0d6e19bfc335539},
   publisher = {Met Office Hadley Centre},
 }
 

@@ -267,7 +267,7 @@ railways = cartopy.feature.ShapelyFeature(geoms, crs=cartopy.crs.OSGB(), linewid
                                           edgecolor='purple', linestyle='solid')
 
 
-def std_decorators(ax, showregions=True, radarNames=False, radar_col='orange', grid: bool = True,
+def std_decorators(ax, showregions=True, radarNames=False, radar_col='green', grid: bool = True,
                    show_railways: bool = False):
     """
     Add a bunch of stuff to an axis
@@ -292,7 +292,7 @@ def std_decorators(ax, showregions=True, radarNames=False, radar_col='orange', g
         for name, row in radar_stations.iterrows():
             ax.annotate(name, (row.Easting + 500, row.Northing + 500), transform=cartopy.crs.OSGB(approx=True),
                         annotation_clip=True,  # backgroundcolor='grey',alpha=0.5,
-                        fontsize='large', fontweight='bold')
+                         fontweight='bold',zorder=100)
 
     ax.add_feature(coastline)  # ax.add_feature(nations, edgecolor='black')
 

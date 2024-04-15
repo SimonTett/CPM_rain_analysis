@@ -134,6 +134,27 @@ if storms move slower in a warmer climate,
 the rainfall in locations under the storm would scale more greatly than saturation humidity,
 as the time that the location is exposed to the storm is lengthened.
 
+\section{Event}
+
+In this section we describe the rainfall event and its impact. We then use that to determine what the event is for subsequent analysis. Fig~\ref{fig:carmont_geog_group}(a) shows the topography and location of various places in North East Scotland with an inset map showing Great Britain and some for Ireland. The Railway from Aberdeen largely runs along the coast except for a deviation inland between Montrose and Stonehaven.  The dominant topographic feature are the Grampian Mountains which are an extensive area greater than 500m above sea-level. The area of interest has, from 2008, two radar stations with much of the region within 60km of one radar station and  all the region within 120km of a radar station and most within 120 km of two radar stations. 
+
+  The event starts in the evening of 2020-08-11 and ends the next day. The atmosphere  at 12:00 UTC on the 11th has high pressure over Great Britain with weak south westerly airflow over Scotland and a convergence line running from the Lake district (North West England) to the North of Scotland\parencite{pritchard2020weather}. By the 12th the convergence line has moved to the west into the North Sea though NE Scotland was still in a SW flow. 
+
+On  the evening of the 11th  a large thunderstorm initiated in the Scottish Borders and over the next few hours propagated Northwards eventually heading out to sea by early morning on the 12th\parencite{Kendon2020thunderstrorms_report}. On its way it caused extensive flooding and damage in the eastern part of the Central Belt of Scotland\parencite{SEPA2020report_floods} and in the town of Stonehaven largely due to surface water with a small contribution from the river Carron. \cite{SEPA2020report_floods} assessed the rainfall as  extreme and rare. Over the Leven hills in Fife the rainfall was sufficiently extreme to produce multiple land slides -- the first such event there since the early 20th century\parencite{Kirkbride2021}.  Stations at Aviemore and Dyce Airport\parencite{pritchard2020weather} reported monthly extremes of 9.6 and 26.8 mm though only Dyce reported an August rainfall larger than the 1991-2015 average. 
+
+
+
+\cite{carmontReport2024} (RAIB from hereon) reported that on the morning of the 12th, after some hours of extreme rainfall, the 06:38 south-bound service from Aberdeen to Glasgow travelled past Carmont, between Stonehaven and Montrose (para S1). Due to a landslip reported ahead, the train reversed to return to Stonehaven. On this journey, the train impacted debris washed out from a drain. The train derailed,resulting in three fatalities,with the other six passengers being injured (RAIB para S1).The train was travelling just below the normal line speed of 117 km/h (RAIB para S2). Extreme rainfall caused flows of surface water that the drain was unable to safely manage. This failure was because the drain was not designed to specification (RAIB paras S13-S16) and that railway operations did not fully account for the risks posed by the extreme rainfall (paras S29-S40). 1km Radar rainfall estimates for the Carmont Drain site are that 51.5 mm fell between 05:50 and about 09:00 with return periods of about 1 in a hundred years for a three hour accumulation (RAIB para S10.)
+
+Due to the COVID-19 pandemic, the train had an extremely low loading of only nine people compared to its capacity of 300. Under normal circumstances between 25 and 50 passengers would have been on the train. With this larger passenger loading, the derailment would have likely resulted in a far higher number of casualties and injuries (RAIB para S78). 
+
+The derailment occurred to the south west of where the railway crosses the Carron Water (RAIB para S1) with the train coming to a halt a few meters after this bridge (Fig.~\ref{fig:carmont_geog_group}(a)).  RAIB commissioned some detailed modelling of water flow into the drain concluding that  flows into the gully being drained occurred in about an hour (RAIB figure 43; para 104). 
+
+
+
+
+Radar rainfall maxima four hour accumulations (Rx4h) for JJA 2020 (Fig.~\ref{fig:carmon_gev_quant_change}(c)) show two small regions  where rainfall is greater than 50 mm. One in the SW of the domain and another along the railway line between Montrose and Stonehaven. (Fig.~\ref{fig:carmon_gev_quant_change}(d) shows that these two extrema occurred on the 12th. Looking at radar rainfall on the 12th at Carmont Drain (Fig.~\ref{fig:aug2020_rain}) shows that, for both the 1km and 5 km datasets, the rainfall fell over a period of about 4 hours. For the 1km rainfall half the accumulated rainfall fell in about an hour.  Resampling the data to hourly data we see that almost all the rain fell in three hours with a substantial contribution from the last hour.  Thus we consider both Rx1h and Rx4h from hereon. The drain for which gravel washout was the proximate cause of the derailment drains the hill to the west of the track (RAIB paras S1-S5)and so we focus subsequent analysis on that location (``Carmont Drain''). Though given our approach our results are not very sensitive to changes in the location of tens of km.  
+
 \section{Methods}
 In this section we describe the methods used in the analysis. They are split into processing of the Convective Permitting Model to remove unphysical rain events  and computation of maxima, how the radar is analysed, definition of an event and, finally, how probabilities of exceeding thresholds are computed. 
 
@@ -169,7 +190,7 @@ The simulated CET records show a range of different behaviours and biases (Fig.~
 
 
 \section{Results}
-
+Drain
 Table~\ref{tab:summary} summarizes various properties of the radar and CPM events for the Stonehaven region.  Both the number of events and the median event area are broadly comparable though the model has more events/year than the radar does.  However, the CPM has about 30\% too much extreme rain in the median quantile of events even after filtering precipitation. Examining  all seasonal extremes in the region the filtered model has about 25\% more rain than the radar data.  This might be because of problems in the model or in the calibration of the radar data. 
 
 To see how good the CPM is I compare the distributions of  day-hour, height and  $\log_{10}$ area of the event between the two sets of simulated data and the three radar datasets. For the hour and height I selected the 50\% quantile within the events. Though there are differences between model and radar datasets in broad terms model and radar agree. The main differences are that the simulated day-of-hour has smallest density around 06:00 while the radar data has a fairly flat probability during the late night/early morning. Filtering makes little difference to the day-hour and height distributions -- recall that each quantile has an associated position, height and date/time. Filtering reduces the frequency of about 20 km$^2$ (2x2 grid points) events but still above the density of 16 km$^2$ events (4x4 radar grid points). 
@@ -220,7 +241,9 @@ Author contributions.
 %		& & Median & Median & Median\\
 %		Source & Events/year & event area(km$^2$) & 50\% quantile event (mm/hr) & all data (mm/h)\\
 %		radar 5km & 23 & 125 & 7.0 & 6.8 \\
-%		radar 1km\_c5 & 21 & 125 & 6.8 & 6.5\\
+%		radar 1km\_c5 & 21 & 125 & 6.8 & \begin{figure}[tp]
+
+
 %		radar 1km\_c4 & 24 & 128 & 6.8 & 6.6\\ \hline
 %		Raw CPM & 27 & 130  & 9.5 & 8.7\\
 %		Filt CPM & 28 & 136 & 9.2 & 8.4\\
@@ -234,20 +257,23 @@ Author contributions.
 \input{tables/aic.tex}
 \input{tables/ks.tex}
 \pagebreak
-\begin{figure}[tp]
-	\centering
-	\includegraphics[width=0.5\linewidth]{radar_carmont.png}
-	\caption{a) Radar rainfall rates at Carmont (mm/h) for 1km/5 min (red) and 5km/15 min; b) Hourly mean rates for 1km (red) and 5km (blue) radar data. Data is shown from 2020-08-12T02:45 to 10:15. }
-	\label{fig:aug2020_rain}
-\end{figure}
 
 \begin{figure}[tp]
 	
 	\centering
 	\includegraphics[width=\linewidth]{carmont_geog_group.png}
-	\caption{a) Map of Carmont Accident site -- brickred star shows where train derailed. Main features are contour lines every 10 meters, railway (black line ) and woods (green) (Map crown copyright Ordinance Survey). b) Topography of North East Scotland (at 1km resolution). Inset shows Great Britain and Ireland. Colour scale on bar to right. Circles are  60 and 120 km from radar stations.  c) Maximum 4 hour accumulation  for JJA 2020. d) Event of 2020-8-21.  Black box in c \& d shows 150x150 km region of interest. Scale bars are shown in a and b.   }
+	\caption{a) Topography of North East Scotland (at 1km resolution). Also show, by their first two letters, are locations of Dyce, Aviemore, Aberdeen, Stonehaven and Montrose. Inset shows Great Britain and Ireland. Colour scale on bar to right. Circles are  60 and 120 km from radar stations (green hexagons with full names). b)  Map of Carmont Accident site -- brick red star shows where train derailed. Main features are contour lines every 10 meters, railway (black line) and woods (green) (Map crown copyright Ordinance Survey).  c) Maximum 4 hour radar rainfall accumulation  for JJA 2020. d) Event of 2020-8-21.  Black box in c \& d shows 150x150 km region of interest. Scale bars are shown in a and b. Location of Carmont drain shown in all plots as pale blue dot.  }
 	\label{fig:carmont_geog_group}
 \end{figure}
+
+\begin{figure}[tp]
+	\centering
+	\includegraphics[width=0.5\linewidth]{radar_carmont.png}
+	\caption{a) Radar rainfall rates at Carmont (mm/h) for 1km/5 min (red) and 5km/15 min. Dotted lines show accumulation reaching 51.5 and 44.9 mm for the 1km \& 5km data respectively. Circles show when 1/2 the total rain has fallen; b) Hourly mean rates for 1km (red) and 5km (blue) radar data. Data is shown from 2020-08-12T02:45 to 10:15 and ``Derail'' shows when the train derailed. }
+	\label{fig:aug2020_rain}
+\end{figure}
+
+
 
 
 \begin{figure}

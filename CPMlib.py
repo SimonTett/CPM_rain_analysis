@@ -17,40 +17,47 @@ table_dir = pathlib.Path('paper/tables')
 radar_dir = CPM_rainlib.dataDir / "radar"  # radar data
 fit_dir = CPM_rainlib.outdir / 'fits'  # where the fits go
 # make all the directories
-for direct in [CPM_dir, CPM_filt_dir,table_dir,radar_dir,fit_dir]:
+for direct in [CPM_dir, CPM_filt_dir, table_dir, radar_dir, fit_dir]:
     direct.mkdir(exist_ok=True, parents=True)
 fit_dir.mkdir(exist_ok=True, parents=True)
 time_unit = 'hours since 1980-01-01'
 projRot = ccrs.RotatedPole(pole_longitude=177.5, pole_latitude=37.5)
 projOSGB = ccrs.OSGB()
 ll = ccrs.PlateCarree()
-cc_scale = 5.4 # computed in plot_scatter
+cc_scale = 5.4  # computed in plot_scatter
 cc_uncert = 0.6
 cc_dist = scipy.stats.norm(loc=cc_scale, scale=cc_uncert)
 # colours for different radars.
-radar_cols={'1km':'black','5km':'green','1km_c4':'blue','1km_c5':'cornflowerblue'}
+radar_cols = {'1km': 'black', '5km': 'green', '1km_c4': 'blue', '1km_c5': 'cornflowerblue'}
 # compute various carmont co-ords
-carmont_long_lat= (-2.3197,56.95248) # location of derailment from openstreetmap.
-carmont_drain_long_lat = (-2.3266852553075017,56.951548724582096) # "field" where rainfell
+carmont_long_lat = (-2.3197, 56.95248)  # location of derailment from openstreetmap.
+carmont_drain_long_lat = (-2.3266852553075017, 56.951548724582096)  # "field" where rainfell
 carmont = dict(zip(CPM_coords, projRot.transform_point(*carmont_long_lat, ll)))
 carmont[CPM_coords[0]] += 360.
 
 carmont_OSGB = dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
-                        projOSGB.transform_point(*carmont_long_lat, ll)))
-carmont_drain_OSGB=dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
-                        projOSGB.transform_point(*carmont_drain_long_lat, ll)))
+                        projOSGB.transform_point(*carmont_long_lat, ll)
+                        )
+                    )
+carmont_drain_OSGB = dict(zip(["projection_x_coordinate", "projection_y_coordinate"],
+                              projOSGB.transform_point(*carmont_drain_long_lat, ll)
+                              )
+                          )
 carmont_drain = dict(zip(CPM_coords,
-                         projRot.transform_point(*carmont_drain_long_lat, ll)))
+                         projRot.transform_point(*carmont_drain_long_lat, ll)
+                         )
+                     )
 carmont_drain[CPM_coords[0]] += 360.
-carmont_rgn_OSGB= {k: slice(v - 75e3, v + 75e3) for k, v in carmont_drain_OSGB.items()}
-carmont_rgn= {k: slice(v - 0.75, v + 0.75) for k, v in carmont_drain.items()}
+carmont_rgn_OSGB = {k: slice(v - 75e3, v + 75e3) for k, v in carmont_drain_OSGB.items()}
+carmont_rgn = {k: slice(v - 0.75, v + 0.75) for k, v in carmont_drain.items()}
 carmont_rgn_extent = []
 for v in carmont_rgn.values():
-    carmont_rgn_extent.extend([v.start,v.stop])
-kw_colorbar = dict(orientation='horizontal',fraction=0.1,aspect=40,pad=0.05,extend='both')
+    carmont_rgn_extent.extend([v.start, v.stop])
+kw_colorbar = dict(orientation='horizontal', fraction=0.1, aspect=40, pad=0.05, extend='both')
 
-today_sel=dict(time=slice('2008', '2023')) # so "today" is common throughout!
-PI_sel=dict(time=slice('1851', '1900')) # so "PI" is common throughout!
+today_sel = dict(time=slice('2008', '2023'))  # so "today" is common throughout!
+PI_sel = dict(time=slice('1851', '1900'))  # so "PI" is common throughout!
+
 
 def discretise(time: xarray.DataArray) -> xarray.DataArray:
     """
@@ -97,7 +104,8 @@ def time_convert(DataArray, ref_yr=1970, set_attrs=True, calendar='360_day'):
         nullT = cftime.num2date(0, units='hours since 1-1-1', calendar=calendar)  # what we use for nan
         time = DataArray.where(OK, nullT)
         hour = xarray.apply_ufunc(cftime.date2num, time,
-                                  kwargs=dict(units=f'hours since {ref_yr:d}-01-01', calendar=calendar))
+                                  kwargs=dict(units=f'hours since {ref_yr:d}-01-01', calendar=calendar)
+                                  )
     # u = name_conversion.get(unit,unit)
     try:
         hour.attrs['units'] = f'hours since {ref_yr}-01-01'
@@ -108,9 +116,11 @@ def time_convert(DataArray, ref_yr=1970, set_attrs=True, calendar='360_day'):
     return hour
 
 
-def location_scale(fit_parameters: xarray.DataArray,
-                   covariates: typing.Optional[typing.List[xarray.DataArray]] = None,
-                   scaled: bool = False) -> xarray.Dataset:
+def location_scale(
+        fit_parameters: xarray.DataArray,
+        covariates: typing.Optional[typing.List[xarray.DataArray]] = None,
+        scaled: bool = False
+        ) -> xarray.Dataset:
     """
     Compute the location and scale parameters
     :param fit_parameters: The parameters of the distribution fit. location and scale are used
@@ -139,10 +149,12 @@ def location_scale(fit_parameters: xarray.DataArray,
     return result
 
 
-def get_topog(rgn_all: dict,
-              rgn: dict,
-              lat: xarray.Variable,
-              lon: xarray.Variable) -> (xarray.DataArray, xarray.DataArray):
+def get_topog(
+        rgn_all: dict,
+        rgn: dict,
+        lat: xarray.Variable,
+        lon: xarray.Variable
+        ) -> (xarray.DataArray, xarray.DataArray):
     """
 
     :param rgn_all: Large scale region to extract data too (for coarsening)
@@ -168,3 +180,22 @@ def get_topog(rgn_all: dict,
     tmn = tmn.interp(grid_longitude=lon, grid_latitude=lat)
 
     return t, tmn
+
+
+def plot_carmont(ax: "cartopy.mpl.geoaxes.GeoAxes", **kwargs):
+    """
+    Plot the carmont drain location
+    :param ax: Axis on which to plot
+    : all other keywords passed through to plot command
+    :return:
+    """
+    kwargs = kwargs.copy()
+    default_values = dict(transform=ccrs.PlateCarree(),
+                          marker='o', ms=8, color='cornflowerblue',
+                          mec='black',
+                          alpha=0.8,
+                          zorder=80) # default values
+    for key, value in default_values.items():
+        kwargs[key] = kwargs.get(key, value)
+
+    ax.plot(*carmont_drain_long_lat, **kwargs)

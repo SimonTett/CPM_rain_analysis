@@ -16,8 +16,9 @@ import itertools
 import matplotlib.patches as mpatches
 import cartopy.crs as ccrs
 import os
+my_logger = CPM_rainlib.logger
+commonLib.init_log(my_logger,level='INFO')
 
-projGB = ccrs.OSGB()
 
 # get OS API key -- needed for detailed map
 try:
@@ -29,9 +30,10 @@ except KeyError:
     print("If you are SFBT get it from https://osdatahub.os.uk/projects/Plot_carmont")
     raise
 
+my_logger.info(f"Got api key {os_api_key}")
+
 carmont_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
-big_carmont_rgn = {k: slice(v - 90e3, v + 90e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
-#big_carmont_rgn_ll = {k: slice(v - 2.5, v + 2.5) for k, v in CPMlib.carmont_drain_long_lat.items()}
+big_carmont_rgn = {k: slice(v - 100e3, v + 90e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
 big_carmont_extent = [big_carmont_rgn['projection_x_coordinate'].start, big_carmont_rgn['projection_x_coordinate'].stop,
                       big_carmont_rgn['projection_y_coordinate'].start, big_carmont_rgn['projection_y_coordinate'].stop]
 scalebarprops = dict(frameon=False)
@@ -52,14 +54,21 @@ rseasMskmax, mxTime, top_fit_grid = CPM_rainlib.get_radar_data(path, topog_grid=
 cmap = 'RdYlBu'
 levels = [25, 50, 75, 100, 125, 150]
 levels = np.linspace(5, 60, 12)
+locations = dict(
+    Stonehaven = (-2.211,56.964),
+    Montrose = (-2.467,56.708),
+    Dyce = (-2.198,57.2025),
+    Aviemore=(-3.823,57.194),
+    Aberdeen = (-2.11,57.15)
+)
 
-fig, axis = plt.subplot_mosaic([['zoom', 'topog'], ['jja2020max', 'aug2020']],
+fig, axis = plt.subplot_mosaic([['topog','zoom'], ['jja2020max', 'aug2020']],
                                figsize=[8, 7], clear=True, layout='constrained',
-                               num='carmont_geog_group', subplot_kw=dict(projection=projGB)
+                               num='carmont_geog_group', subplot_kw=dict(projection=CPMlib.projOSGB)
                                )
 # plot the accident area
 scale = 14 # empirically derived.
-#osm_img = cimgt.OSM(cache=True,user_agent='Anaconda 3',style='Terrain')
+
 
 
 ord_survey_img = cimgt.OrdnanceSurvey(os_api_key, layer='Outdoor', cache=True)
@@ -74,11 +83,15 @@ axis['zoom'].plot(*CPMlib.carmont_long_lat, mec='firebrick', marker='*',mfc='Non
                   )
 scalebar = ScaleBar(1, "m", **scalebarprops)
 axis['zoom'].add_artist(scalebar)
+my_logger.info("Plotted zoom")
 # plot the topography
 topog.plot(ax=axis['topog'], cmap='terrain',
            levels=[-200, -100, 0, 50, 100, 200, 300, 400, 500, 600, 700, 800],
            cbar_kwargs=dict(label='height (m)')
            )
+## add locations of places refered to int he paper text.
+for locn, coord in locations.items():
+    axis['topog'].text(*coord,locn[0:2], transform=ccrs.PlateCarree(),fontweight='bold')#,backgroundcolor='grey',alpha=0.7)
 # add circles around the radar at roughly 60 and 120 km corresponding to roughly 1 km and 2km resoln.
 
 for (range, name) in itertools.product([60, 120], ['Hill of Dudwick', 'Munduff Hill']):
@@ -91,15 +104,15 @@ for (range, name) in itertools.product([60, 120], ['Hill of Dudwick', 'Munduff H
     axis['topog'].add_patch(circle)
 scalebar = ScaleBar(1, "m", **scalebarprops)
 axis['topog'].add_artist(scalebar)
-
-cm = radar_data.plot(ax=axis['jja2020max'], levels=levels, transform=projGB, cmap=cmap, add_colorbar=False)
+my_logger.info("Plotted topog")
+cm = radar_data.plot(ax=axis['jja2020max'], levels=levels, transform=CPMlib.projOSGB, cmap=cmap, add_colorbar=False)
 dofyear = pd.to_datetime('2020-08-12').dayofyear
 rn_max = rseasMskmax.sel(time='2020', rolling=4).where(mxTime.sel(rolling=4, time='2020').dt.dayofyear == dofyear) * 4
 print(f"area of 2020-08-12 event is {float(rn_max.count())} km^2")
-#(top_fit_grid < 50).where(True,np.nan).plot(cmap='gray_r',ax=axis['aug2020'],transform=projGB,add_colorbar=False)
-rn_max.plot(ax=axis['aug2020'], cmap=cmap, transform=projGB, add_colorbar=False, levels=levels)
-# plot the topog over.
 
+rn_max.plot(ax=axis['aug2020'], cmap=cmap, transform=CPMlib.projOSGB, add_colorbar=False, levels=levels)
+
+my_logger.info("Plotted radar for aug2020")
 
 # plot a box!
 xstart = carmont_rgn['projection_x_coordinate'].start
@@ -108,41 +121,30 @@ ystart = carmont_rgn['projection_y_coordinate'].start
 ystop = carmont_rgn['projection_y_coordinate'].stop
 x, y = [xstart, xstart, xstop, xstop, xstart], [ystart, ystop, ystop, ystart, ystart]
 for ax_name in ['aug2020', 'jja2020max']:
-    axis[ax_name].plot(x, y, color='black', linewidth=2, transform=ccrs.OSGB())
+    axis[ax_name].plot(x, y, color='black', linewidth=2, transform=CPMlib.projOSGB)
 
-# show 1km and 5 km grids,
-
-# for file, color in zip(["summary/summary_2008_1km.nc", "summary/summary_2008_5km.nc"],
-#                        ['red', 'black']
-#                        ):
-#     ds = xarray.open_dataset(CPMlib.radar_dir / file).Radar_rain_Mean
-#     X, Y = np.meshgrid(ds.projection_x_coordinate, ds.projection_y_coordinate)
-#     axis['zoom'].scatter(X, Y, marker='+', s=100, transform=ccrs.OSGB(), color=color)
 label = commonLib.plotLabel()
-for ax, title in zip(axis.values(), ['Accident Site', 'Topography', '2020 JJA Max', 'Masked 2020-08-12']):
+for ax, title in zip(axis.values(), ['Topography','Accident Site',  '2020 JJA Max', 'Masked 2020-08-12']):
     if title == 'Accident Site':
         pass  # don't want to add anything!
 
     else:
-        ax.set_extent(big_carmont_extent, crs=ccrs.OSGB())
+        ax.set_extent(big_carmont_extent, crs=CPMlib.projOSGB)
         CPM_rainlib.std_decorators(ax, radar_col='green', radarNames=(title == 'Topography'), show_railways=True)
-    ax.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(),
-            marker='o', ms=6, color='cornflowerblue'
-            )
+
+    CPMlib.plot_carmont(ax)
 
     ax.set_title(title, size='large')
     label.plot(ax)
 
 ## add an inset plot of the British Isles
 
-axBI = axis['topog'].inset_axes([0.62, 0.025, 0.4, 0.70],
+axBI = axis['topog'].inset_axes([0.65, 0.025, 0.4, 0.65],
                                 projection=ccrs.OSGB()
                                 )
 axBI.set_extent((-11, 2, 50, 61), crs=ccrs.PlateCarree())
 axBI.tick_params(labelleft=False, labelbottom=False)
-axBI.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(),
-          marker='o', ms=6, color='cornflowerblue'
-          )
+CPMlib.plot_carmont(axBI)
 axBI.coastlines()
 ##
 fig.colorbar(cm, ax=list(axis.values()), label='Rx4h Accumulation (mm)', **CPMlib.kw_colorbar)
