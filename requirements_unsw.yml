@@ -8,6 +8,8 @@ channels:
     - conda-forge
     - defaults
 dependencies:
+   - doit
+   - gdbm
    - r-base>=4.0.5
    - python~=3.11
    - ipython~=8.18
@@ -40,5 +42,6 @@ dependencies:
    - openpyxl~=3.0
    - nc-time-axis~=1.4
    - matplotlib-scalebar
+
 
 

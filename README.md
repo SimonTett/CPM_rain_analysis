@@ -9,13 +9,14 @@
 
 ## Images used in paper and  code  to generate them.
 
-| Figure Number | Image               | Code                     | Notes               |
-|---------------|---------------------|--------------------------|:--------------------|
-| 1             | radar_jja           | plot_radar_jja           |                     |
-| 2             | radar_carmont       | plot_radar_carmont.py    |                     |
-| 3             | carmont_geog_group  | plot_carmont_geog_group  | Requires OS API Key |
-| 3             | cet_scatter         | plot_cet_scatter         |                     |
-|               | cpm_intensity_delta | plot_cpm_intensity_delta |                    |
-|               | intens_prob_ratios  | plot_intens_prob_ratios  |                     |
-|               | radar_rtn_prds      | plot_radar_rtn_prds      |                     |
-|               | map_return_prds     |                          |                     |
+| Figure Number | Image               | Code                          | Notes               |
+|:--------------|---------------------|-------------------------------|:--------------------|
+| 3             | radar_jja           | plot_radar_jja                |                     |
+| 2             | radar_carmont       | plot_radar_carmont.py         |                     |
+| 1             | carmont_geog_group  | plot_carmont_geog_group       | Requires OS API Key |
+| 5             | scatter             | plot_scatter                  |                     |
+| 9             | intens_prob_ratios  | plot_intens_prob_ratios       |                     |
+| 6             | radar_rtn_prds      | plot_radar_rtn_prds           |                     |
+| 7             | map_return_prds     | plot_radar_rtn_prds           |                     |
+| 8             | kde_smooth_events   | plot_kde_smooth_events        |                     |
+| 10            | carmont_gev_quant_change | plot_carmont_gev_quant_change |                     |
