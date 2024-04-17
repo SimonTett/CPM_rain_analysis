@@ -112,7 +112,7 @@ else:  # read in data and process.
 
 cc = CPMlib.cc_dist.mean()  # CC is roughly 5.5%/K CET
 ## now plot 1, 2 % 4 hr param changes
-fig, axs = plt.subplots(1, 3, figsize=(8, 3.25), clear=True, num='carmont_gev_quant_change', layout='constrained',
+fig, axs = plt.subplots(1, 3, figsize=(8, 4), clear=True, num='carmont_gev_quant_change', layout='constrained',
                         sharey=True, sharex=True
                         )
 label   = commonLib.plotLabel()
@@ -165,4 +165,4 @@ for roll, ax in zip([1, 2, 4], axs):
     label.plot(ax)
 fig.show()
 fig.colorbar(cm, ax=axs, label='quantile', **CPMlib.kw_colorbar)
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='pdf')

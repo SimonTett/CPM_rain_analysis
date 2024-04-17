@@ -12,15 +12,19 @@ import shutil
 import functools  # for cache
 import xarray
 import matplotlib.pyplot as plt
-import logging
 import typing
 import sys
+import logging
+
+my_logger = logging.getLogger(__name__)
 
 
-def init_log(log: logging.Logger,
-             level: typing.Union[typing.Literal['DEBUG','INFO','WARNING','ERROR'],int] = 'WARNING',
-             log_file: typing.Optional[typing.Union[pathlib.Path, str]] = None,
-             mode: str = 'a') -> None:
+def init_log(
+        log: logging.Logger,
+        level: typing.Union[typing.Literal['DEBUG', 'INFO', 'WARNING', 'ERROR'], int] = 'WARNING',
+        log_file: typing.Optional[typing.Union[pathlib.Path, str]] = None,
+        mode: str = 'a'
+) -> None:
     """
     Set up logging on a logger! Will clear any existing logging
     :param log: logger to be changed
@@ -45,7 +49,6 @@ def init_log(log: logging.Logger,
         fh.setFormatter(formatter)
         log.addHandler(fh)
     log.propagate = False
-
 
 
 def high_resoln():
@@ -82,7 +85,8 @@ def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_typ
 
     nskip = dict(monthly=4, seasonal=9, daily=0)
     month_lookups = dict(JAN=1, FEB=2, MAR=3, APR=4, MAY=5, JUN=6, JUL=7, AUG=8, SEP=9, OCT=10, NOV=11, DEC=12, DJF=1,
-                         MAM=4, JJA=7, SON=10, Win=1, Spr=4, Sum=7, Aut=10)  # month
+                         MAM=4, JJA=7, SON=10, Win=1, Spr=4, Sum=7, Aut=10
+                         )  # month
 
     if file is None:
         file = f"cet_{mean}_{temp_type}.nc"
@@ -93,7 +97,7 @@ def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_typ
         # will trigger an error if mean or temp_type not as expected though error won't be very helpful...
         print(f"Retrieving data from {url}")
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:77.0) Gecko/20190101 Firefox/77.0'}  # fake we are interactive...
+                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:77.0) Gecko/20190101 Firefox/77.0'}  # fake we are interactive...
         r = requests.get(url, headers=headers)
         rdata = io.StringIO(r.text)
         data = pd.read_csv(rdata, skiprows=nskip.get(mean, 0), header=[0], sep=r'\s+', na_values=[-99.9])
@@ -120,33 +124,37 @@ def read_cet(file=None, retrieve=False, direct='data', mean='seasonal', temp_typ
     return ts
 
 
-def saveFig(fig, name=None, savedir=None, figtype=None, dpi=None):
-    """
-    :param fig -- figure to save
-    :param name (optional) set to None if undefined
-    :param savedir (optional) directory as a pathlib. Path to save figure to . Default is figures
-    :param figtype (optional) temp_type of figure. (If nto specified then png will
+def saveFig(
+        fig, name: typing.Optional[str] = None,
+        savedir: typing.Optional[pathlib.Path] = None,
+        figtype: typing.Union[str, typing.List[str]] = 'png', dpi: int = 300
+):
     """
 
-    defFigType = '.png'
+    :param fig -- figure to save
+    :param name (optional) set to None if undefined use fig.get_label
+    :param savedir (optional) directory as a pathlib. Path to save figure to. Default is figures
+    :param figtype graphics type to save as. If list then types to save as
+    :param dpi: resolution to save at.    else:
+        fig_name = name
+    """
+
     if dpi is None:
         dpi = 300
     # set up defaults
-    if figtype is None:
-        figtype = defFigType
     # work out sub_plot_name.
     if name is None:
-        fig_name = fig.get_label()
-    else:
-        fig_name = name
-
+        name = fig.get_label()
     if savedir is None:
         savedir = pathlib.Path('figures')  # always relative to where we are
     # possibly create the savedir.
     savedir.mkdir(parents=True, exist_ok=True)  # create the directory
-
-    outFileName = savedir / (fig_name + figtype)
-    fig.savefig(outFileName, dpi=dpi)
+    if isinstance(figtype, str):
+        figtype = [figtype]
+    for ftype in figtype:  # loop over fig types
+        out_file_name = savedir / (name + "."+ftype)
+        fig.savefig(out_file_name, dpi=dpi)
+        my_logger.debug(f"Saved figure to {out_file_name} at {dpi} dpi")
 
 
 class plotLabel:
@@ -213,7 +221,8 @@ class plotLabel:
             (x, y) = where
 
         plt_axis.text(x, y, text, transform=plt_axis.transAxes, horizontalalignment='right', verticalalignment='bottom',
-                      fontdict=self.fontdict)
+                      fontdict=self.fontdict
+                      )
 
 
 # cache handling
