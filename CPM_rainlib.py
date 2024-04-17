@@ -45,7 +45,7 @@ if ('jasmin.ac.uk' in machine) or ('jc.rl.ac.uk' in machine):
     nimrodRootDir = pathlib.Path("/badc/ukmo-nimrod/data/composite")  # where the nimrod data lives
     cpmDir = pathlib.Path("/badc/ukcp18/data/land-cpm/uk/2.2km/rcp85")  # where the CPM data lives
     outdir = dataDir
-
+    common_data = pathlib.Path('~tetts/data/common_data').expanduser()
 elif 'GEOS-' in machine.upper():
     dataDir = pathlib.Path(r'C:\Users\stett2\OneDrive - University of Edinburgh\data\Scotland_extremes')
     nimrodRootDir = dataDir / 'nimrod_data'

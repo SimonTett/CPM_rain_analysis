@@ -39,7 +39,51 @@ def memory_use() -> str:
     except ModuleNotFoundError:
         mem = 'Mem use unknown'
     return mem
+
+
+def time_convert(DataArray, ref='1970-01-01', unit='h'):
+    """
+    convert times to hours (etc) since reference time.
+    :param DataAray -- dataArray values to be converted
+    :param ref -- reference time as ISO string. Default is 1970-01-01
+    :param unit -- unit default is h for hours
+    :return -- returns dataarray with units reset and values converted
+    """
+    name_conversion = dict(m='minutes', h='hours', d='days')
+    u = name_conversion.get(unit, unit)
+    msk = ~DataArray.isnull()
+    with xarray.set_options(keep_attrs=True):
+        hour = (DataArray - np.datetime64(ref)) / np.timedelta64(1, unit)
+        hour = hour.where(msk,np.nan)
+        hour = hour.assign_attrs(units=f'{u} since {ref}',calendar='proleptic_gregorian')
+    return hour
+
     
+
+def write_data(ds:xarray.Dataset, outFile:pathlib.Path):
+    """
+    Writes data to netcdf file -- need to fix times!
+      converts any variables that are datetime64 to fixed reference time. 
+    :param ds -- dataset to be written
+    :param outFile: file to write to.
+    :return: converted dataset.
+    """
+    ds2 = ds.copy()  # as modifying things...
+    vars_to_change = [ v for v in ds2.data_vars if np.issubdtype(ds2[v].dtype,np.datetime64)]
+    for v in vars_to_change:
+        ds2[v] =  time_convert(ds2[v])
+        my_logger.debug(f"Converting times in {v}")
+    # compress the ouput... useful because quite a lot of missing data.
+    encoding = dict()
+    comp = dict(zlib=True)
+    for v in ds2.data_vars:
+        encoding[v] = comp
+
+
+    ds2.to_netcdf(outFile, encoding=encoding,unlimited_dims=['time']) # allow time to unlimited
+    my_logger.info(f"Wrote summary data for  {ds.time_bounds.min().values} - {ds.time_bounds.max().values} to {outFile}")
+
+    return ds2
 
 def time_process(da:xarray.DataArray,
                  rolling:typing.List[int]=[1]):
@@ -77,7 +121,7 @@ def time_process(da:xarray.DataArray,
 def end_period_process(dailyData:typing.List,
                        outDir:pathlib.Path, 
                        resoln:str, 
-                       period:str='1M', 
+                       period:str='1MS', 
                        coarsens:typing.List[int]=[1],
                        rolling:typing.List[int]=[1]):
     """
@@ -85,13 +129,13 @@ def end_period_process(dailyData:typing.List,
     :param dailyData -- input list of daily datasets
     :param outDir -- output directory where data will be written to
     :param  resoln -- resolution string
-    :param period (default '1M'). Time period over which data to be resampled to
+    :param period (default '1MS'). Time period over which data to be resampled to
     :param coarsens: List of coarsenings to apply to spatial data.
     :param rolling. List of rolling periods to apply to data in time.
     """
     if len(dailyData) == 0:
         return []  # nothing to do so return empty list 
-    name_keys = {'1D': 'daily', '1M': 'monthly'}
+    name_keys = {'1D': 'daily', '1MS': 'monthly'}
     no_days = len(dailyData)
     summary_prefix = name_keys.get(period, period)
     outDir.mkdir(exist_ok=True,parents=True) # create the outdir
@@ -122,14 +166,185 @@ def end_period_process(dailyData:typing.List,
             ["radar_rain", start_time,end_time, key+'.nc'])
 
         resampDS = coarsened_da.resample(time=period).map(time_process, rolling=rolling)
-        encoding = dict()
-        comp = dict(zlib=True)
-        for v in resampDS.data_vars:
-            encoding[v] = comp
-
+        
         resampDS['No_samples'] = No_samples # add in the number of samples
-        resampDS.to_netcdf(outFile, encoding=encoding)
-        my_logger.info(f"Wrote summary data for {len(dailyData)} days for {resampDS.time.max().values} to {outFile}")
+        resampDS["time"]=    ds2.to_netcdf(outFile, encoding=encoding,unlimited_dims=['time']) # allow time to unlimited
+    my_logger.info(f"Wrote summary data for  {ds.time.min().values} - {ds.time.max().values} to {outFile}")
+
+    return ds2
+
+def time_process(da:xarray.DataArray,
+                 rolling:typing.List[int]=[1]):
+    """
+    Process a dataArray of (daily) data
+    :param dataarray -- Dataset to process
+    :param rolling. List of rolling periods to use.
+    """
+
+    mx=[]
+    mx_time=[]
+    for roll in rolling:
+        if roll == 1: # skip rolling!
+            roll_var =  da
+        else:
+            roll_var =  da.rolling(time=roll,center=True).mean()
+        mx_r = roll_var.max('time', keep_attrs=True).rename(f'{da.name}_Max')  # max
+        mx_time_r = roll_var.where(mx_r >0).idxmax('time').rename(f'{da.name}_MaxTime') # only want > 0
+        
+        mx.append(mx_r.assign_coords(rolling=roll))
+        mx_time.append(mx_time_r.assign_coords(rolling=roll))
+    
+    mx=xarray.concat(mx,dim='rolling')
+    mx_time=xarray.concat(mx_time,dim='rolling')
+
+    time_max = da.time.max().values
+    time_min = da.time.min().values
+    # TODO modify to make a total.
+    mn = da.mean('time', keep_attrs=True).rename(f'{da.name}_Mean')
+    ds = xarray.merge([mn, mx, mx_time])
+    ds['time_bounds']=xarray.DataArray([time_min,time_max],coords=dict(bounds=[0,1]))
+
+    return ds
+
+def end_period_process(dailyData:typing.List,
+                       outDir:pathlib.Path, 
+                       resoln:str, 
+                       period:str='1MS', 
+                       coarsens:typing.List[int]=[1],
+                       rolling:typing.List[int]=[1]):
+    """
+    Deal with data processing at end of a period -- normally a calendar month.
+    :param dailyData -- input list of daily datasets
+    :param outDir -- output directory where data will be written to
+    :param  resoln -- resolution string
+    :param period (default '1MS'). Time period over which data to be resampled to
+    :param coarsens: List of coarsenings to apply to spatial data.
+    :param rolling. List of rolling periods to apply to data in time.
+    """
+    if len(dailyData) == 0:
+        return []  # nothing to do so return empty list 
+    name_keys = {'1D': 'daily', '1MS': 'monthly'}
+    no_days = len(dailyData)
+    summary_prefix = name_keys.get(period, period)
+    outDir.mkdir(exist_ok=True,parents=True) # create the outdir
+    rain=xarray.concat(dailyData,dim='time')
+    # pull out no of samples and compute total number of samples in period
+    No_samples=rain['no_samples'].resample(time=period).sum() # no of samples
+    fmt_str = '%Y-%m-%dT%H'
+    start_time = rain.time.min().dt.strftime(fmt_str).values.tolist()
+    end_time = rain.time.max().dt.strftime(fmt_str).values.tolist()
+
+
+
+    # Handle Coarsening
+    resultDS=dict()
+    rain_var = "Radar_rain"
+    for coarsen in coarsens:
+        if coarsen == 1:
+            coarsened_da = rain[rain_var] # no coarsening needed!
+            key = f'{resoln}'
+        else:
+            c_dict=dict(projection_x_coordinate=coarsen,
+                        projection_y_coordinate=coarsen)
+            coarsened_da =rain[rain_var].coarsen(boundary='pad',**c_dict).mean().\
+                          assign_coords(dict(coarsen=coarsen))
+            key = f'{resoln}_c{coarsen}'
+
+        outFile = outDir / "_".join(
+            ["radar_rain", start_time,end_time, key+'.nc'])
+
+        resampDS = coarsened_da.resample(time=period).map(time_process, rolling=rolling)
+        
+        resampDS['No_samples'] = No_samples # add in the number of samples
+        resampDS["time"]=    ds2.to_netcdf(outFile, encoding=encoding,unlimited_dims=['time']) # allow time to unlimited
+    my_logger.info(f"Wrote summary data for  {ds.time.min().values} - {ds.time.max().values} to {outFile}")
+
+    return ds2
+
+def time_process(da:xarray.DataArray,
+                 rolling:typing.List[int]=[1]):
+    """
+    Process a dataArray of (daily) data
+    :param dataarray -- Dataset to process
+    :param rolling. List of rolling periods to use.
+    """
+
+    mx=[]
+    mx_time=[]
+    for roll in rolling:
+        if roll == 1: # skip rolling!
+            roll_var =  da
+        else:
+            roll_var =  da.rolling(time=roll,center=True).mean()
+        mx_r = roll_var.max('time', keep_attrs=True).rename(f'{da.name}_Max')  # max
+        mx_time_r = roll_var.where(mx_r >0).idxmax('time').rename(f'{da.name}_MaxTime') # only want > 0
+        
+        mx.append(mx_r.assign_coords(rolling=roll))
+        mx_time.append(mx_time_r.assign_coords(rolling=roll))
+    
+    mx=xarray.concat(mx,dim='rolling')
+    mx_time=xarray.concat(mx_time,dim='rolling')
+
+    time_max = da.time.max().values
+    time_min = da.time.min().values
+    # TODO modify to make a total.
+    mn = da.mean('time', keep_attrs=True).rename(f'{da.name}_Mean')
+    ds = xarray.merge([mn, mx, mx_time])
+    ds['time_bounds']=xarray.DataArray([time_min,time_max],coords=dict(bounds=[0,1]))
+
+    return ds
+
+def end_period_process(dailyData:typing.List,
+                       outDir:pathlib.Path, 
+                       resoln:str, 
+                       period:str='1MS', 
+                       coarsens:typing.List[int]=[1],
+                       rolling:typing.List[int]=[1]):
+    """
+    Deal with data processing at end of a period -- normally a calendar month.
+    :param dailyData -- input list of daily datasets
+    :param outDir -- output directory where data will be written to
+    :param  resoln -- resolution string
+    :param period (default '1MS'). Time period over which data to be resampled to
+    :param coarsens: List of coarsenings to apply to spatial data.
+    :param rolling. List of rolling periods to apply to data in time.
+    """
+    if len(dailyData) == 0:
+        return []  # nothing to do so return empty list 
+    name_keys = {'1D': 'daily', '1MS': 'monthly'}
+    no_days = len(dailyData)
+    summary_prefix = name_keys.get(period, period)
+    outDir.mkdir(exist_ok=True,parents=True) # create the outdir
+    rain=xarray.concat(dailyData,dim='time')
+    # pull out no of samples and compute total number of samples in period
+    No_samples=rain['no_samples'].resample(time=period).sum() # no of samples
+    fmt_str = '%Y-%m-%dT%H'
+    start_time = rain.time.min().dt.strftime(fmt_str).values.tolist()
+    end_time = rain.time.max().dt.strftime(fmt_str).values.tolist()
+
+
+
+    # Handle Coarsening
+    resultDS=dict()
+    rain_var = "Radar_rain"
+    for coarsen in coarsens:
+        if coarsen == 1:
+            coarsened_da = rain[rain_var] # no coarsening needed!
+            key = f'{resoln}'
+        else:
+            c_dict=dict(projection_x_coordinate=coarsen,
+                        projection_y_coordinate=coarsen)
+            coarsened_da =rain[rain_var].coarsen(boundary='pad',**c_dict).mean().\
+                          assign_coords(dict(coarsen=coarsen))
+            key = f'{resoln}_c{coarsen}'
+
+        outFile = outDir / "_".join(
+            ["radar_rain", start_time,end_time, key+'.nc'])
+
+        resampDS = coarsened_da.resample(time=period).map(time_process, rolling=rolling)
+        
+        resampDS['No_samples'] = No_samples # add in the number of samples
+        resampDS=write_data(resampDS,outFile)
         resultDS[key]=resampDS
 
     return resultDS  # return summary dataset
@@ -261,7 +476,7 @@ for year in args.year:
             my_logger.info("Starting a new period. Summarizing and writing data out")
             # process and write out data
 
-            summaryDS = end_period_process(daily_rain, outdir,resoln,period='1M',
+            summaryDS = end_period_process(daily_rain, outdir,resoln,period='1MS',
                                            coarsens=coarsens, rolling=args.rolling)
 
             my_logger.info(memory_use()) # print out memory use.
@@ -280,7 +495,7 @@ for year in args.year:
     # end loop over years.
 
 # and we might have data to write out!
-summaryDS = end_period_process(daily_rain,outdir,resoln, period='1M',
+summaryDS = end_period_process(daily_rain,outdir,resoln,period='1MS',
                                coarsens=coarsens,rolling=args.rolling) # process and write out data
 
 my_logger.info("All done")

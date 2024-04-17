@@ -11,6 +11,7 @@ import dask
 
 parser=argparse.ArgumentParser(description="combine processed radar data")
 parser.add_argument("dir",type=str,help='Dir to process')
+parser.add_argument("--pattern",help='glob pattern for files',default='radar_rain*.nc')
 parser.add_argument("output",type=str,help='Name of Output file')
 parser.add_argument("--nocompress","-n",action='store_true',
                     help="Do not compress output data")
@@ -30,17 +31,15 @@ if args.region is not None:
     )
 
 dask.config.set({"array.slicing.split_large_chunks": True})
-chunks=dict(time=24,projection_y_coordinate=100,projection_x_coordinate=100)
-files=pathlib.Path(args.dir).glob("*monthly*.nc")
-# remove all the 2004 files
-files_wanted = sorted([ file for file in files if '2004' not in file.name])
-if args.verbose:
-    print("Combining ",files_wanted)
+chunks=dict(time=12,projection_y_coordinate=100,projection_x_coordinate=100)
+files=list(pathlib.Path(args.dir).glob(args.pattern))
+files=sorted(files)
 
-ds=xarray.open_mfdataset(files_wanted,chunks=chunks,combine='nested')
+ds=xarray.open_mfdataset(files,chunks=chunks,parallel=True)
 if region:
     ds=ds.sel(**region)
-encoding=dict()
+
+encoding=dict() # make it an empty dict
 
 if not args.nocompress:
     # compress the ouput... useful because quite a lot of the data is missing

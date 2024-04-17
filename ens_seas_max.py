@@ -4,6 +4,7 @@
 
 Process CPM data on JASMIN. Generate seasonal-totals, seasonal maxes
 and time of seasonal extreme for data. Optionally filters out bad data.
+Fairly horrid code -- would benefit from a fairly comprehensive rewrite/refactor.
 
 
 """
@@ -140,7 +141,7 @@ def write_data(ds, outFile, summary_prefix='seasonal'):
     for v in ds2.data_vars:
         encoding[v]=comp
     outFile.parent.mkdir(exist_ok=True,parents=True) # make dir if needed.
-    ds2.to_netcdf(outFile,encoding=encoding)
+    ds2.to_netcdf(outFile,encoding=encoding,unlimited_dims=['time'])
     return ds2
 
 
@@ -254,7 +255,7 @@ if args.filter_bad: # filter out bad data.
     pr,ancil = spatial_filter_r.xarray_filter(pr)
     ancil_file=outfile.parent/(outfile.stem+"_ancil-info.nc")
     ancil_file.parent.mkdir(exist_ok=True,parents=True) # make dir if needed
-    ancil.to_netcdf(ancil_file) # write out ancil data
+    ancil.to_netcdf(ancil_file,unlimited_dims=['time']) # write out ancil data
     logging.info(f"Ancil data in {ancil_file}")
     mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss 
     max_mem = max(max_mem,mem) 
