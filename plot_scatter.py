@@ -27,7 +27,7 @@ def regress(x:xarray.DataArray,y:xarray.DataArray):
     X = np.column_stack((X, X ** 2))
     X = sm.add_constant(X)
     Y = y.values.flatten()
-    model = sm.RLM(Y, X)
+    model = sm.OLS(Y, X)
     fit = model.fit()
     return fit
 
@@ -49,16 +49,26 @@ obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA',drop=True)
 t_today = obs_cet_jja.sel(**CPMlib.today_sel).mean()
 t_PI = obs_cet_jja.sel(**CPMlib.PI_sel).mean()
+# put a scatter plot of CET "now" vs local temp "now"
+mn_cet = sim_cet.sel(**CPMlib.today_sel).mean('time')
 
 label=commonLib.plotLabel()
 fig_scatter, axis = plt.subplots(nrows=2, ncols=2, num='scatter', clear=True, figsize=[8, 5], layout='constrained')
 for var,ax in zip([sim_reg_tas,sim_reg_es,sim_reg_pr],axis.flat):
     ax.scatter(sim_cet, var,color='grey',s=6)
+    var_mn = var.sel(**CPMlib.today_sel).mean('time')
+    ax.scatter(mn_cet, var_mn, color='red', s=30, marker='+', zorder=100)
     label.plot(ax)
-axis[-1][-1].scatter(sim_reg_tas, sim_reg_es, color='grey', s=6)
-label.plot(axis[-1][-1])
+ax=axis[-1][-1]
+ax.scatter(sim_reg_tas, sim_reg_es, color='grey', s=6)
+mn_sim_reg_tas = sim_reg_tas.sel(**CPMlib.today_sel).mean('time')
+mn_sim_reg_es = sim_reg_es.sel(**CPMlib.today_sel).mean('time')
+ax.scatter(mn_sim_reg_tas,mn_sim_reg_es, color='red', s=30, marker='+', zorder=100)
+label.plot(ax)
 # plot best fit lines...
 npts = 50
+
+
 for fit, ax,title in zip([fit_reg, fit_es,fit_pr,fit_es_reg], axis.flat,
                          ["CET vs Reg. Temp", "CET vs Reg. SVP", "CET vs Reg. Precip","Reg T vs Reg SVP"]):
     if title.startswith('CET'):
@@ -85,10 +95,13 @@ for fit, ax,title in zip([fit_reg, fit_es,fit_pr,fit_es_reg], axis.flat,
     if 'Temp' in title:
         fract_increase = (fit_p1k-fit_today)
         err = fit.bse[1]
+        text = f"{fract_increase:4.2f} $\pm$ {err:4.2f} R$^2$:{fit.rsquared*100:3.0f} %"
     else:
         fract_increase = 100*((fit_p1k-fit_today) / fit_today)
         err = 100*(fit.bse[1]/ fit_today)
-    print(f"Change per {units} = {fract_increase:4.1f}, Err: {err:4.2f} (%)")
+        text = f"{fract_increase:4.2f} $\pm$ {err:4.2f} R$^2$:{fit.rsquared*100:3.0f} %"
+    ax.text(0.05, 0.8,text,ha='left',va='bottom',backgroundcolor='grey',transform=ax.transAxes)
+    print(f"Change per {units} = {fract_increase:4.1f}, Err: {err:4.2f} (%): {fit.rsquared*100:3.0f} %")
     ax.set_title(title)
 
 
@@ -100,4 +113,4 @@ axis.flat[-1].set_xlabel(r"Regional Temp ($^\circ$C)")
 axis.flat[-1].set_ylabel(r"SVP (Pa)")
 
 fig_scatter.show()
-commonLib.saveFig(fig_scatter)
+commonLib.saveFig(fig_scatter,figtype=['pdf','png'])

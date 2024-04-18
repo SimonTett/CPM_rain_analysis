@@ -33,7 +33,7 @@
 % Set pdf information and add title, fill in the fields
 %-----------------------
 
-\title{Attribution of the  extreme precipitation related to Derailment  on August 12th 2020 in Carmont, Scotland derailment.}
+\title{Attribution of the  extreme precipitation related to Derailment  on August 12th 2020 in Carmont, Scotland}
 \author{Simon F. B. Tett\thanks{School of Geosciences, University of Edinburgh, Edinburgh EH9 3JW, UK} \thanks{CLXX, UNSW, Sydney, NSW, XXXX, Australia}
 	\and 
 Chris Long\thanks{School of Physics, University of Edinburgh, Edinburgh EH9 xxx, UK}
@@ -62,67 +62,26 @@ ANY MORE\thanks{Address}}
 \section{Introduction}
 \label{sect:Intro}
 
-On August 12th 2020 a passenger train running from Aberdeen to Glasgow derailed at Carmont near Stonehaven. The train was lightly loaded due to COVID restrictions but three people died and the remaining six people on the train  were injured. The proximate cause of the derailment was gravel being washed out of a drain \parencite{carmontReport2024}. Radar estimates of  rain at 1km x 1km resolution was 51.5 mm of rain falling between 05:50 to 09:00 which was estimated at around a 1-in-a-100 year event. The drain should have been able to deal with that volume of water but because the drain had not been built to design requirements gravel and other debris was washed out of it and onto the tracks. This in turn caused the derailment.
-
-Theory\parencite{allen02insight} suggests that extreme rainfall occurs when the entire column of atmospheric water precipitates. This, in turn,  suggests that extreme precipitation increases fractionally at the same rate as saturated humidity, or for fixed atmospheric pressure, saturated vapour pressure (Clausius-Clapyron; CC). This is about 7\%/K. However, some studies suggest that sub-daily extreme rainfall  could increase  at rates  up to twice CC\parencite{kendon2023uk_cpm}.
-
-There has only been a limited number of studies that attempted to attribute chnages in sub-daily extreme rainfall.  \cite{mishra2023landslide} using  data from a CPM simulation of a storm in 2009 and pre-industrial conditions found that changes in three-hourly extremes had increased the frequency of landslides by about 10\%. While \cite{Reed2022,Reed2021dorian_extreme_rain} examining North Atlantic hurricanes  using a CPM found that climate change had increased extreme 3-hourly rainfall by 11\% and, for Hurricane Dorian by 8-18\%. 
+On August 12th 2020 a passenger train running from Aberdeen to Glasgow derailed at Carmont near Stonehaven. The train was lightly loaded due to COVID restrictions. Even so,  three people died and the remaining six people on the train  were injured. The proximate cause of the derailment was gravel being washed out of a drain \parencite{carmontReport2024}. Radar estimates of  rain at 1km x 1km resolution was 51.5 mm of rain falling between 05:50 to 09:00 which was estimated at around a 1-in-a-100 year event. The drain should have been able to deal with that volume of water but because the drain had not been built to design requirements gravel and other debris was washed out of it and onto the tracks. This in turn caused the derailment. In the aftermath of the derailment UK Government commissioned a report to examine the resilience of the UK's rail infrastructure\parencite{NR_DfT_2021}. It reported that the signal of climate change is becoming more significant  also examined the impacts of future climate change  on rail infrastructure.
 
 
- The goal of this study is to develop the methodology of \cite{tett2023edinburgh}  to estimate extreme rainfall return periods for the current climate and change in return period, and rain fall intensity, due to climate change since the late 19th century. This allows us to estimate how much climate change has changed the probability of the Carmont rainfall.
+ Serious accidents often require several things to go wrong. In the case of Carmont derailment  the both a not to specification drain construction and extreme rainfall were required. This paper focuses on the rainfall component of the accident. It develops methodology to estimate, from radar data, the return period of the radar rain, uses convective permitting model (CPM) simulations to estimate how climate change (largely anthropogenic) has changed the distribution of extreme precipitation at Carmont. Finally we adjust the radar estimated distribution by the CPM changes to provide an event attribution of the extreme rainfall. 
+
+Theory\parencite{allen02insight} suggests that extreme rainfall occurs when the entire column of atmospheric water precipitates. This, in turn,  suggests that extreme precipitation increases fractionally at the same rate as saturated humidity, or for fixed atmospheric pressure, saturated vapour pressure (Clausius-Clapyron; CC). This is about 7\%/K. However,  studies suggest that sub-daily extreme rainfall  could increase  at rates  up to twice CC\parencite{fowler2021rainfall_extremes} with a clear signal in both observations and CPM relating contemporaneous dew-point temperature to extreme rainfall. 
+
+The last IPCC report\parencite{Seneviratne2021ippcc_chapter_extremes} reported on the lack of systematic analysis of long-term trend in sub-daily extreme precipitation at global scales (Sect 11.4). Though, did report on regional studies that found intensification at those scales. It also criqued the apparent scaling of sub-daily precipitation extremes. There has  been an extremely limited number of studies that attempted to attribute changes in sub-daily extreme rainfall, with none reported in \cite{Seneviratne2021ippcc_chapter_extremes},  though several studies have attributed changes in daily or longer time-scale rainfall\parencite{clarke2022extreme_Attribution,Zhang2020rainfall,tradowsky2023w_europe_rain}.  Studies that attempted to attribute changes in sub-daily extreme precipitation are \cite{mishra2023landslide} who used  data from a CPM simulation of a storm in 2009 and with pre-industrial conditions found that changes in three-hourly extremes had increased the frequency of landslides by about 10\%. While \cite{Reed2022,Reed2021dorian_extreme_rain} examining North Atlantic hurricanes  using a CPM found that climate change had increased extreme 3-hourly rainfall by 11\% and, for Hurricane Dorian by 8-18\%. \cite{tett2023edinburgh} used radar and CPM data to estimate the change in probability of a ``cloud burst'' event at Edinburgh Castle. They also examined the impact on the castle.  This study develops the methodology they used to estimate the probability changes and evaluates the CPM. 
+
+  As part of the UKCP18 project\parencite{kendon2023uk_cpm} a 12 member ensemble from 1980 to 2080, at a resolution of 2.2 km, was ran. Results suggest intensification of hourly extreme rainfall particularly in the northern part of the UK.  This ensemble, unfortunately, has a software error which occurs when raining systems are advected exactly along the model grid.  Data, after filtering out the impact of this error, are used to estimate how extreme rainfall changes with temperature. 
  
-   As part of the UKCP18 project\parencite{kendon2023uk_cpm} a 12 member ensemble from 1980 to 2080, at a resolution of 2.2 km, was ran.  This ensemble, unfortunately, has a software error which occurs when raining systems are advected exactly along the model grid.  Data, after filtering out the impact of this error, are used to estimate how extreme rainfall changes with temperature. 
-   
-
-
-
-A report released by the UK Government in the aftermath of the derailment~\cite{NR_DfT_2021}
-was made to discuss the resilience of the UK's rail infrastructure.
-This report notes that the signal of climate change is becoming more significant,
-and dedicates a section to the impacts climate change will have on rail infrastructure.
-It is with this consideration that the attribution analysis for the Stonehaven Event is performed here.
-
-This analysis will proceed by considering the rainfall as the cause of the event.
-As the modelling necessary for either the landslip or the drain debris washout is beyond the scope of this report,
-the intensity of the extreme rainfall itself will be used to define the event.
-
-
-
-It is reasonable to expect that climate change had an impact on the extreme rainfall on 12 August 2020.
-One example of this in the UK is the estimated 40\% increase
-in the likelihood of one-day events as intense as Storm Desmond~\cite{Desmond_2015}.
-Another event in Scotland was the 2021 Edinburgh cloudburst~\cite{tett2023edinburgh},
-which found an increase in the likelihood of around 30\%,
-increasing to approximately 70\% after 2 Kelvin of warming,
-with the event spanning a 15-minute time period.
-As the Stonehaven Event is in a similar climate to these two events,
-with a time period in between,
-sub-daily but not sub-hourly,
-it would not be unreasonable to find similar results.
-
-A warmer climate,
-through thermodynamic effects captured by the Clausius-Clapeyron relation,
-gives the air a greater saturation humidity,
-expected to scale by approximately 7\% per degree of warming\parencite{fowler2021rainfall_extremes}
-As the air is holding more water,
-the intensity of precipitation would be expected to scale similarly.
-
-Working Group 1 of the IPCC~\cite{IPCC_2021} states that sub-daily precipitation intensities,
-such as that of the Stonehaven Event,
-would be expected to scale between one and two times that expected by Clausius-Clapeyron scaling.
-This is as other properties of the event may also change in a warmer climate.
-For example,
-if storms move slower in a warmer climate,
-the rainfall in locations under the storm would scale more greatly than saturation humidity,
-as the time that the location is exposed to the storm is lengthened.
+The rest of this paper is laid out as follows. We first describe the event and its impact, then describe our methodology, show results and conclude. 
 
 \section{Event}
 
-In this section we describe the rainfall event and its impact. We then use that to determine what the event is for subsequent analysis. Fig~\ref{fig:carmont_geog_group}(a) shows the topography and location of various places in North East Scotland with an inset map showing Great Britain and some for Ireland. The Railway from Aberdeen largely runs along the coast except for a deviation inland between Montrose and Stonehaven.  The dominant topographic feature are the Grampian Mountains which are an extensive area greater than 500m above sea-level. The area of interest has, from 2008, two radar stations with much of the region within 60km of one radar station and  all the region within 120km of a radar station and most within 120 km of two radar stations. 
+In this section we describe the rainfall event and its impact. We then use that to determine what the event is for subsequent analysis. Fig~\ref{fig:carmont_geog_group}(a) shows the topography and location of various places in North East Scotland with an inset map showing Great Britain and some of Ireland. The railway from Aberdeen largely runs along the coast except for a deviation inland between Montrose and Stonehaven.  The dominant topographic feature are the Grampian Mountains which are an extensive area greater than 500m above sea-level. The area of interest has, from 2008, two radar stations with much of the region within 60km of one radar station and  all the region within 120km of a radar station and most within 120 km of two radar stations. 
 
   The event starts in the evening of 2020-08-11 and ends the next day. The atmosphere  at 12:00 UTC on the 11th has high pressure over Great Britain with weak south westerly airflow over Scotland and a convergence line running from the Lake district (North West England) to the North of Scotland\parencite{pritchard2020weather}. By the 12th the convergence line has moved to the west into the North Sea though NE Scotland was still in a SW flow. 
 
-On  the evening of the 11th  a large thunderstorm initiated in the Scottish Borders and over the next few hours propagated Northwards eventually heading out to sea by early morning on the 12th\parencite{Kendon2020thunderstrorms_report}. On its way it caused extensive flooding and damage in the eastern part of the Central Belt of Scotland\parencite{SEPA2020report_floods,kendon2021ukclimate} and in the town of Stonehaven largely due to surface water with a small contribution from the river Carron. \cite{SEPA2020report_floods} assessed the rainfall as  extreme and rare. Over the Leven hills in Fife the rainfall was sufficiently extreme to produce multiple land slides -- the first such event there since the early 20th century\parencite{Kirkbride2021}.  Stations at Aviemore and Dyce Airport\parencite{pritchard2020weather} reported monthly extremes of 9.6 and 26.8 mm though only Dyce reported an August rainfall larger than the 1991-2015 average. 
+On  the evening of the 11th  a large thunderstorm initiated in the Scottish Borders and over the next few hours propagated northwards eventually heading out to sea by early morning on the 12th\parencite{Kendon2020thunderstrorms_report}. On its way it caused extensive flooding and damage in the eastern part of the Central Belt of Scotland\parencite{SEPA2020report_floods,kendon2021ukclimate} and in the town of Stonehaven largely due to surface water with a small contribution from the river Carron. \cite{SEPA2020report_floods} assessed the rainfall as  extreme and rare. Over the Leven hills in Fife the rainfall was sufficiently extreme to produce multiple land slides -- the first such event there since the early 20th century\parencite{Kirkbride2021}.  Stations at Aviemore and Dyce Airport\parencite{pritchard2020weather} reported monthly extremes of 9.6 and 26.8 mm though only Dyce reported an August rainfall larger than the 1991-2015 average. 
 
 
 
@@ -133,38 +92,47 @@ Due to the COVID-19 pandemic, the train had an extremely low loading of only nin
 The derailment occurred to the south west of where the railway crosses the Carron Water (RAIB para S1) with the train coming to a halt a few meters after this bridge (Fig.~\ref{fig:carmont_geog_group}(a)).  RAIB commissioned some detailed modelling of water flow into the drain concluding that  flows into the gully being drained occurred in about an hour (RAIB figure 43; para 104). 
 
 
-
-
-Radar rainfall maxima four hour accumulations (Rx4h) for JJA 2020 (Fig.~\ref{fig:carmont_gev_quant_change}(c)) show two small regions  where rainfall is greater than 50 mm. One in the SW of the domain and another along the railway line between Montrose and Stonehaven. (Fig.~\ref{fig:carmont_gev_quant_change}(d) shows that these two extrema occurred on the 12th. Looking at radar rainfall on the 12th at Carmont Drain (Fig.~\ref{fig:aug2020_rain}) shows that, for both the 1km and 5 km datasets, the rainfall fell over a period of about 4 hours. For the 1km rainfall half the accumulated rainfall fell in about an hour.  Resampling the data to hourly data we see that almost all the rain fell in three hours with a substantial contribution from the last hour.  Thus we consider both Rx1h and Rx4h from hereon. The drain for which gravel washout was the proximate cause of the derailment drains the hill to the west of the track (RAIB paras S1-S5)and so we focus subsequent analysis on that location (``Carmont Drain''). Though given our approach our results are not very sensitive to changes in the location of tens of km.  
+Radar rainfall maxima four hour accumulations (Rx4h) for JJA 2020 (Fig.~\ref{fig:carmont_geog_group}(c)) show two small regions  where rainfall is greater than 50 mm. One in the SW of the domain and another along the railway line between Montrose and Stonehaven. (Fig.~\ref{fig:carmont_geog_group}(d) shows that these two extrema occurred on the 12th. Looking at radar rainfall on the 12th at Carmont Drain (Fig.~\ref{fig:aug2020_rain}) shows that, for both the 1km and 5 km datasets, the rainfall fell over a period of about 4 hours. For the 1km rainfall half the accumulated rainfall fell in about an hour.  Resampling the data to hourly data we see that almost all the rain fell in three hours with a substantial contribution from the last hour. Thus we consider both Rx1h and Rx4h from hereon. The drain for which gravel washout was the proximate cause of the derailment drains the hill to the west of the track (RAIB paras S1-S5) and so we focus subsequent analysis on that location (``Carmont Drain'').
 
 \section{Methods}
 In this section we describe the methods used in the analysis. They are split into processing of the Convective Permitting Model to remove unphysical rain events  and computation of maxima, how the radar is analysed, definition of an event and, finally, how probabilities of exceeding thresholds are computed. 
 
-All analysis uses a 150x150 km square region centred on  Carmont Drain. As the derailment happened in August we restrict our analysis to June-July-August. 
+All analysis uses a 150x150 km square region centred on Carmont Drain (2.327W, 56.952N). As the derailment happened in August we restrict our analysis to June-July-August. 
 
 \subsection{CPM data processing}
-
-Due to an error in the model dynamics code the UKCP18 convective permitting models generate unphysical rainfall when the data is advected along grid lines. This produces lines of, and the occasional point with, unphysical heavy rain. These are empirically filtered out  by processing the hourly precipitation model output. This software has several empirical constants to select thresholds and sizes. The default values were used.  SB -- need a brief description of this here. 
- All CPM rainfall was then aggregated to 4.4 km resolution by simple averaging over 4 cells. 1 , 2 , 4  and 8 hour rolling averages were computed for this data. Then, for each grid point and rolling period,  the seasonal hourly maximum and date/time of maxima for all seasons and years in the ensemble. We focus on the filtered data but  explore sensitivity to filtering by showing some results from unfiltered (``Raw'') model data. 
+We use the full 100 year, 12 member ensemble data. The UK's CPM outputs hourly average rainfall on UTC hours with a nominal timestamp of HH:30. Due to an error in the model dynamics code the CPM generates unphysical rainfall (``fountains'') when the data is advected along grid lines. This produces lines of, and the occasional point with, unphysical heavy rain. These are empirically filtered out  by processing the hourly precipitation model output. This software has several empirical constants to select thresholds and sizes. The default values were used.  \textbf{SB -- need a brief description of this here. }
+ 
+All CPM hourly mean rainfall was then aggregated to 4.4 km resolution by simple averaging over 4 cells.  2, 4  and 8 hour rolling averages were then computed from the hourly-mean data. For each grid point and rolling period (including the original data),  the seasonal hourly maximum and date/time of maxima for all seasons and years in the ensemble. We focus on the filtered data but  explore sensitivity to filtering by showing some results from unfiltered (``Raw'') model data. We generally present summer  maximum accumulations described by RxNh where N is the number of hours over which the accumulation was computed. 
 
 \subsection{Radar analysis}
-\cite{saltikoff2019radar_climate} found that radar was useful! For this study we use the data from the UK archive which contains data from 2004 to one day before current date\parencite{radar_data}. However, this data may under estimate extremes\parencite{harrison2000nimrod}. The data is available  as  1km 5-minute and 5km 15-minute rainfall averages.  Both datasets  were aggregated to UTC hourly means requiring, for any day, data from at least 6  unique hours. As a crude form of quality control data was set missing if the rain rate was greater than 400 mm/hour.  The 1km data was then aggregated to 4 and 5km resolution by averaging 16 or 25 cells respectively. Data was then rolling averaged to 1, 2, 4 \& hours. As with the CPM,  seasonal maxima and the time/date of the seasonal maximum were computed for each rolling period and at each gridpoint. This gives four summary radar datasets ( 1km, 5km,  1km-c4 and  1km-c5).Much of the analysis focuses on the 1km dataset with the  other three datasets used to compare with the CPM simulations. 
+\cite{saltikoff2019radar_climate} suggested that radar data is now useful for quantitative climate studies.   For this study we use the data from the UK NIMROD archive which contains data from 2004 to one day before current date\parencite{radar_data}. However, this data may under estimate extremes\parencite{harrison2000nimrod}. The data is available  as  1km 5-minute and 5km 15-minute rainfall averages.  Both datasets  were aggregated to UTC hourly means requiring, for any day, data from at least 6  unique hours. As a crude form of quality control data was set missing if the rain rate was greater than 400 mm/hour.  The 1km data was then aggregated to 4 (1km-c4) and 5km (1km-c5) resolution by averaging 16 or 25 cells respectively. Data was then rolling averaged to 1, 2, 4 \& hours. As with the CPM,  seasonal maxima and the time/date of the seasonal maximum were computed for each rolling period and at each gridpoint. This gives four summary radar datasets (1km, 5km,  1km-c4 and  1km-c5). Much of our analysis focuses on the 1km dataset with the  other three datasets used to compare with the CPM simulations. 
 
 Radar datasets can suffer from various artefacts \parencite{Overeem2023euradclim}.
-For the Carmont region, both the mean summer rainfall and the summer median 1-hour maximum rainfall are largely free of artefacts (Fig~\ref{fig:mean_rain}). There are two artefacts associated with the Munduff hill site on the southern end of the domain visible in the summer mean rain. Beyond these the clearest signal is a strong land/sea contrast in both the mean and maximum rain. 
+For the Carmont region, both the summer mean rainfall and the summer median 1-hour maximum rainfall are largely free of artefacts (Fig~\ref{fig:radar_jja}). There are two artefacts associated with the Munduff hill site on the southern end of the domain visible in the summer mean rain. There are also a few localised areas over the North sea which may be radar artefacts.  Beyond these the clearest signal is a strong land/sea contrast in both the mean and maximum rain. Overall, the radar data appears to be adequate for our purposes.  
 
 \subsection{Event Definition}
 
 One goal of the study was to use the large volumes of radar data to compare with data from the CPM stimulations. We  wanted  to fit distributions to  datasets of seasonal extreme rainfall and compare the distributional properties. To properly estimate uncertainties requires a dataset of independent values but extreme rainfall in two locations close in space and time is likely from the same system and so not independent. We used a relatively crude way of doing this and defined an event  all extreme rainfall occurring on the same UTC day over land in the Carmont region.  For convenience, within that event quantiles are computed at values from $0$ to $1$ in steps of $0.05$. Each of these quantile values have their position, time, and topographic height recorded. The event area is also recorded.  
 
-Figure~\ref{fig:example_event} shows maximum hourly precipitation for summer 2020 and  extreme precipitation for the August 12th event from the 1km radar dataset. The August 12th event had an area of about 6000 km$^2$ which makes it a rare event. 
-
+Figure~\ref{fig:carmont_geog_group}(c) shows Rx4h accumulated precipitation for summer 2020 and  extreme precipitation for the August 12th event from the 1km radar dataset with white showing areas which do not form part of the event. The August 12th event had an area of about 6000 km$^2$ which makes it a rare event. 
 
 \subsection{Statistical Models}
 
-\cite{fowler2021rainfall_extremes} argues that extreme precipitation is related to concurrent dew point temperature (rather than temperature) as above 25C (dry bulb) extreme precip falls with temperature.  Howerver, \cite{Visser2021hook_precipitation} found, for Australian rainfall stations, that this ``hook'' was explained by changes in rainfall event duration
+\cite{fowler2021rainfall_extremes} argues that extreme precipitation is related to concurrent dew point temperature (rather than temperature) as above 25C (dry bulb) extreme precipitation falls with temperature.  However, \cite{Visser2021hook_precipitation} found, for Australian rainfall stations, that this ``hook'' was explained by changes in rainfall event duration while \cite{Seneviratne2021ippcc_chapter_extremes} found that the contemporaneous dew-point/extreme rainfall relationship was not very robust. 
 
-I fit several different statistical models to the simulated  extreme event data. Each event quantile has a  statistical model fit independent of any other quantile value and I use the Akaike Information Criteria (AIC) to decide on the best model\parencite{akaike74aic}. These models were fit using the extRemes R library\parencite{gilleland2016extremes} giving, with uncertainties, the parameters for a Generalised Extreme Value (GEV) distribution.   This library allows covariates to be included in the fit. I assumed a fixed shape with the location and scale parameters changing linearly with covariates selected from  Central England Temperature (CET), CET$^2$,  $\log_{10}$ of the event area, and the event area.  Use of CET was based on my earlier work\parencite{tett2023edinburgh} and, for the ensemble, CET correlates well with regional saturated vapour pressure~(Fig.~\ref{fig:cet_scatter}). 
+We want to generate a statistical model that relates seasonal mean conditions to extreme precipitation and so use the extRemes R library\parencite{gilleland2016extremes} to fit a generalised extreme value distribution\parencite{Coles_2001} with covariates on the shape and location parameter. From this we can estimate probabilities of extremes at specified covariate values.   For the CPM we consider several different statistical model:
+\begin{description}
+	\item[No Covariate] Fixed GEV distribution. 
+	\item[CET] Use JJA mean Central England Temperature (CET;\cite{parker92cet}) as a covariate
+	\item[CET+CET$^2$] Use both CET and CET$^2$ as covariates. This model would be able to crudely represent any non-linearities in the relationship between temperature and extreme precipitation. 
+	\item[Regn. T] Use average summer temperature in the Carmont region as a covariate.
+	\item[Reg. SVP] Use average summer saturated vapour pressure (SVP) in the Carmont region as a covariate. SVP was computed from the daily mean temperature and the improved Magnus relationship (Eqn~3 of \cite{Huang2018SVP}).
+\end{description}
+We compute a Kolmogorov-Smirnov test statistic between a GEV with 0 location, unit scale and the shape from the fit and the data scaled by the location and scale as a function of covariate(s). The K-S test is not a particularly powerful test\parencite{stephens74fit} but alternatives are not very suitable for the GEV. We also use the Aikie information criteria\parencite{akaike74aic} to compare different statistical models.  We evaluate these models by averaging over a 22x22 km region centred on the Carmont Drain.
+
+Before examining  the statistical summaries we examine scatter plots between CET and the other variables as well as regional temperature vs SVP.  
+
+I fit several different statistical models to the simulated  extreme event data. Each event quantile has a  statistical model fit independent of any other quantile value and I use the Akaike Information Criteria (AIC) to decide on the best model\parencite{akaike74aic}. These models were fit using the  giving, with uncertainties, the parameters for a Generalised Extreme Value (GEV) distribution.   This library allows covariates to be included in the fit. I assumed a fixed shape with the location and scale parameters changing linearly with covariates selected from  Central England Temperature (CET), CET$^2$,  $\log_{10}$ of the event area, and the event area.  Use of CET was based on my earlier work\parencite{tett2023edinburgh} and, for the ensemble, CET correlates well with regional saturated vapour pressure~(Fig.~\ref{fig:cet_scatter}). 
 
  
  Use of CET$^2$ allows non-linear impacts to be examined while use of  event area or $\log_{10}$ event area is plausible as one would expect the large quantiles to be larger for big events - though how much depends on the correlation scale between extreme rainfall within an event. 
@@ -223,7 +191,7 @@ The simulated extreme rainfall shows super-CC behaviour  which varies across the
 
 \cite{saltikoff2019radar_climate,kendon2021ukclimate,karoly06cet,harrison2000nimrod,kendon2023uk_climate} are all relevant! 
 
-About 25 years  SFBT, working with others, attributed surface temperature  change at global scales to human influences \parencite{tett99c20tc,stott00sci}. As he tells his students this is now scientifically dull with the research frontier now being attribution of extreme  events. The fact that the extreme rainfall in the Carmont derailment can be attributed is  possible shows how strong the signal of climate change has become.  He continues to be saddened by the lack of urgent action to both dramatically reduce emissions and, in the UK and Scotland, to urgently adapt to already existing and future climate change\parencite{ccc2024no_action}.
+About 25 years ago SFBT, working with others, attributed surface temperature  change at global scales to human influences \parencite{tett99c20tc,stott00sci}. As he tells his students this is now scientifically dull with the research frontier being attribution of extreme  events. That the extreme rainfall in the Carmont derailment can be attributed shows how strong the signal of climate change has become.  He continues to be saddened by the lack of urgent action to both dramatically reduce emissions and, in the UK and Scotland, to urgently adapt to already existing and future climate change\parencite{ccc2024no_action}.
 
 \printbibliography %Prints bibliography
 
@@ -231,43 +199,43 @@ About 25 years  SFBT, working with others, attributed surface temperature  chang
 SFBT acknowledges  Met Office support for accommodation and subsistence costs for a two week visit to the Met Office on which preliminary work on model evaluation was done. We thank Fraser Lott, Simon Brown, Elizabeth Kendon and Chris Short for discussions while there. Much of the  work carried out while Tett visiting UNSW while on Sabbatical. Preliminary version of this formed Long's MSC thesis.  Data processing of the CPM and radar data made extensive use of the UK's JASMIN platform. 
 
 \subsection*{Author contributions}
-\FloatBarrier
-%% tables
 
-\input{tables/max_rain.tex}
-\input{tables/aic.tex}
+
+\section*{Tables}
+%\FloatBarrier
 \input{tables/ks.tex}
+\input{tables/aic.tex}
+\input{tables/max_rain.tex}
 
-\afterpage{\FloatBarrier}
 
-%%figures
-\begin{figure}[tp]
+
+\FloatBarrier
+\clearpage
+\section*{Figures}
+\begin{figure}[ht!] % need various [ht!] to make figures appear. Mystery why... 
 	
 	\centering
 	\includegraphics[width=\linewidth]{carmont_geog_group}
-	\caption{a) Topography of North East Scotland (at 1km resolution). Also show, by their first two letters, are locations of Dyce, Aviemore, Aberdeen, Stonehaven and Montrose. Inset shows Great Britain and Ireland. Colour scale on bar to right. Circles are  60 and 120 km from radar stations (green hexagons with full names). b)  Map of Carmont Accident site -- brick red star shows where train derailed. Main features are contour lines every 10 meters, railway (black line) and woods (green) (Map crown copyright Ordinance Survey).  c) Maximum 4 hour radar rainfall accumulation  for JJA 2020. d) Event of 2020-8-21.  Black box in c \& d shows 150x150 km region of interest. Scale bars are shown in a and b. Location of Carmont drain shown in all plots as pale blue dot.  }
+	\caption{a) Topography of North East Scotland (at 1km resolution). Also shown, by their first two letters, are locations of Dyce, Aviemore, Aberdeen, Stonehaven and Montrose. Inset shows Great Britain and Ireland. Colour scale on bar to right. Circles are  60 and 120 km from radar stations (green hexagons with full names). b)  Map of Carmont Accident site -- brick red star shows where train derailed. Main features are contour lines every 10 meters, railway (black line) and woods (green) (Map crown copyright Ordinance Survey).  c) Maximum 4 hour radar rainfall accumulation  for JJA 2020. d) Event of 2020-8-21.  Black box in c \& d shows 150x150 km region of interest. Scale bars are shown in a and b. Location of Carmont drain shown in all plots as pale blue dot.  }
 	\label{fig:carmont_geog_group}
 \end{figure}
-
-\begin{figure}[tp]
+\clearpage
+\begin{figure}[ht!]
 	\centering
 	\includegraphics[width=0.5\linewidth]{radar_carmont}
 	\caption{a) Radar rainfall rates at Carmont (mm/h) for 1km/5 min (red) and 5km/15 min. Dotted lines show accumulation reaching 51.5 and 44.9 mm for the 1km \& 5km data respectively. Circles show when 1/2 the total rain has fallen; b) Hourly mean rates for 1km (red) and 5km (blue) radar data. Data is shown from 2020-08-12T02:45 to 10:15 and ``Derail'' shows when the train derailed. }
 	\label{fig:aug2020_rain}
 \end{figure}
 
-
-
-
-\begin{figure}
+\begin{figure}[ht!]
 	\centering
-	%%\includegraphics[width=\linewidth]{radar_jja}
-	\caption{a) Mean radar rainfall (mm/day) b) Mean monthly maximum 4h rain total (mm/h). Means are for summers (June-July-August) from 2008 to 2023 inclusive. Circles are  60 and 120 km from radar stations (Green hexagons). Pale blue circle shows point ("Carmont drain") where rain occurred, purple lines show railways and grey lines local authority boundaries. }
-	\label{fig:mean_rain}
+	\includegraphics[width=\linewidth]{radar_jja}
+	\caption{a) Mean radar rainfall (mm/day) b) Mean monthly maximum 4h rain total (mm/h). Means are for summers (June-July-August) from 2008 to 2023 inclusive. Circles are  60 and 120 km from radar stations (Green hexagons). Pale blue circle shows point ("Carmont drain") where rain occurred, purple lines show railways and grey lines local authority boundaries. Semi-transparent green lines (circles) show radial features (localised sources) which may be radar artefacts. Red crosses show, for each ensemble, mean simulated values for 2008-2023.}
+	\label{fig:radar_jja}
 \end{figure}
 
 
-\begin{figure}[tp]
+\begin{figure}
 	\centering
 	\includegraphics[width=\linewidth]{scatter}
 	\caption{Scatter plots for summer mean  a)  Central England Temperature (CET) vs  regional mean temperature; b) CET vs regional average saturated vapour pressure (SVP); c) CET vs regional average precipitation; d) Regional temperature vs Regional SVP. Green and red hexagons show estimated 1850-1899 and 2012-2021 average values. Lines show second order best fits.}
@@ -277,7 +245,7 @@ SFBT acknowledges  Met Office support for accommodation and subsistence costs fo
 \begin{figure}
 	\centering
 	\includegraphics[width=1\linewidth]{cpm_intensity_delta}
-	\caption{One in a hundred year CPM maximum rainfall accumulation for 1 and 4 hour rainfall (a \& c) and percentage sensitivity to 1 degree CET increase. Dashed lines shows intensity increase of 5.4\%/degree CET corresponding to CC. Other elements as Figure~\ref{fig:mean_rain}.  }
+	\caption{One in a hundred year CPM maximum rainfall accumulation for 1 and 4 hour rainfall (a \& c) and percentage sensitivity to 1 degree CET increase. Dashed lines shows intensity increase of 5.4\%/degree CET corresponding to CC. Other elements as Figure~\ref{fig:radar_jja}.  }
 	\label{fig:map_intensity}
 \end{figure}
 
@@ -287,32 +255,40 @@ SFBT acknowledges  Met Office support for accommodation and subsistence costs fo
 	\caption{Estimated return values for  JJA maximum accumulated radar rainfall. Shown are Rx1h (a) and Rx4h (b) for 1km  (black),  5km (green), 1km-c4 (blue) and 1km-c5 (pale blue) radar rain. Symbols in left hand of sub plots show radar rain at nearest gridpoint to Carmont drain. Horizontal error bars show return periods range for those values. }
 	\label{fig:radar_rtn_prd}
 \end{figure}
-\afterpage{\FloatBarrier}
+
 \begin{figure}
 	\centering
 	\includegraphics[width=\linewidth]{map_return_prds}
-	\caption{Best estimate Return periods for Carmont regional Rx1h and Rx4h accumulations which occured on 2020-08-12. Plots a \& b show Rx1h while plots c \& d show Rx4h. Color bar at bottom refers to all plots. Other elements as Figure~\ref{fig:mean_rain}. } 
+	\caption{Best estimate return periods for Carmont regional Rx1h and Rx4h accumulations which occurred on 2020-08-12. Plots a \& b show Rx1h while plots c \& d show Rx4h. Color bar at bottom refers to all plots. Other elements as Figure~\ref{fig:radar_jja}. } 
 	\label{fig:map_rtn_prd}
 \end{figure}
-\afterpage{\FloatBarrier}
+
+
 \begin{figure}
 	\centering
 	\includegraphics[width=\linewidth]{kde_smooth_events}
 	\caption{Kernel Density Estimates from  CPM (orange), CPM-Raw (brown), 5km radar (green), 1km-c4 (blue) and 1km-c5 (pale blue) events at 50\% quantile for 2008-2022 period. Shown are day-hour (a \& e),$\log_{10}$ of event area (b \& f),  topographic height (c \& g ) and maximum Rainfall accumulation (d \& h). Top row shows Rx1h while bottom row shows Rx4h values.}
 \end{figure}
 
-
-\begin{figure}
+\clearpage
+\begin{figure}[ht!]
 	\centering
-	\includegraphics[width=\linewidth]{intens_prob_ratios}
+	\includegraphics[width=0.9\linewidth]{intens_prob_ratios}
 	\caption{a \& d: Probability ratio, relative to Pre-industrial, at Carmont drain as function of accumulated rainfall for 1km radar rainfall. b \& e) As a but for 5km radar rainfall. c \& f: Intensity ratio at Carmont drain  as function of  return period. Also shown are median (horizontal dashed line) and 5-95\% uncertainties (vertical shading) for changes expected from Clausius-Clapyron. Upper plots (a-c) show Rx1h accumulations while lower plots (d-f) show Rx4h accumulations. All plots show changes for +2C world (red), 2012-2021 (dark blue) and 1980-1989 (pale blue) from filtered CPM data. Brown shows changes in +2C world when raw CPM data is used.   Solid lines are median changes with 5-95\% uncertainty range shown by  shading.}
 	\label{fig:int_pr}
 \end{figure}
-
-\begin{figure}
+\clearpage
+\begin{figure}[ht!]
 	\centering
 	\includegraphics[width=\linewidth]{carmont_gev_quant_change}
-	\caption{Fractional change in GEV scale  and location parameters for raw (squares) and filtered (circles) CPM data. Colours denote quantiles in 5x5 region (approximately 22x22 km) centred on Carmont Drain. Small symbols show where change is not significantly different from median quantile change. Dashed horizontal and vertical lines show mean Clausius-Clapeyron changes. Black symbols show fractional change for the whole region.  Show are Rx1h (a), Rx2h (b) and Rx4h values.}
+	\caption{
+		Fractional change in GEV scale  and location parameters for raw (squares) and filtered (circles) CPM data. 
+				Colours denote quantiles in 5x5 region (approximately 22x22 km) centred on Carmont Drain. 
+				Small symbols show where change is not significantly different from median quantile change.
+				Dashed horizontal and vertical lines show mean Clausius-Clapeyron changes.
+				Black symbols show fractional change for the whole region.  
+				Shown are Rx1h (a), Rx2h (b) and Rx4h values.
+	}
 	\label{fig:carmont_gev_quant_change}
 \end{figure}
 

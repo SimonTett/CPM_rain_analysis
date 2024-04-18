@@ -2,6 +2,7 @@
 Provides classes, variables and functions used across the project
 """
 import copy
+import re
 
 import fiona
 import rioxarray
@@ -253,7 +254,30 @@ except fiona.errors.DriverError:
 
 # radar stations
 
+def dms_to_dd(dms_str:str) -> float:
+    """
+    Convert a string in the format 'degrees°minutes'seconds"direction' to decimal degrees.
+    """
+    # Check if the input is a string
+    if not isinstance(dms_str, str):
+        raise ValueError("Input must be a string")
+
+    dms_str = dms_str.strip() # remove leading/trailing spaces
+    # Check if the input string is in the correct format
+    if not re.match(r"^\d+°\d+['’]\d+[”\"][NSWE]$", dms_str):
+        raise ValueError(f"Input string >>{dms_str}<< is not in the correct format 'degrees°minutes'seconds\"direction'")
+
+    degrees, minutes, seconds,direction = re.split('°|\'|’|"|”', dms_str)
+    dd = float(degrees) + float(minutes)/60 + float(seconds)/(60*60)
+    if direction in ['S', 'W']:
+        dd *= -1
+    return dd
+
 radar_stations = pd.read_excel(common_data / 'radar_station_metadata.xlsx', index_col=[0], na_values=['-']).T
+# convert long/lat from DMS to decimal degrees
+for col in ['Latitude', 'Longitude']:
+    radar_stations[col] = radar_stations[col].apply(dms_to_dd)
+    logger.debug(f"Converted UK Radar data {col} to decimal degrees")
 L = radar_stations.Working.str.upper() == 'Y'
 radar_stations = radar_stations[L]
 # rail network
