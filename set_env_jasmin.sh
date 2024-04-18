@@ -3,10 +3,10 @@
 ##if  [[ -z "$SET_ENV_JASMIN" ]]
 ##then
     echo "Setting up R & python env"
-    module load jasr # load the jasmin r env.
+    #module load jasr # load the jasmin r env.
     conda activate /home/users/tetts/CPMpy # my python + R env
     CPM_DIR=~tetts/CPM_rain_analysis
-    export PATH=$CPM_DIR:$PATH:~/pycharm-community-2023.2.4/bin/ # give me pycharm
+    export PATH=$CPM_DIR:$PATH:~/pycharm-community-XC2023.2.4/bin/ # give me pycharm
     export PYTHONPATH=$CPM_DIR:$PYTHONPATH
     export SET_ENV_JASMIN="true"
 #else

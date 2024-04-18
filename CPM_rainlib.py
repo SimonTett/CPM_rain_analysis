@@ -584,6 +584,26 @@ def comp_params(param: xarray.DataArray,
     result = xarray.concat(result, 'parameter')
     return result
 
+def fix_cpm_topog(topog: xarray.DataArray, reference:xarray.DataArray) -> xarray.DataArray:
+    """
+    Fix the CPM topography data which has small errors in its co-ords relative to jasmin archive data
+    :param topog: Topography data
+    :param topog_grid: Grid to regrid to
+    :return: Fixed topography data
+    """
+
+    max_rel_lon = float((np.abs(topog.grid_longitude.values / reference.grid_longitude.values - 1)).max())
+    max_rel_lat = float((np.abs(topog.grid_latitude.values / reference.grid_latitude.values - 1)).max())
+
+    if max_rel_lon > 1e-6:
+        raise ValueError(f"Lon Grids differ by more than 1e-6. Max = {max_rel_lon}")
+
+    if max_rel_lat > 1e-6:
+        raise ValueError(f"Lat Grids differ by more than 1e-6. Max = {max_rel_lat}")
+    topog = topog.interp(grid_longitude=reference.grid_longitude, grid_latitude=reference.grid_latitude)  # grids differ by tiny amount.
+
+    return topog
+
 
 
 

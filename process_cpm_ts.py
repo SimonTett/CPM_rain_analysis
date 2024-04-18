@@ -6,6 +6,8 @@ The following are computed:
 2) CET, carmont regional temperature and CPM temperature
 3) carmont region and CPM region mean precip.
 
+all ts compute avg and and land only ts.
+
 
 """
 import CPMlib
@@ -74,7 +76,14 @@ rotated_coords = {k: CPMlib.projRot.transform_point(*c, proj) for k, c in coords
 # add 360 to the x coord to match co-ords of grid
 rotated_coords = {k: [c[0] + 360, c[1]] for k, c in rotated_coords.items()}
 
-
+# get in the topographry
+sim_topog=xarray.load_dataset(CPM_rainlib.dataDir/'orog_land-cpm_BI_2.2km.nc',decode_times=False).ht.squeeze()
+# and fix co-ord names
+sim_topog=sim_topog.rename(dict(longitude='grid_longitude',latitude='grid_latitude'))
+# and grid
+ref_file = next((CPM_rainlib.cpmDir/'01/tas/mon/latest').glob('*.nc')) # get a file to get the grid from
+ref_da = xarray.open_dataset(ref_file)['tas']
+sim_topog = CPM_rainlib.fix_cpm_topog(sim_topog, ref_da)
 ## now to read the ensemble data.
 
 offset = 0.75  # degrees offset. 1 degree is ~ 100 km
@@ -87,11 +96,13 @@ outdir=CPM_rainlib.dataDir/'CPM_ts'
 outdir.mkdir(parents=True,exist_ok=True)
 if test:
     file_pattern = '*199*.nc' # for testing
-    region.update(time=slice('1989-12-01', '1995-11-30'))
+    region.update(time=slice('1989-12-01', '1992-11-30'))
     my_logger.warning('Running in test mode')
 else:
     file_pattern='*.nc'
 # Compute SVP from daily mean temperature.
+
+
 mn_svp=[]
 for p in CPM_rainlib.cpmDir.glob('[0-9][0-9]'):
     pth = p / 'tas/day/latest'
@@ -102,12 +113,17 @@ for p in CPM_rainlib.cpmDir.glob('[0-9][0-9]'):
                                concat_dim='time', combine='nested',
                                data_vars='minimal', coords='minimal',
                                compat='override')['tas']
-    my_logger.info(f"Opened files for ensemble {str(da.ensemble_member_id.values[0])}")
+    my_logger.info(f"Opened files for ensemble {int(da.ensemble_member.values[0]):d} {str(da.ensemble_member_id.values[0])}")
     da = da.sel(**region)
     my_logger.info('Selected region')
     ts= da.resample(time='MS').map(comp_mean_svp,dimensions=['time','grid_latitude','grid_longitude']).load()
+    ts=ts.rename('Reg SVP')
+    ts_land = da.where(sim_topog > 0.0).resample(time='MS').map(comp_mean_svp,dimensions=['time','grid_latitude','grid_longitude']).load()
+    ts_land = ts_land.rename('Land Reg SVP')
     my_logger.info('Computed mean SVP from daily data')
-    mn_svp.append(ts)
+    ds_svp = xarray.Dataset(dict(svp=ts,land_svp=ts_land))
+    mn_svp.append(ds_svp)
+
 mn_svp=xarray.concat(mn_svp,dim='ensemble_member')
 # write the data out
 outfile=outdir/'rgn_svp.nc'
@@ -128,7 +144,9 @@ for var in ['tas','pr']:
                                    concat_dim='time', combine='nested',
                                    data_vars='minimal', coords='minimal',
                                    compat='override')[var]
-        my_logger.info(f"Opened files for {var} and ensemble {str(da.ensemble_member_id.values[0])}")
+        my_logger.info(
+            f"Opened files for {var} ensemble {int(da.ensemble_member.values[0]):d} {str(da.ensemble_member_id.values[0])}")
+
         # not too bad performance! The extra args come from the xarray doc.
         if var == 'tas':  # CET is temperature
             cet = 0.0
@@ -141,10 +159,12 @@ for var in ['tas','pr']:
 
             cet_list.append(cet)  # append the cet
             my_logger.info(f'Computed CET')
-        rgn_ts = da.sel(**region).mean(CPM_rainlib.cpm_horizontal_coords).load()
-        rgn_list.append(rgn_ts)
-        cpm_ts=da.mean(CPM_rainlib.cpm_horizontal_coords).load()
-        cpm_list.append(cpm_ts)
+        rgn_da = da.sel(**region)
+        rgn_ts = rgn_da.mean(CPM_rainlib.cpm_horizontal_coords).load().rename('Reg '+var)
+        rgn_ts_land = rgn_da.where(sim_topog > 0.0).mean(CPM_rainlib.cpm_horizontal_coords).load().rename('Land Reg '+var)
+
+        rgn_list.append(xarray.Dataset({var: rgn_ts, 'land_'+var: rgn_ts_land}))
+
         my_logger.info(f"Done with {p} for {var}")  # end loop over ensemble members
 
     if var == 'tas':
@@ -153,8 +173,8 @@ for var in ['tas','pr']:
         cet.to_netcdf(outdir/'cet.nc')
 
     rgn_data = xarray.concat(rgn_list, dim='ensemble_member')
-    rgn_data.to_netcdf(outdir/f'reg_{var}.nc')
-    cpm=xarray.concat(cpm_list,dim='ensemble_member')
-    cpm.to_netcdf(outdir/f'cpm_reg_{var}.nc')
-    my_logger.info(f"Done with {var}. Data written to {outdir}")
+    outpath    = outdir/f'reg_{var}.nc'
+    rgn_data.to_netcdf(outpath)
+
+    my_logger.info(f"Done with {var}. Data written to {outpath}")
     # end loop over variables
