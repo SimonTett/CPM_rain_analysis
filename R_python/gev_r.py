@@ -99,7 +99,9 @@ def gen_params(
 def gev_fit(
         *args: typing.List[np.ndarray],
         use_weights: bool = False,
-        shapeCov: bool = False, **kwargs
+        shapeCov: bool = False,
+        minValues:int  = 20,
+        **kwargs
 ):
     """
     Do GEV fit using R and return named tuple of relevant values.
@@ -122,13 +124,27 @@ def gev_fit(
         weights = None  # to stop complaints from IDE about possibly undefined var
     ncov = len(args) - 1
 
-    L = ~np.isnan(x)
-    df_data = [x[L]]  # remove nan from data]
-    cols = ['x']
+
     npts = 3 + 2 * ncov
     if shapeCov:
         npts += ncov
         # end of dealing with covariance and trying to get to the right shape.
+    params = np.broadcast_to(np.nan, npts)
+    se = np.broadcast_to(np.nan, npts)
+    cov_params = np.broadcast_to(np.nan, [npts, npts])
+    nllh = np.array([np.nan])
+    aic = np.array([np.nan])
+    ks = np.array([np.nan])
+    L = ~np.isnan(x)
+    # check we have enough data.
+    sumOK = L.sum()
+    if sumOK < minValues:
+        my_logger.debug(f'Not enough data for fit. Have {sumOK} need {minValues}')
+        return (params, se, cov_params, nllh, aic, ks)
+
+    df_data = [x[L]]  # remove nan from data]
+    cols = ['x']
+
     r_code = 'fevd(x=x,data=df'
     for indx, cov in enumerate(args[1:]):
         df_data.append(cov[L])  # remove places where x was nan from cov.
@@ -147,12 +163,7 @@ def gev_fit(
     df = pd.DataFrame(np.array(df_data).T, columns=cols)
     with (robjects.default_converter + rpandas2ri.converter + numpy2ri.converter).context():
         robjects.globalenv['df'] = df  # push the dataframe with info into R
-    params = np.broadcast_to(np.nan, npts)
-    se = np.broadcast_to(np.nan, npts)
-    cov_params = np.broadcast_to(np.nan, [npts, npts])
-    nllh = np.array([np.nan])
-    aic = np.array([np.nan])
-    ks = np.array([np.nan])
+
     try:
         r_fit = robjects.r(r_code)  # do the fit
         fit = base.summary(r_fit, silent=True)  # get the summary fit info

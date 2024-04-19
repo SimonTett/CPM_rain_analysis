@@ -1,6 +1,7 @@
 # Print out stat fits for GEV fits. WIll explore CET, CET+CET^2, regional temp & regional SVP
 # will look at ks stat and AIC for micro region!
 import pathlib
+import typing
 
 import pandas as pd
 
@@ -10,95 +11,106 @@ import CPMlib
 import xarray
 import commonLib
 import numpy as np
-import matplotlib.pyplot as plt
-import statsmodels.api as sm
 
 
-def get_jja_ts(path: pathlib.Path) -> xarray.Dataset:
-    """
-    Get the JJA time series from monthly-mean data in netcdf file
-    :param path: path to data
-    :return: dataset containing JJA data
-    """
-    if not path.exists():
-        raise FileNotFoundError(f"{path} does not exist")
-    ts = xarray.open_dataset(path)
-    ts = ts.resample(time='QS-DEC').mean()
-    ts = ts.where(ts.time.dt.season == 'JJA', drop=True)
-    # remove the 2008-2022 values before doing the fit
-    ts = ts - ts.sel(**CPMlib.today_sel).mean()  # average over all ensembles
-    return ts
-
-
-my_logger = CPM_rainlib.logger
-commonLib.init_log(my_logger, level='INFO')
-rgn = {key: slice(value - 0.4, value + 0.4) for key, value in CPMlib.carmont_drain.items()}
-recreate_fit = False  # set False to use cache
-ts_dir = CPM_rainlib.dataDir / 'CPM_ts'
-sim_cet = get_jja_ts(ts_dir / 'cet_tas.nc').tas.rename('CET')
-sim_reg_es = get_jja_ts(ts_dir / 'rgn_svp.nc').tas.rename('RegSVP')
-sim_reg_tas = get_jja_ts(ts_dir / 'reg_tas.nc').tas.rename('RegTemp')
-my_logger.info("Read in the time series data")
-
-fit_dir = CPMlib.CPM_filt_dir / 'fits'
-fit_dir.mkdir(exist_ok=True, parents=True)
-
-raw_fit_dir = CPMlib.CPM_dir / 'fits'
-raw_fit_dir.mkdir(exist_ok=True, parents=True)
-
-ds = xarray.open_mfdataset(CPMlib.CPM_filt_dir.glob("**/CPM*11_30_23.nc"), parallel=True)
-L = ds.time.dt.season == 'JJA'
-maxRain = ds.seasonalMax.where(L, drop=True).sel(**rgn).load()
-
-raw_ds = xarray.open_mfdataset(CPMlib.CPM_dir.glob("**/CPM*11_30_23.nc"), parallel=True)
-L = raw_ds.time.dt.season == 'JJA'
-raw_maxRain = raw_ds.seasonalMax.where(L, drop=True).sel(**rgn).load()
-
-my_logger.info("Read in the max rain data")
-stack_dim = dict(t_e=['time', "ensemble_member"])
-fits = dict()
-fits_raw = dict()
-for name, cov in zip(['NoCov', 'CET', 'CET_sqr', 'Rgn_t', 'Rgn_svp'],
-                     [[], [sim_cet], [sim_cet, (sim_cet ** 2).rename('CET_sqr')], [sim_reg_tas], [sim_reg_es]]
-                     ):
-    cov_stack = [c.stack(**stack_dim) for c in cov]
-    fits[name] = gev_r.xarray_gev(maxRain.stack(**stack_dim),
-                                  cov=cov_stack, dim='t_e', name=f'Rgn_{name}',
-                                  file=fit_dir / f'carmont_rgn_fit_{name}.nc', recreate_fit=recreate_fit
-                                  )
-    fits_raw[name] = gev_r.xarray_gev(raw_maxRain.stack(**stack_dim),
-                                      cov=cov_stack, dim='t_e', name=f'Rgn_{name}',
-                                      file=raw_fit_dir / f'carmont_rgn_fit_{name}.nc', recreate_fit=recreate_fit
-                                      )
-    my_logger.info(f"Computed fits for {name}")
-
-
-# make dataframes of AIC and KS stats
 def comp_mn(ds: xarray.Dataset):
     mn = ds.rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
     mn = mn.sel(**CPMlib.carmont_drain, method='nearest').drop_vars(
         ['grid_latitude', 'grid_longitude', 'latitude', 'longitude'], errors='ignore'
-        )
+    )
     return mn
 
 
-AIC = pd.concat([comp_mn(f.AIC).rename(key).to_dataframe() for key, f in fits.items()], axis=1)
-AIC_raw = pd.concat([comp_mn(f.AIC).rename(key).to_dataframe() for key, f in fits_raw.items()], axis=1)
+def comp_land_mn(ds: xarray.Dataset, topog: xarray.DataArray):
+    mn = ds.rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
+    mn = mn.sel(**CPMlib.carmont_drain, method='nearest').drop_vars(
+        ['grid_latitude', 'grid_longitude', 'latitude', 'longitude'], errors='ignore'
+    )
+    mn = mn.where(topog > 1, drop=True)
+    return mn
 
-KS = pd.concat([comp_mn(f.KS).rename(key).to_dataframe() for key, f in fits.items()], axis=1)
-KS_raw = pd.concat([comp_mn(f.KS).rename(key).to_dataframe() for key, f in fits_raw.items()], axis=1)
+
+def fix_coords(ds: xarray.Dataset):
+    for c in CPM_rainlib.cpm_horizontal_coords:
+        ds[c] = ds[c].astype(np.float32).round(2)  # round co-ords
+
+
+def load_dataset(f: pathlib.Path):
+    ds = xarray.load_dataset(f)
+    fix_coords(ds)
+    return ds
+
+
+my_logger = CPM_rainlib.logger
+commonLib.init_log(my_logger, level='INFO')
+
+
+def sort_fn(path: pathlib.Path) -> str:
+    key = path.stem
+    if key == 'carmont_rgn_fit_NoCov':
+        key = 'aaaaaa'
+    elif key == 'carmont_rgn_fit_CET':
+        key = 'aaaaab'
+    elif key == 'carmont_rgn_fit_CET_sqr':
+        key = 'aaaaac'
+    else:
+        pass
+    return key
+
+
+fit_files = sorted((CPMlib.CPM_filt_dir / 'fits').glob('carmont_rgn_fit_*.nc'), key=sort_fn)
+raw_fit_files = sorted((CPMlib.CPM_dir / 'fits').glob('carmont_fit_raw_*.nc'), key=sort_fn)
+fits = dict()
+for f in fit_files:
+    ds = load_dataset(f)
+    fits[ds.name] = ds
+
+raw_fits = dict()
+for f in raw_fit_files:
+    ds = load_dataset(f)
+    raw_fits[ds.name] = ds
+
+my_logger.info("Read in the fits")
+# msk to land
+topog = xarray.load_dataset(CPM_rainlib.dataDir / 'orog_land-cpm_BI_2.2km.nc', decode_times=False).ht.squeeze()
+topog = topog.drop_vars(['t', 'surface'], errors='ignore')
+topog = topog.rename(dict(longitude='grid_longitude', latitude='grid_latitude'))[1:, 1:]
+topog = topog.coarsen(grid_longitude=2, grid_latitude=2, boundary='pad').mean(). \
+    sel(**CPMlib.carmont_rgn).load()
+fix_coords(topog)
+my_logger.info("Read in the topography")
+
+# make dataframes of AIC and KS stats
+# fix coords
+vars_to_drop = ['t', 'surface', 'latitude', 'longitude']
+fn = lambda da: da.where(topog > 0).drop_vars(vars_to_drop, errors='ignore').mean(CPM_rainlib.cpm_horizontal_coords)
+AIC = pd.concat([fn(f.AIC).rename(key[4:]).to_dataframe() for key, f in fits.items()], axis=1)
+AIC_raw = pd.concat([fn(f.AIC).rename(key[4:]).to_dataframe() for key, f in raw_fits.items()], axis=1)
+KS = pd.concat([fn(f.KS).rename(key[4:]).to_dataframe() for key, f in fits.items()], axis=1)
+KS_raw = pd.concat([fn(f.KS).rename(key[4:]).to_dataframe() for key, f in raw_fits.items()], axis=1)
+
 ## generate tables
 
-rename = dict(NoCov='No Covariate', CET_sqr='CET+CET$^2$', Rgn_t='Regn. T', Rgn_svp='Regn. SVP')
+rename = dict(NoCov='No Cov.', CET='C', CET_sqr='C+C$^2$', Rgn_t='T', Rgn_svp='S',
+              land_Rgn_t='L. T', land_Rgn_svp='L. S',Rgn_t_sqr='T+T$^2$', Rgn_svp_sqr='S+S$^2$',
+                land_Rgn_t_sqr='L. T+T$^2$', land_Rgn_svp_sqr='L. S+S$^2$'
+              )
 # print out the AIC values
 with open(CPMlib.table_dir / 'aic.tex', 'w') as f:
-    AIC.rename(columns=rename).rename_axis('').style.\
+    AIC.rename(columns=rename).rename_axis('').style. \
         relabel_index([f'Rx{r:d}h' for r in AIC.index]).format(precision=0).to_latex(
-            f, label='tab:aic',
-            caption="Mean AIC values for Carmont Drain",hrules=True
-        )
+        f, label='tab:aic', hrules=True, position='ht!',
+        caption="""Mean AIC values for Carmont Region for different rainfall season maxes and covariates: 
+            No Covariate (No Cov.), CET (C), CET and CET$^2$ (C+C$^2$), 
+            Regional mean SVP (S), SVP and SVP$^2$ (S+S$^2$), Regional mean Temperature (T), Temp and Temp$^2$ (T+T$^2$).
+            Land only Regional means are show with L."""
+    )
 # and the KS values
 with open(CPMlib.table_dir / 'ks.tex', 'w') as f:
     KS.rename(columns=rename).rename_axis('').style. \
-        relabel_index([f'Rx{r:d}h' for r in AIC.index]).\
-        format(precision=2).to_latex(f, label='tab:ks',caption='Mean KS values for Carmont Drain',hrules=True)
+        relabel_index([f'Rx{r:d}h' for r in AIC.index]). \
+        format(precision=2).to_latex(
+        f, label='tab:ks', position='ht!',
+        caption='Mean KS values for Carmont Region. Columns as Table~\\ref{tab:aic}.',
+        hrules=True
+    )

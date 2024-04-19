@@ -24,8 +24,8 @@ time_unit = 'hours since 1980-01-01'
 projRot = ccrs.RotatedPole(pole_longitude=177.5, pole_latitude=37.5)
 projOSGB = ccrs.OSGB()
 ll = ccrs.PlateCarree()
-cc_scale = 5.4  # computed in plot_scatter
-cc_uncert = 0.6
+cc_scale = 5.7  # computed in plot_scatter
+cc_uncert = 0.04
 cc_dist = scipy.stats.norm(loc=cc_scale, scale=cc_uncert)
 # colours for different radars.
 radar_cols = {'1km': 'black', '5km': 'green', '1km_c4': 'blue', '1km_c5': 'cornflowerblue'}

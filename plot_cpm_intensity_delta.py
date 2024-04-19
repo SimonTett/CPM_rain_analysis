@@ -49,48 +49,25 @@ def comp_params(
     return result
 
 
-# do the GEV calculations
-recreate_fit = False  # set False to use cache
+# read in the GEV fits. Using linear CET fit.
 fit_dir = CPM_rainlib.dataDir / 'CPM_scotland_filter' / "fits"
 raw_fit_dir = CPM_rainlib.dataDir / 'CPM_scotland' / "fits"  # no filtering
-obs_cet = commonLib.read_cet()  # read in the obs CET
-obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA', drop=True)
-t_today = obs_cet_jja.sel(**CPMlib.today_sel).mean()
-temps = dict()
-
-# compute the fits!
-rgn = CPMlib.carmont_rgn
-ds = xarray.open_mfdataset(CPMlib.CPM_filt_dir.glob("**/CPM*11_30_23.nc"), parallel=True)
-L = ds.time.dt.season == 'JJA'
-maxRain = ds.seasonalMax.sel(**rgn).where(L, drop=True).load()
-
-# raw data
-ds_raw = xarray.open_mfdataset(CPMlib.CPM_dir.glob("**/CPM*11_30_23.nc"), parallel=True)
-L = ds_raw.time.dt.season == 'JJA'
-maxRain_raw = ds_raw.seasonalMax.sel(**rgn).where(L, drop=True).load()
-#rgn_all = dict(longitude=slice(357.5, 361.0), latitude=slice(1.5, 7.5))  # region for which extraction was done.
-
-cpm_cet = xarray.load_dataset(CPM_rainlib.dataDir / "CPM_ts/cet_tas.nc")
-cpm_cet = cpm_cet.tas.resample(time='QS-DEC').mean()  # resample to seasonal means
-cpm_cet_jja = cpm_cet.where(cpm_cet.time.dt.season == 'JJA', drop=True)  # and pull out summer.
-stack_dim = dict(t_e=['time', "ensemble_member"])
-
-fit = gev_r.xarray_gev(maxRain.stack(**stack_dim), cov=[(cpm_cet_jja - t_today).rename('CET').stack(**stack_dim)],
-                       dim='t_e',
-                       name='Rgn_c', file=fit_dir / 'rgn_fit_cet.nc', recreate_fit=recreate_fit
-                       )
-
-raw_fit = gev_r.xarray_gev(maxRain_raw.stack(**stack_dim),
-                           cov=[(cpm_cet_jja - t_today).rename('CET').stack(**stack_dim)], dim='t_e',
-                           name='Rgn_c', file=raw_fit_dir / 'rgn_fit_cet.nc', recreate_fit=recreate_fit
-                           )
+name = 'CET'
+fit = xarray.load_dataset(fit_dir / f'carmont_rgn_fit_{name}.nc' )
+raw_fit = xarray.load_dataset(raw_fit_dir / f'carmont_fit_raw_{name}.nc' )
+# get in the simulated and obs CET and then compute the difference for "today"
+sim_cet = xarray.load_dataset(CPM_rainlib.dataDir / 'CPM_ts' / 'cet.nc').tas.rename('CET')
+sim_t_today= float(sim_cet.where(sim_cet.time.dt.season == 'JJA', drop=True).sel(**CPMlib.today_sel).mean())
+obs_cet = commonLib.read_cet()
+obs_t_today = float(obs_cet.where(obs_cet.time.dt.season == 'JJA', drop=True).sel(**CPMlib.today_sel).mean())
+delta = obs_t_today-sim_t_today
 ## plot the results
 rtn_prd=100
 pv = 1.0 /rtn_prd
-accum_filt_carmont  = gev_r.xarray_gev_isf(comp_params(fit).sel(**CPMlib.carmont_drain, method='Nearest'), [pv])*fit['rolling']
+accum_filt_carmont  = gev_r.xarray_gev_isf(comp_params(fit,temperature=delta).sel(**CPMlib.carmont_drain, method='Nearest'), [pv])*fit['rolling']
 for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_intensity_delta_raw']):
-    intensity = gev_r.xarray_gev_isf(comp_params(fit_params), [pv])
-    intensity_p1k = gev_r.xarray_gev_isf(comp_params(fit_params, temperature=1.0), [pv])
+    intensity = gev_r.xarray_gev_isf(comp_params(fit_params,temperature=delta), [pv])
+    intensity_p1k = gev_r.xarray_gev_isf(comp_params(fit_params, temperature=delta+1.0), [pv])
     i_percent = (100 * intensity_p1k / intensity) - 100.
 
     if 'raw' in fig_name:
@@ -102,7 +79,7 @@ for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_int
                                    num=fig_name, layout='constrained',
                                    subplot_kw=dict(projection=CPMlib.projRot)
                                    )
-
+    axes = axes.T
     label = commonLib.plotLabel()
     cmap = 'RdYlBu'
     for (axis_today, axis_delta), rolling in zip(axes, [1, 4]):
@@ -113,9 +90,10 @@ for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_int
               )
         # want fixed levels so compute them from filtered data.
         carmont_filt= float(accum_filt_carmont.sel(rolling=rolling))
-        delta = math.ceil(carmont_filt * 0.3) / 5
-        intensity_levels = np.arange(math.ceil( carmont_filt* 0.85 ), math.floor(carmont_filt * 1.15  + delta),
-                                     delta
+        df=0.15
+        delta_ctab = math.ceil(carmont_filt * 2*df) / 5
+        intensity_levels = np.arange(math.ceil( carmont_filt* (1-df) ), math.floor(carmont_filt * (1+df)  + delta_ctab),
+                                     delta_ctab
                                      )
         ratio_levels = np.arange(2, 14)
         kw_colorbar = CPMlib.kw_colorbar.copy()
@@ -129,8 +107,8 @@ for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_int
         i_percent.sel(rolling=rolling).squeeze(drop=True).plot.contour(ax=axis_delta, levels=[CPMlib.cc_dist.mean()],
                                                                        colors='black', linewidths=1, linestyles='dashed'
                                                                        )
-        axis_today.set_title(f'Rx{rolling:d}h Total (2012-22)')
-        axis_delta.set_title(f'Rx{rolling:d}h Total $\Delta$ %/K')
+        axis_today.set_title(f'Rx{rolling:d}h Accumulation (2008-23)')
+        axis_delta.set_title(f'Rx{rolling:d}h'+' Accumulation $\Delta$ %C$^{-1}$')
     carmont_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
     xstart = carmont_rgn['projection_x_coordinate'].start
     xstop = carmont_rgn['projection_x_coordinate'].stop
@@ -138,7 +116,7 @@ for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_int
     ystop = carmont_rgn['projection_y_coordinate'].stop
     x, y = [xstart, xstart, xstop, xstop, xstart], [ystart, ystop, ystop, ystart, ystart]  # coords for box.
 
-    for ax in axes.flat:
+    for ax in axes.T.flat:
         ax.set_extent(CPMlib.carmont_rgn_extent)
         CPM_rainlib.std_decorators(ax, radar_col='green', show_railways=True)
         g = ax.gridlines(draw_labels=True)
