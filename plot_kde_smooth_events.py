@@ -54,10 +54,15 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
     radar_c5_quant = radar_dataset_c5.sel(quantv=q,rolling=rolling).rename(EventTime='idx').dropna('idx')
     my_logger.debug(f"Loaded radar")
     for ds,area in zip([radar_quant, radar_c4_quant, radar_c5_quant, quant, raw_quant], [25.0, 16.0, 25, 4.4 * 4.4, 4.4 * 4.4]):
-        ds['log10 area'] = np.log10(ds.count_cells*area)
+        L = (ds.t.dt.season == 'JJA' ) & (ds.t.dt.year >=2008 )  &  (ds.t.dt.year <= 2023)
+        ds['Area'] = ds.count_cells*area
         ds['Hour'] = ds.t.dt.hour
         ds['Accum'] = ds.max_precip*rolling
-    my_logger.debug(f"Computed log10_area, hour, accum")
+        try:
+            ds['indx_2020_08_12'] = ds.idx.where(ds.t.dt.strftime('%Y-%m-%d') == '2020-08-12',drop=True).values[0]
+        except IndexError:
+            pass
+    my_logger.debug(f"Computed area, hour, accum")
     pos = axis[0].get_position()
     y=(pos.ymax+pos.ymin)/2
     x=0.02
@@ -67,9 +72,9 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
 
 
     for ax,var,bins,xlabel in zip(axis.flatten(),
-                        ['Hour','log10 area','height','Accum'],
+                        ['Hour','Area','height','Accum'],
                         [24,20,20,20], # bin sizes
-                        ['Hour',r'$\log_{10}$ Area','Height (m)','Accum precip (mm)']     ):
+                        ['Hour','Area (km$^2$)','Height (m)','Accum precip (mm)']     ):
 
         for ds,name in zip([quant, raw_quant, radar_quant, radar_c4_quant, radar_c5_quant],
                                  ['CPM','CPM-Raw','5km','1km-c4','1km-c5']):
@@ -78,6 +83,9 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
                color='brown'
             sns.kdeplot(ds[var],ax=ax,label=f'{name} ',
                         color=color,linewidth=2,cut=0)
+            if 'km' in name: # radar data.
+                ax.axvline(ds[var].sel(idx=ds.indx_2020_08_12)+np.random.uniform(low=-0.3,high=0.3),color=color,linestyle='dashed')
+
 
 
 
@@ -85,7 +93,8 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
         ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
         labels.plot(ax)
 
-
+for ax in axs:
+    ax[1].set_xscale('log')
 axs[-1][-1].set_xlim(0,50)
 axs[0][1].legend(fontsize='small',loc='lower left')
 fig.show()

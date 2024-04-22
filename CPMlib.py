@@ -191,9 +191,11 @@ def plot_carmont(ax: "cartopy.mpl.geoaxes.GeoAxes", **kwargs):
     """
     kwargs = kwargs.copy()
     default_values = dict(transform=ccrs.PlateCarree(),
-                          marker='o', ms=8, color='cornflowerblue',
-                          mec='black',
+                          marker='o', ms=8,
+                          mec='cornflowerblue',
                           alpha=0.8,
+                          markerfacecolor='none',
+                          markeredgewidth=2,
                           zorder=80) # default values
     for key, value in default_values.items():
         kwargs[key] = kwargs.get(key, value)

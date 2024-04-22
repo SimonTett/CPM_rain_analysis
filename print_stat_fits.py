@@ -30,14 +30,12 @@ def comp_land_mn(ds: xarray.Dataset, topog: xarray.DataArray):
     return mn
 
 
-def fix_coords(ds: xarray.Dataset):
-    for c in CPM_rainlib.cpm_horizontal_coords:
-        ds[c] = ds[c].astype(np.float32).round(2)  # round co-ords
+
 
 
 def load_dataset(f: pathlib.Path):
     ds = xarray.load_dataset(f)
-    fix_coords(ds)
+    CPM_rainlib.fix_coords(ds)
     return ds
 
 
@@ -72,12 +70,8 @@ for f in raw_fit_files:
 
 my_logger.info("Read in the fits")
 # msk to land
-topog = xarray.load_dataset(CPM_rainlib.dataDir / 'orog_land-cpm_BI_2.2km.nc', decode_times=False).ht.squeeze()
-topog = topog.drop_vars(['t', 'surface'], errors='ignore')
-topog = topog.rename(dict(longitude='grid_longitude', latitude='grid_latitude'))[1:, 1:]
-topog = topog.coarsen(grid_longitude=2, grid_latitude=2, boundary='pad').mean(). \
-    sel(**CPMlib.carmont_rgn).load()
-fix_coords(topog)
+topog = xarray.load_dataarray(CPM_rainlib.dataDir / 'cpm_topog_fix_c2.nc').sel(**CPMlib.carmont_rgn)
+
 my_logger.info("Read in the topography")
 
 # make dataframes of AIC and KS stats

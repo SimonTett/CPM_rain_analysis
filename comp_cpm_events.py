@@ -18,7 +18,7 @@ cpm_cet = cpm_cet.tas.resample(time='QS-DEC').mean()  # resample to seasonal mea
 cpm_cet_jja = cpm_cet.where(cpm_cet.time.dt.season == 'JJA', drop=True)  # and pull out summer.
 
 # Load up CPM extreme rainfall data, select to region of interest and mask
-rgn_all = dict(longitude=slice(357.5, 361.0), latitude=slice(1.5, 7.5))  # region for which extraction was done.
+
 rgn = CPMlib.carmont_rgn
 filtered = False
 if filtered:
@@ -27,34 +27,20 @@ if filtered:
 else:
     paths = sorted(CPMlib.CPM_dir.glob('CPM*/*.nc'))
     outpath = CPMlib.CPM_dir / "CPM_all_events.nc"
-my_logger.info(f"Opening data for {len(paths)}")
+my_logger.info(f"Opening data for {len(paths)} files")
 ds = xarray.open_mfdataset(paths, parallel=True)
 ds = ds.where(ds.time.dt.season == 'JJA', drop=True)  # get summer only
-ds = ds.sel(**rgn)  # reduce to rgn of interest
-print("Opened data")
-topog = xarray.load_dataset(CPM_rainlib.dataDir / 'orog_land-cpm_BI_2.2km.nc', decode_times=False)
-topog = topog.ht.sel(rgn_all).rename(dict(longitude='grid_longitude', latitude='grid_latitude')).squeeze()
-t = topog.coarsen(grid_longitude=2, grid_latitude=2, boundary='trim').min().sel(rgn)
-tmn = topog.coarsen(grid_longitude=2, grid_latitude=2, boundary='trim').mean().sel(rgn)
-# check rel errors < 1.e-6
-max_rel_lon = float((np.abs(t.grid_longitude.values / ds.grid_longitude.values - 1)).max())
-max_rel_lat = float((np.abs(t.grid_latitude.values / ds.grid_latitude.values - 1)).max())
-
-if max_rel_lon > 1e-6:
-    raise ValueError(f"Lon Grids differ by more than 1e-6. Max = {max_rel_lon}")
-
-if max_rel_lat > 1e-6:
-    raise ValueError(f"Lat Grids differ by more than 1e-6. Max = {max_rel_lat}")
-t = t.interp(grid_longitude=ds.grid_longitude, grid_latitude=ds.grid_latitude)  # grids differ by tiny amount.
-tmn = tmn.interp(grid_longitude=ds.grid_longitude, grid_latitude=ds.grid_latitude)
-
-# iterate over ensemble_member and then stack them at the end...
+ds = ds.sel(**rgn).load()  # reduce to rgn of interest
+CPM_rainlib.fix_coords(ds)
+topog = xarray.load_dataarray(CPM_rainlib.dataDir / 'cpm_topog_fix_c2.nc').sel(**rgn)
+my_logger.info("Loaded data")
+## iterate over ensemble_member and then stack them at the end...
 grped_list = []
 for ensemble in ds.ensemble_member:
     my_logger.info(f"Processing ensemble: {int(ensemble)}")
-    dataset = ds.sel(ensemble_member=ensemble)  # extract the ensemble
+    dataset = ds.sel(ensemble_member=ensemble) # extract the ensemble
     mxTime = dataset.seasonalMaxTime.squeeze(drop=True).load()
-    grp = CPMlib.discretise(mxTime).where(t > 1, 0).rename('EventTime')
+    grp = CPMlib.discretise(mxTime).where(topog > 0, 0).rename('EventTime')
     # remove unwanted co-ords.
     coords_to_drop = [c for c in mxTime.coords if c not in mxTime.dims]
     # add on t & surface.
@@ -77,7 +63,7 @@ for ensemble in ds.ensemble_member:
         dd['CET'] = cet_extreme_times  # add in the CET data.
         dd_lst.append(dd)
         # add in hts
-        ht = tmn.sel(grid_longitude=dd.x, grid_latitude=dd.y)
+        ht = topog.sel(grid_longitude=dd.x, grid_latitude=dd.y)
         # drop unnneded coords
         coords_to_drop = [c for c in ht.coords if c not in ht.dims]
         ht = ht.drop_vars(coords_to_drop)
