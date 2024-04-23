@@ -12,10 +12,10 @@ channels:
 dependencies:
    - python~=3.9
    - ipython~=8.18
-   - xarray~=2023.8 # neeed to fix anoying numpy error.
+   - xarray~=2023.8 # neeed to fix annoying numpy error.
    - flox~=0.8
    - scipy~=1.11
-   - pandas~=1.4 # reduced version as want compatability with 2022 xarray.
+   - pandas~=2.2 #
    - numpy~=1.21
    - rpy2~=3.5.15
    - matplotlib~=3.6

@@ -30,7 +30,7 @@ fig.get_layout_engine().set(rect=[0.05,0.0,0.95,1.0])#.execute(fig)
 
 labels = commonLib.plotLabel()
 plot_col_titles=True
-for (q,rolling),axis in zip(itertools.product([0.95],[1,4]),axs):
+for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
     sel = dict(quantv=q,rolling=rolling,method='nearest') # waht we want!
     quant = dataset.sel(**sel).stack(idx=['EventTime','ensemble_member']).dropna('idx') # select the quantile and rolling period
     raw_quant = raw_dataset.sel(**sel).stack(idx=['EventTime', 'ensemble_member']).dropna('idx'

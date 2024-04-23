@@ -150,13 +150,13 @@ my_logger.debug(f"Loaded radar data")
 
 ## get in the model fits and work out ratios for today and PI
 fit_dir = CPM_rainlib.dataDir / 'CPM_scotland_filter' / "fits"
-fit_file = fit_dir / 'rgn_fit_cet.nc'
+fit_file = fit_dir / 'carmont_rgn_fit_CET.nc'
 cpm_gev_params = xarray.open_dataset(fit_file).rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
 cpm_gev_params = cpm_gev_params.sel(**CPMlib.carmont_drain, method='nearest') # get the data for the carmont drain
 cpm_gev_params['Cov'] = cpm_gev_params['Cov'] / 25. # average over 25 points so covariance down by a factor of 25.
 # get in the raw data
 raw_fit_dir = CPM_rainlib.dataDir / 'CPM_scotland' / "fits"
-raw_fit_file = raw_fit_dir / 'rgn_fit_cet.nc'
+raw_fit_file = raw_fit_dir / 'carmont_fit_raw_CET.nc'
 raw_cpm_gev_params = xarray.open_dataset(raw_fit_file).rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
 raw_cpm_gev_params = raw_cpm_gev_params.sel(**CPMlib.carmont_drain, method='nearest') # get the data for the carmont drain
 raw_cpm_gev_params['Cov'] = raw_cpm_gev_params['Cov'] / 25. # average over 25 points so covariance down by a factor of 25.

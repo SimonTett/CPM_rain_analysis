@@ -118,60 +118,7 @@ def time_process(da:xarray.DataArray,
 
     return ds
 
-def end_period_process(dailyData:typing.List,
-                       outDir:pathlib.Path, 
-                       resoln:str, 
-                       period:str='1MS', 
-                       coarsens:typing.List[int]=[1],
-                       rolling:typing.List[int]=[1]):
-    """
-    Deal with data processing at end of a period -- normally a calendar month.
-    :param dailyData -- input list of daily datasets
-    :param outDir -- output directory where data will be written to
-    :param  resoln -- resolution string
-    :param period (default '1MS'). Time period over which data to be resampled to
-    :param coarsens: List of coarsenings to apply to spatial data.
-    :param rolling. List of rolling periods to apply to data in time.
-    """
-    if len(dailyData) == 0:
-        return []  # nothing to do so return empty list 
-    name_keys = {'1D': 'daily', '1MS': 'monthly'}
-    no_days = len(dailyData)
-    summary_prefix = name_keys.get(period, period)
-    outDir.mkdir(exist_ok=True,parents=True) # create the outdir
-    rain=xarray.concat(dailyData,dim='time')
-    # pull out no of samples and compute total number of samples in period
-    No_samples=rain['no_samples'].resample(time=period).sum() # no of samples
-    fmt_str = '%Y-%m-%dT%H'
-    start_time = rain.time.min().dt.strftime(fmt_str).values.tolist()
-    end_time = rain.time.max().dt.strftime(fmt_str).values.tolist()
 
-
-
-    # Handle Coarsening
-    resultDS=dict()
-    rain_var = "Radar_rain"
-    for coarsen in coarsens:
-        if coarsen == 1:
-            coarsened_da = rain[rain_var] # no coarsening needed!
-            key = f'{resoln}'
-        else:
-            c_dict=dict(projection_x_coordinate=coarsen,
-                        projection_y_coordinate=coarsen)
-            coarsened_da =rain[rain_var].coarsen(boundary='pad',**c_dict).mean().\
-                          assign_coords(dict(coarsen=coarsen))
-            key = f'{resoln}_c{coarsen}'
-
-        outFile = outDir / "_".join(
-            ["radar_rain", start_time,end_time, key+'.nc'])
-
-        resampDS = coarsened_da.resample(time=period).map(time_process, rolling=rolling)
-        
-        resampDS['No_samples'] = No_samples # add in the number of samples
-        resampDS["time"]=    ds2.to_netcdf(outFile, encoding=encoding,unlimited_dims=['time']) # allow time to unlimited
-    my_logger.info(f"Wrote summary data for  {ds.time.min().values} - {ds.time.max().values} to {outFile}")
-
-    return ds2
 
 def time_process(da:xarray.DataArray,
                  rolling:typing.List[int]=[1]):
@@ -206,60 +153,6 @@ def time_process(da:xarray.DataArray,
 
     return ds
 
-def end_period_process(dailyData:typing.List,
-                       outDir:pathlib.Path, 
-                       resoln:str, 
-                       period:str='1MS', 
-                       coarsens:typing.List[int]=[1],
-                       rolling:typing.List[int]=[1]):
-    """
-    Deal with data processing at end of a period -- normally a calendar month.
-    :param dailyData -- input list of daily datasets
-    :param outDir -- output directory where data will be written to
-    :param  resoln -- resolution string
-    :param period (default '1MS'). Time period over which data to be resampled to
-    :param coarsens: List of coarsenings to apply to spatial data.
-    :param rolling. List of rolling periods to apply to data in time.
-    """
-    if len(dailyData) == 0:
-        return []  # nothing to do so return empty list 
-    name_keys = {'1D': 'daily', '1MS': 'monthly'}
-    no_days = len(dailyData)
-    summary_prefix = name_keys.get(period, period)
-    outDir.mkdir(exist_ok=True,parents=True) # create the outdir
-    rain=xarray.concat(dailyData,dim='time')
-    # pull out no of samples and compute total number of samples in period
-    No_samples=rain['no_samples'].resample(time=period).sum() # no of samples
-    fmt_str = '%Y-%m-%dT%H'
-    start_time = rain.time.min().dt.strftime(fmt_str).values.tolist()
-    end_time = rain.time.max().dt.strftime(fmt_str).values.tolist()
-
-
-
-    # Handle Coarsening
-    resultDS=dict()
-    rain_var = "Radar_rain"
-    for coarsen in coarsens:
-        if coarsen == 1:
-            coarsened_da = rain[rain_var] # no coarsening needed!
-            key = f'{resoln}'
-        else:
-            c_dict=dict(projection_x_coordinate=coarsen,
-                        projection_y_coordinate=coarsen)
-            coarsened_da =rain[rain_var].coarsen(boundary='pad',**c_dict).mean().\
-                          assign_coords(dict(coarsen=coarsen))
-            key = f'{resoln}_c{coarsen}'
-
-        outFile = outDir / "_".join(
-            ["radar_rain", start_time,end_time, key+'.nc'])
-
-        resampDS = coarsened_da.resample(time=period).map(time_process, rolling=rolling)
-        
-        resampDS['No_samples'] = No_samples # add in the number of samples
-        resampDS["time"]=    ds2.to_netcdf(outFile, encoding=encoding,unlimited_dims=['time']) # allow time to unlimited
-    my_logger.info(f"Wrote summary data for  {ds.time.min().values} - {ds.time.max().values} to {outFile}")
-
-    return ds2
 
 def time_process(da:xarray.DataArray,
                  rolling:typing.List[int]=[1]):

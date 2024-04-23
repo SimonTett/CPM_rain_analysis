@@ -6,8 +6,7 @@ import re
 
 import fiona
 import rioxarray
-import iris
-import iris.fileformats.nimrod_load_rules
+
 import tarfile
 import gzip
 import zlib  # so we can trap an error
@@ -25,9 +24,9 @@ import pandas as pd
 import numpy as np
 import platform
 import cftime
-import cf_units
+
 import logging
-import iris.exceptions
+
 import typing
 import cartopy.crs as ccrs
 
@@ -35,9 +34,7 @@ logger = logging.getLogger(__name__)
 
 from pandas._libs import NaTType
 
-bad_data_err = (
-    zlib.error, ValueError, TypeError, iris.exceptions.ConstraintMismatchError,
-    gzip.BadGzipFile)  # possible bad data
+
 # bad_data_err = (zlib.error,iris.exceptions.ConstraintMismatchError,gzip.BadGzipFile) # possible bad data
 machine = platform.node()
 if ('jasmin.ac.uk' in machine) or ('jc.rl.ac.uk' in machine):
@@ -88,48 +85,54 @@ def convert_date_to_cftime(
 
 
 ## hack iris so bad times work...
+try:
+    import iris
+    import iris.fileformats.nimrod_load_rules
+    import cf_units
+    import iris.exceptions
+    import iris.fileformats.nimrod_load_rules
+    bad_data_err = (
+        zlib.error, ValueError, TypeError, iris.exceptions.ConstraintMismatchError,
+        gzip.BadGzipFile)  # possible bad data
+    def hack_nimrod_time(cube, field):
+        """Add a time coord to the cube based on validity time and time-window. HACKED to ignore seconds"""
+        NIMROD_DEFAULT = -32767.0
 
-def hack_nimrod_time(cube, field):
-    """Add a time coord to the cube based on validity time and time-window. HACKED to ignore seconds"""
-    NIMROD_DEFAULT = -32767.0
+        TIME_UNIT = cf_units.Unit("seconds since 1970-01-01 00:00:00", calendar=cf_units.CALENDAR_GREGORIAN)
 
-    TIME_UNIT = cf_units.Unit("seconds since 1970-01-01 00:00:00", calendar=cf_units.CALENDAR_GREGORIAN)
+        if field.vt_year <= 0:
+            # Some ancillary files, eg land sea mask do not
+            # have a validity time.
+            return
+        else:
+            missing = field.data_header_int16_25  # missing data indicator
+            dt = [field.vt_year, field.vt_month, field.vt_day, field.vt_hour, field.vt_minute,
+                  field.vt_second]  # set up a list with the dt cpts
+            for indx in range(3, len(dt)):  # check out hours/mins/secs and set to 0 if missing
+                if dt[indx] == missing:
+                    dt[indx] = 0
 
-    if field.vt_year <= 0:
-        # Some ancillary files, eg land sea mask do not
-        # have a validity time.
-        return
-    else:
-        missing = field.data_header_int16_25  # missing data indicator
-        dt = [field.vt_year, field.vt_month, field.vt_day, field.vt_hour, field.vt_minute,
-              field.vt_second]  # set up a list with the dt cpts
-        for indx in range(3, len(dt)):  # check out hours/mins/secs and set to 0 if missing
-            if dt[indx] == missing:
-                dt[indx] = 0
+            valid_date = cftime.datetime(*dt)  # make a cftime datetime.
 
-        valid_date = cftime.datetime(*dt)  # make a cftime datetime.
+        point = np.around(iris.fileformats.nimrod_load_rules.TIME_UNIT.date2num(valid_date)).astype(np.int64)
 
-    point = np.around(iris.fileformats.nimrod_load_rules.TIME_UNIT.date2num(valid_date)).astype(np.int64)
+        period_seconds = None
+        if field.period_minutes == 32767:
+            period_seconds = field.period_seconds
+        elif (not iris.fileformats.nimrod_load_rules.is_missing(field, field.period_minutes) and field.period_minutes != 0):
+            period_seconds = field.period_minutes * 60
+        if period_seconds:
+            bounds = np.array([point - period_seconds, point], dtype=np.int64)
+        else:
+            bounds = None
 
-    period_seconds = None
-    if field.period_minutes == 32767:
-        period_seconds = field.period_seconds
-    elif (not iris.fileformats.nimrod_load_rules.is_missing(field, field.period_minutes) and field.period_minutes != 0):
-        period_seconds = field.period_minutes * 60
-    if period_seconds:
-        bounds = np.array([point - period_seconds, point], dtype=np.int64)
-    else:
-        bounds = None
+        time_coord = iris.coords.DimCoord(points=point, bounds=bounds, standard_name="time", units=TIME_UNIT)
 
-    time_coord = iris.coords.DimCoord(points=point, bounds=bounds, standard_name="time", units=TIME_UNIT)
-
-    cube.add_aux_coord(time_coord)
-
-
-import iris.fileformats.nimrod_load_rules
-
-iris.fileformats.nimrod_load_rules.time = hack_nimrod_time
-print("WARNING MONKEY PATCHING iris.fileformats.nimrod_load_rules.time")
+        cube.add_aux_coord(time_coord)
+    iris.fileformats.nimrod_load_rules.time = hack_nimrod_time
+    print("WARNING MONKEY PATCHING iris.fileformats.nimrod_load_rules.time")
+except ImportError:
+    logger.warning('failed to import iris so no nimrod files can be read')
 
 
 def get_first_non_missing(data_array: xarray.DataArray):
@@ -615,17 +618,19 @@ def comp_events(max_values: xarray.DataArray,
         assert (int(dd.count_cells.sum('EventTime').values) == expected_event_area)
         event_time_values = np.arange(0, len(dd.EventTime))
         dd = dd.assign_coords(rolling=roll, EventTime=event_time_values)
+        logger.debug('Computed event stats')
         # get the summer mean CET out and force its time's to be the same.
         tc = np.array([f"{int(y)}-06-01" for y in dd.t.isel(quantv=0).dt.year])
         cet_extreme_times = cet.interp(time=tc).rename(dict(time='EventTime'))
         # convert EventTime to an index.
         cet_extreme_times = cet_extreme_times.assign_coords(rolling=roll, EventTime=event_time_values)
         dd['CET'] = cet_extreme_times  # add in the CET data.
-
+        logger.debug('Added CET in')
         # add in hts
         coords = source_coords(source)
         sel = dict(zip(coords, [dd.x, dd.y]))
         ht = topog.sel(**sel)
+        logger.debug('Included ht')
         # drop unneeded coords
         coords_to_drop = [c for c in ht.coords if c not in ht.dims]
         ht = ht.drop_vars(coords_to_drop)

@@ -31,7 +31,7 @@ cc_dist = scipy.stats.norm(loc=cc_scale, scale=cc_uncert)
 radar_cols = {'1km': 'black', '5km': 'green', '1km_c4': 'blue', '1km_c5': 'cornflowerblue'}
 # compute various carmont co-ords
 carmont_long_lat = (-2.3197, 56.95248)  # location of derailment from openstreetmap.
-carmont_drain_long_lat = (-2.3266852553075017, 56.951548724582096)  # "field" where rainfell
+carmont_drain_long_lat = (-2.3266852553075017, 56.951548724582096)  # "field" where rain fell. From openstreet map and ST clicking!
 carmont = dict(zip(CPM_coords, projRot.transform_point(*carmont_long_lat, ll)))
 carmont[CPM_coords[0]] += 360.
 
@@ -49,7 +49,12 @@ carmont_drain = dict(zip(CPM_coords,
                      )
 carmont_drain[CPM_coords[0]] += 360.
 carmont_rgn_OSGB = {k: slice(v - 75e3, v + 75e3) for k, v in carmont_drain_OSGB.items()}
-carmont_rgn = {k: slice(v - 0.75, v + 0.75) for k, v in carmont_drain.items()}
+# generate rotated co-ords.
+xc=np.array( [carmont_rgn_OSGB['projection_x_coordinate'].start,carmont_rgn_OSGB['projection_x_coordinate'].stop])
+yc= np.array([carmont_rgn_OSGB['projection_y_coordinate'].start,carmont_rgn_OSGB['projection_y_coordinate'].stop])
+xy_rot = projRot.transform_points(projOSGB,np.array(xc),np.array(yc))
+xy_rot[:,0] += 360.
+carmont_rgn = dict(zip(CPM_coords,[slice(*xy_rot[:,indx]) for indx in range(2)]))
 carmont_rgn_extent = []
 for v in carmont_rgn.values():
     carmont_rgn_extent.extend([v.start, v.stop])

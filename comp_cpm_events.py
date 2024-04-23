@@ -13,6 +13,8 @@ import dask
 
 my_logger = CPM_rainlib.logger
 commonLib.init_log(my_logger, level='INFO')
+test= False
+filtered = True # if True use filtered data!
 # first get in CET -- our covariate
 
 obs_cet = commonLib.read_cet()  # read in the obs CET
@@ -21,13 +23,14 @@ obs_cet_jja = obs_cet.sel(time=(obs_cet.time.dt.season == 'JJA'))
 cpm_cet = xarray.load_dataset(CPM_rainlib.dataDir / "CPM_ts/cet_tas.nc")
 cpm_cet = cpm_cet.tas.resample(time='QS-DEC').mean()  # resample to seasonal means
 cpm_cet_jja = cpm_cet.where(cpm_cet.time.dt.season == 'JJA', drop=True)  # and pull out summer.
-
-
-
 # Load up CPM extreme rainfall data, select to region of interest and mask
+# test
+if test:
+    rgn = {'grid_longitude': slice(359.75, 360.25),'grid_latitude': slice(4.25, 4.75)}
+    my_logger.info(f'In test mode. Using small rgn')
+else:
+    rgn = CPMlib.carmont_rgn
 
-rgn = CPMlib.carmont_rgn
-filtered = False
 if filtered:
     paths = sorted(CPMlib.CPM_filt_dir.glob('CPM*/*11_30_23.nc'))
     outpath = CPMlib.CPM_filt_dir / "CPM_filter_all_events.nc"
@@ -39,12 +42,20 @@ with dask.config.set(**{'array.slicing.split_large_chunks': True}):
     ds = xarray.open_mfdataset(paths, parallel=True, drop_variables=['month_number', 'year', 'yyyymmddhh'], chunks={})
 my_logger.info("Opened files")
 ds = ds.where(ds.time.dt.season == 'JJA', drop=True)  # get summer only
-ds = ds.sel(**rgn)  # reduce to rgn of interest
 CPM_rainlib.fix_coords(ds)
-topog = xarray.load_dataarray(CPM_rainlib.dataDir / 'cpm_topog_fix_c2.nc').sel(**rgn)
+ds = ds.sel(**rgn)  # reduce to rgn of interest
+
+topog = xarray.load_dataarray(CPM_rainlib.dataDir / 'cpm_topog_fix_c2.nc')
+CPM_rainlib.fix_coords(topog)
+topog= topog.sel(**rgn)
 ## iterate over ensemble_member and then stack them at the end...
 grped_list = []
-for ensemble in ds.ensemble_member:
+
+if test:
+    ensemble_list=[1,5]
+else:
+    ensemble_list = ds.ensemble_member
+for ensemble in ensemble_list:
     my_logger.info(f"Processing ensemble: {int(ensemble)}")
     dataset = ds.sel(ensemble_member=ensemble).load()  # extract the ensemble
     my_logger.info(f"Loaded ensemble: {int(ensemble)}")
@@ -55,34 +66,9 @@ for ensemble in ds.ensemble_member:
     # add on t & surface.
     coords_to_drop += ['t', 'surface']
     grp = grp.drop_vars(coords_to_drop, errors='ignore')
-    my_logger.info(f"Computed grouping: {int(ensemble)}")
-    dd_lst = []
-    expected_events = len(dataset.time) * (topog > 0).sum()
-    for roll in dataset['rolling'].values:
-        dd = CPM_rainlib.event_stats(dataset.seasonalMax.sel(rolling=roll),
-                                     mxTime.sel(rolling=roll),
-                                     grp.sel(rolling=roll)
-                                     ).sel(EventTime=slice(1, None))
-        # at this point we have the events. Check that the total cell_count. Should be no_years*no non-nan cells in seasonalMax
-        assert (int(dd.count_cells.sum('EventTime').values) == expected_events)
+    my_logger.info(f"Computed grouping for ensemble: {int(ensemble)}")
+    dd = CPM_rainlib.comp_events(dataset.seasonalMax,dataset.seasonalMaxTime, grp, topog, cpm_cet_jja.sel(ensemble_member=ensemble),source='CPM')
 
-        event_time_values = np.arange(0, len(dd.EventTime))
-        dd = dd.assign_coords(rolling=roll, EventTime=event_time_values)
-        # get the CPM summer mean CET out and force its time's to be the same.
-        tc = np.array([f"{int(y)}-06-01" for y in dd.t.isel(quantv=0).dt.year])
-        cet_extreme_times = cpm_cet_jja.sel(ensemble_member=ensemble).interp(time=tc).rename(dict(time='EventTime'))
-        # convert EventTime to an index.
-        cet_extreme_times = cet_extreme_times.assign_coords(rolling=roll, EventTime=event_time_values)
-        dd['CET'] = cet_extreme_times  # add in the CET data.
-        dd_lst.append(dd)
-        # add in hts
-        ht = topog.sel(grid_longitude=dd.x, grid_latitude=dd.y)
-        # drop unnneded coords
-        coords_to_drop = [c for c in ht.coords if c not in ht.dims]
-        ht = ht.drop_vars(coords_to_drop)
-        dd['height'] = ht
-        my_logger.info(f"Processed rolling: {roll}")
-    dd = xarray.concat(dd_lst, dim='rolling')
     # remove unneded dimensions
     dims = list(dd.dims) + ['ensemble_member', 'ensemble_member_id']
     coords_to_drop = [c for c in dd.coords if c not in dims]
@@ -95,4 +81,5 @@ for var in ['t']:
     dataset[var] = CPMlib.time_convert(dataset[var])
 
 my_logger.info(f"Writing events to {outpath}")
-dataset.to_netcdf(outpath)
+if not test:
+    dataset.to_netcdf(outpath)
