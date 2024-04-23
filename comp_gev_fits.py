@@ -27,7 +27,7 @@ def get_jja_ts(path: pathlib.Path) -> xarray.Dataset:
     return ts.load()
 
 
-recreate_fit = False  # recreate all fits. Set to False to cache -- handy if want to add to existing
+recreate_fit = True  # recreate all fits. Set to False to cache -- handy if want to add to existing
 ts_dir = CPM_rainlib.dataDir / 'CPM_ts'
 sim_cet = get_jja_ts(ts_dir / 'cet.nc').tas.rename('CET')
 sim_reg_es = get_jja_ts(ts_dir / 'rgn_svp.nc')

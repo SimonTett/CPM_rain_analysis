@@ -68,13 +68,16 @@ def discretise(time: xarray.DataArray) -> xarray.DataArray:
     :rtype:
     """
 
-    def disc(time, time_unit):
-        times = cftime.date2num(time, time_unit).astype('int')
+    def disc(time:np.ndarray, time_unit:str) -> np.ndarray:
+
+        times = cftime.date2num(time, time_unit).astype('int64')
         result = 24 * (times // 24).astype('int')  # +((times%24)/24)*24
-        return result.astype('int')
+        return result.astype('int64')
 
-    return xarray.apply_ufunc(disc, time, time_unit)  # do the discretisation and return the discrete times
-
+    msk = time.notnull()
+    result = xarray.apply_ufunc(disc, time.where(msk,cftime.Datetime360Day(1,1,1)), time_unit)  # do the discretisation and return the discrete times
+    result = result.where(msk,0)
+    return result
 
 def inv_disc(disc_time: xarray.DataArray) -> xarray.DataArray:
     """

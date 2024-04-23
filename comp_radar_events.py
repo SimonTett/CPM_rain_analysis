@@ -1,5 +1,7 @@
 # Generate event datasets from radar data
 # also do GEV fit
+from __future__ import annotations
+
 import logging
 import pathlib
 import typing
@@ -61,8 +63,7 @@ def convert_to_cftime(
 
 init_log(logger, level='INFO')
 recreate = True
-proj = ccrs.PlateCarree()
-projGB = ccrs.OSGB()
+
 carmont = CPMlib.carmont_rgn_OSGB.copy()
 carmont.update(time=slice('2008-01-01', '2023-12-31'))
 
@@ -70,11 +71,12 @@ carmont.update(time=slice('2008-01-01', '2023-12-31'))
 obs_cet = commonLib.read_cet()
 # restrict to summer and > 1800 -- so in the range of np.datetime64. Sigh time coords are such a pain.
 obs_cet_jja = obs_cet.where((obs_cet.time.dt.season == 'JJA') & (obs_cet.time.dt.year > 1800), drop=True)
-# From https://stackoverflow.com/questions/55786995/converting-cftime-datetimejulian-to-datetime/55787899
 # and demonstrating the calendar support is a bit dodgy in xarray. Sigh!
 obs_cet_jja['time'] = obs_cet_jja.indexes['time'].to_datetimeindex()
 summary_files = list(CPMlib.radar_dir.glob("summary/*.nc"))
 for path in summary_files:
+    root = '_'.join(path.stem.split('_')[2:])
+    topog = xarray.load_dataarray(CPMlib.radar_dir / 'topography'/f'topog_{root}.nc').sel(**CPMlib.carmont_rgn_OSGB)
     resoln, coarsen = extract_resoln_coarsen(path.name)
     if resoln == 1:
         samples_per_day = 12 * 24  # 5 min samples for km resoln
@@ -88,26 +90,26 @@ for path in summary_files:
         name = f'{resoln:d}km hourly'
 
     outpath = path.name.replace('summary', 'events')
-    logger.warning(f'Processing {path} to {outpath} at {resoln} km resolution with coarsening {coarsen}.')
-    grid = int(resoln * 1000. / 90.)
-    radar_dataset = CPM_rainlib.comp_event_stats(path, region=carmont, topog_grid=grid,
-                                                 height_range=slice(1., None),
-                                                 samples_per_day=samples_per_day, sample_fract_limit=(0.8, 1.)
-                                                 )
+    logger.info(f'Processing {path} to {outpath} at {resoln} km resolution with coarsening {coarsen}.')
+    radar = xarray.open_dataset(path).sel(**carmont).where(topog > 0)
+    seas_radar = radar.resample(time='QS-DEC',skipna=True).map(CPM_rainlib.time_process)
+    L=radar.time.dt.season == 'JJA'
+    seas_radar = seas_radar.where(L, drop=True).load()
+    # need a different discretisation from CPM  as radar uses np.datetime64 times.
+    grp = np.floor(((seas_radar.Radar_rain_MaxTime-np.datetime64('1970-01-01'))/np.timedelta64(1,'D'))).rename('EventTime')
+    logger.info(f"Computed grouping for {name}")
 
-    # now get CET for all the event times
-    msk = radar_dataset.t.notnull()
-    cet_interp = obs_cet_jja.sel(time=radar_dataset.t, method='Nearest')
-    radar_dataset['CET'] = cet_interp
+    radar_events = CPM_rainlib.comp_events(seas_radar.Radar_rain_Max,
+                                           seas_radar.Radar_rain_MaxTime, grp, topog, obs_cet_jja,source='RADAR')
 
     # add some attributes
     source_str = (f"""Processed {name} NIMROD RADAR data.
      From {path.name} to events using comp_radar_events.py on {datetime.datetime.now()}""")
-    radar_dataset.attrs.update(source=source_str)
+    radar_events.attrs.update(source=source_str)
     opath = CPMlib.radar_dir / f"radar_events/{outpath}"
     opath.parent.mkdir(exist_ok=True)
-    radar_dataset.to_netcdf(opath)
-    print(f"Saved {radar_dataset.attrs['source']}\n to {opath}")
+    radar_events.to_netcdf(opath)
+    print(f"Saved {radar_events.attrs['source']}\n to {opath}")
 
 ## lets check there are OK and print  out the shape/locn/scale values
 files = pathlib.Path(CPMlib.radar_dir / 'radar_events').glob("*.nc")

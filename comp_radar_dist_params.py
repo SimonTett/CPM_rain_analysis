@@ -14,7 +14,7 @@ import numpy.random
 import CPMlib
 
 my_logger=CPM_rainlib.logger
-commonLib.init_log(my_logger)
+commonLib.init_log(my_logger,level='INFO')
 use_cache = False # if True  just read in the saved fits (if they exist) otherwise generate the fits and save them
 def comp_fits(rng, radar_events, nsamps: int = 100) -> xarray.DataArray:
     n_events = radar_events.EventTime.shape[0]

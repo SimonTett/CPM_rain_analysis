@@ -1,10 +1,15 @@
 # COmpute simulated events
 # fit the CPM rainfall data.
+import typing
+
+import pandas as pd
+
 import commonLib
 import numpy as np
 import xarray
 import CPMlib
 import CPM_rainlib
+import dask
 
 my_logger = CPM_rainlib.logger
 commonLib.init_log(my_logger, level='INFO')
@@ -17,6 +22,8 @@ cpm_cet = xarray.load_dataset(CPM_rainlib.dataDir / "CPM_ts/cet_tas.nc")
 cpm_cet = cpm_cet.tas.resample(time='QS-DEC').mean()  # resample to seasonal means
 cpm_cet_jja = cpm_cet.where(cpm_cet.time.dt.season == 'JJA', drop=True)  # and pull out summer.
 
+
+
 # Load up CPM extreme rainfall data, select to region of interest and mask
 
 rgn = CPMlib.carmont_rgn
@@ -27,20 +34,22 @@ if filtered:
 else:
     paths = sorted(CPMlib.CPM_dir.glob('CPM*/*.nc'))
     outpath = CPMlib.CPM_dir / "CPM_all_events.nc"
-my_logger.info(f"Opening data for {len(paths)} files")
-ds = xarray.open_mfdataset(paths, parallel=True)
+my_logger.info(f"Opening data for {len(paths)} files. ")
+with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+    ds = xarray.open_mfdataset(paths, parallel=True, drop_variables=['month_number', 'year', 'yyyymmddhh'], chunks={})
+my_logger.info("Opened files")
 ds = ds.where(ds.time.dt.season == 'JJA', drop=True)  # get summer only
-ds = ds.sel(**rgn).load()  # reduce to rgn of interest
+ds = ds.sel(**rgn)  # reduce to rgn of interest
 CPM_rainlib.fix_coords(ds)
 topog = xarray.load_dataarray(CPM_rainlib.dataDir / 'cpm_topog_fix_c2.nc').sel(**rgn)
-my_logger.info("Loaded data")
 ## iterate over ensemble_member and then stack them at the end...
 grped_list = []
 for ensemble in ds.ensemble_member:
     my_logger.info(f"Processing ensemble: {int(ensemble)}")
-    dataset = ds.sel(ensemble_member=ensemble) # extract the ensemble
-    mxTime = dataset.seasonalMaxTime.squeeze(drop=True).load()
-    grp = CPMlib.discretise(mxTime).where(topog > 0, 0).rename('EventTime')
+    dataset = ds.sel(ensemble_member=ensemble).load()  # extract the ensemble
+    my_logger.info(f"Loaded ensemble: {int(ensemble)}")
+    mxTime = dataset.seasonalMaxTime.squeeze(drop=True)
+    grp = CPMlib.discretise(mxTime.where(topog > 0)).rename('EventTime')
     # remove unwanted co-ords.
     coords_to_drop = [c for c in mxTime.coords if c not in mxTime.dims]
     # add on t & surface.
@@ -48,11 +57,15 @@ for ensemble in ds.ensemble_member:
     grp = grp.drop_vars(coords_to_drop, errors='ignore')
     my_logger.info(f"Computed grouping: {int(ensemble)}")
     dd_lst = []
+    expected_events = len(dataset.time) * (topog > 0).sum()
     for roll in dataset['rolling'].values:
-        dd = CPM_rainlib.event_stats(dataset.seasonalMax.sel(rolling=roll).load(),
+        dd = CPM_rainlib.event_stats(dataset.seasonalMax.sel(rolling=roll),
                                      mxTime.sel(rolling=roll),
                                      grp.sel(rolling=roll)
                                      ).sel(EventTime=slice(1, None))
+        # at this point we have the events. Check that the total cell_count. Should be no_years*no non-nan cells in seasonalMax
+        assert (int(dd.count_cells.sum('EventTime').values) == expected_events)
+
         event_time_values = np.arange(0, len(dd.EventTime))
         dd = dd.assign_coords(rolling=roll, EventTime=event_time_values)
         # get the CPM summer mean CET out and force its time's to be the same.

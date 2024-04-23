@@ -31,14 +31,13 @@ import iris.exceptions
 import typing
 import cartopy.crs as ccrs
 
-
 logger = logging.getLogger(__name__)
 
 from pandas._libs import NaTType
 
 bad_data_err = (
-        zlib.error, ValueError, TypeError, iris.exceptions.ConstraintMismatchError,
-        gzip.BadGzipFile)  # possible bad data
+    zlib.error, ValueError, TypeError, iris.exceptions.ConstraintMismatchError,
+    gzip.BadGzipFile)  # possible bad data
 # bad_data_err = (zlib.error,iris.exceptions.ConstraintMismatchError,gzip.BadGzipFile) # possible bad data
 machine = platform.node()
 if ('jasmin.ac.uk' in machine) or ('jc.rl.ac.uk' in machine):
@@ -78,7 +77,7 @@ def convert_date_to_cftime(
         date: typing.Union[None, int, float, NaTType],
         date_type: typing.Callable = cftime.DatetimeGregorian,
         has_year_zero: bool = False
-        ) -> typing.Union[cftime.datetime, NaTType]:
+) -> typing.Union[cftime.datetime, NaTType]:
     date = pd.to_datetime(date)
     if date is None or isinstance(date, NaTType):
         return pd.NaT
@@ -277,7 +276,7 @@ def dms_to_dd(dms_str: str) -> float:
     if not re.match(r"^\d+°\d+['’]\d+[”\"][NSWE]$", dms_str):
         raise ValueError(
             f"Input string >>{dms_str}<< is not in the correct format 'degrees°minutes'seconds\"direction'"
-            )
+        )
 
     degrees, minutes, seconds, direction = re.split('°|\'|’|"|”', dms_str)
     dd = float(degrees) + float(minutes) / 60 + float(seconds) / (60 * 60)
@@ -308,7 +307,7 @@ railways = cartopy.feature.ShapelyFeature(geoms, crs=cartopy.crs.OSGB(), linewid
 def std_decorators(
         ax, showregions=True, radarNames=False, radar_col='green', grid: bool = True,
         show_railways: bool = True
-        ):
+):
     """
     Add a bunch of stuff to an axis
     :param ax: axis
@@ -324,7 +323,6 @@ def std_decorators(
         ax.add_feature(regions, edgecolor='grey', linewidth=2)
     if show_railways:
         ax.add_feature(railways)
-
 
     if grid:
         g = ax.gridlines(draw_labels=True)
@@ -347,7 +345,7 @@ def xarray_gen_cov_samp(
         cov: xarray.DataArray,
         rng: typing.Any = 123456,
         nsamp: int = 100
-        ) -> xarray.DataArray:
+) -> xarray.DataArray:
     """ Generate  samples from the covariance matrix"""
 
     def gen_cov(mean, cov, rng=123456):
@@ -431,8 +429,8 @@ def get_radar_data(
     return rseasMskmax, mxTime, top_fit_grid
 
 
-def fix_coords(ds: typing.Union[xarray.DataArray, xarray.Dataset]) -> typing.Union[xarray.DataArray, xarray.Dataset]:
-    # fix coords in CPM data by rounding to 3 sf. Needed becuase of slightly different grid for topography and rain...
+def fix_coords(ds: typing.Union[xarray.DataArray, xarray.Dataset]):
+    # fix coords in CPM data by rounding to 3 sf. Needed because of slightly different grid for topography and rain...
 
     for c in cpm_horizontal_coords:
         ds[c] = ds[c].astype(np.float32).round(3)  # round co-ords
@@ -466,7 +464,7 @@ from typing import Optional, Union, Dict, List, Tuple, Callable, Literal
 def apply_func_recursively(
         collection: Union[Dict, List, any],
         func: Callable
-        ) -> (
+) -> (
         Union)[Dict, List, any]:
     if isinstance(collection, dict):
         return {k: apply_func_recursively(v, func) for k, v in collection.items()}
@@ -496,11 +494,11 @@ def convert_slice(obj: slice) -> np.ndarray:
 
 
 # noinspection PyShadowingNames
-def comp_event_stats(
-        file: pathlib.Path,
-        source: typing.Literal['RADAR', 'CPM'] = 'RADAR',
-        **kwargs
-):
+def comp_event_stats(file: pathlib.Path
+                     ,
+                     source: typing.Literal['RADAR', 'CPM'] = 'RADAR',
+                     **kwargs
+                     ):
     """
     read in  data and then group by day.
     :param file: File to be read in
@@ -538,17 +536,22 @@ def comp_event_stats(
                                                )  # update the attributes with the various kwargs used to get radar data.
     return radar_dataset
 
-
-def event_stats(max_precip: xarray.Dataset, max_time: xarray.Dataset, group, source: str = "CPM"):
+def source_coords(source: str) -> tuple[str, ...]:
+    """
+    Return coords for different source
+    :param source:  Source CPM or RADAR
+    :return: co-ord names s a tuple.
+    :rtype:
+    """
     if source == 'CPM':
-        x_coord = 'grid_longitude'
-        y_coord = 'grid_latitude'
+        return tuple(cpm_horizontal_coords)
     elif source == 'RADAR':
-        x_coord = 'projection_x_coordinate'
-        y_coord = 'projection_y_coordinate'
+        return tuple(horizontal_coords)
     else:
         raise ValueError(f"Unknown source {source}")
 
+def event_stats(max_precip: xarray.DataArray, max_time: xarray.DataArray, group, source: str = "CPM"):
+    x_coord, y_coord = source_coords(source)
     ds = xarray.Dataset(dict(maxV=max_precip, maxT=max_time))
     grper = ds.groupby(group)
     quantiles = np.linspace(0, 1, 21)
@@ -558,25 +561,79 @@ def event_stats(max_precip: xarray.Dataset, max_time: xarray.Dataset, group, sou
     return dataSet
 
 
-def time_process(data_set: xarray.Dataset) -> xarray.Dataset:
+def time_process(data_set: xarray.Dataset,
+                 mean_var: str = 'Radar_rain_Mean',
+                 max_var: str = 'Radar_rain_Max',
+                 max_time_var: str = 'Radar_rain_MaxTime',
+                 samples_var: str = 'No_samples',
+                 time_dim: str = 'time') -> xarray.Dataset:
     """
-    Process a dataset of (daily) data
+    Process a dataset of radar data (though could be anything by appropriate setting of the variable names
     :param data_set -- Dataset to process
-    returns a dataarray containg mean of means, max of maxes, time of max, time_bounds and toal number of samples.
+    :param mean_var -- name of mean variable
+    :param max_var -- name of max variable
+    :param max_time_var - name of time of max variable
+    :param samples_var -- name of samples var (if not found a warnign will be printed)
+    returns a dataset containing mean of means, max of maxes, time of max, time_bounds and total number of samples.
+    Used to process the data for a season.
 
     """
-    mn = data_set['Radar_rain_Mean']
-    mx = data_set['Radar_rain_Max'].max('time', keep_attrs=True)  # max of maxes
-    mx_idx = data_set['Radar_rain_Max'].fillna(0.0).argmax('time', skipna=True)  # index  of max
-    mx_time = data_set['Radar_rain_MaxTime'].isel(time=mx_idx).drop_vars('time')
-    time_bounds = xarray.DataArray([mn.time.min().values, mn.time.max().values], coords=dict(bounds=[0, 1])).rename(
-        'time_bounds'
+    mn = data_set[mean_var]
+    mx = data_set[max_var].max(time_dim, keep_attrs=True)  # max of maxes
+    mx_idx = data_set[max_var].idxmax(time_dim, skipna=True)  # index  of max
+    mx_time = data_set[max_time_var].sel({time_dim: mx_idx}, method='ffill').drop_vars('time')
+    time_bounds = xarray.DataArray([mn[time_dim].min().values, mn[time_dim].max().values],
+                                   coords=dict(bounds=[0, 1])).rename(
+        f'{time_dim}_bounds'
     )
-    mn = mn.mean('time', keep_attrs=True)
-    no_samples = data_set['No_samples'].sum('time', keep_attrs=True)
-    ds = xarray.merge([mn, mx, mx_time, time_bounds, no_samples])
+    mn = mn.mean(time_dim, keep_attrs=True)
+    ds = xarray.merge([mn, mx, mx_time, time_bounds])
+    try:
+        no_samples = data_set[samples_var].sum(time_dim, keep_attrs=True)
+        ds = xarray.merge([ds, no_samples])
+    except KeyError:
+        logger.warning(f'Failed to find {samples_var} in data_set')
 
     return ds
+
+
+def comp_events(max_values: xarray.DataArray,
+                max_times: xarray.DataArray,
+                grp: xarray.DataArray,
+                topog: xarray.DataArray,
+                cet: xarray.DataArray,
+                source: str = 'CPM'
+                ):
+    dd_lst = []
+    expected_event_area = len(max_values.time) * (topog > 0).sum()
+    for roll in max_values['rolling'].values:
+        dd = event_stats(max_values.sel(rolling=roll),
+                         max_times.sel(rolling=roll),
+                         grp.sel(rolling=roll),source=source
+                         ).sel(EventTime=slice(1, None))
+        # at this point we have the events. Check that the total cell_count. Should be no_years*no non-nan cells in seasonalMax
+        assert (int(dd.count_cells.sum('EventTime').values) == expected_event_area)
+        event_time_values = np.arange(0, len(dd.EventTime))
+        dd = dd.assign_coords(rolling=roll, EventTime=event_time_values)
+        # get the summer mean CET out and force its time's to be the same.
+        tc = np.array([f"{int(y)}-06-01" for y in dd.t.isel(quantv=0).dt.year])
+        cet_extreme_times = cet.interp(time=tc).rename(dict(time='EventTime'))
+        # convert EventTime to an index.
+        cet_extreme_times = cet_extreme_times.assign_coords(rolling=roll, EventTime=event_time_values)
+        dd['CET'] = cet_extreme_times  # add in the CET data.
+
+        # add in hts
+        coords = source_coords(source)
+        sel = dict(zip(coords, [dd.x, dd.y]))
+        ht = topog.sel(**sel)
+        # drop unneeded coords
+        coords_to_drop = [c for c in ht.coords if c not in ht.dims]
+        ht = ht.drop_vars(coords_to_drop)
+        dd['height'] = ht
+        dd_lst.append(dd)
+        logger.info(f"Processed rolling: {roll}")
+    event_ds = xarray.concat(dd_lst, dim='rolling')
+    return event_ds
 
 
 def quants_locn(
@@ -611,7 +668,7 @@ def comp_params(
         log10_area: typing.Optional[float] = None,
         hour: typing.Optional[float] = None,
         height: typing.Optional[float] = None
-        ):
+):
     """
     Compute the location and scale parameters for a given set of covariate values
     :param param:
@@ -673,7 +730,7 @@ def fix_cpm_topog(topog: xarray.DataArray, reference: xarray.DataArray) -> xarra
     return topog
 
 
-def radar_dx_dy(radar:xarray.Dataset) -> np.ndarray:
+def radar_dx_dy(radar: xarray.Dataset) -> np.ndarray:
     """
     Compute the mean dx, dy for a radar dataset
     :param radar: radar dataset -- only uses the coords
@@ -681,4 +738,4 @@ def radar_dx_dy(radar:xarray.Dataset) -> np.ndarray:
     """
     dx = radar.projection_x_coordinate.diff('projection_x_coordinate')
     dy = radar.projection_y_coordinate.diff('projection_y_coordinate')
-    return np.array([float(dx.mean()),float(dy.mean())])
+    return np.array([float(dx.mean()), float(dy.mean())])
