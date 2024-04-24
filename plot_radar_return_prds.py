@@ -83,7 +83,7 @@ for name in radar_fit.keys():
     my_logger.debug(f"Max Time for {name} radar data is {mx_time.dt.strftime('%Y-%m-%d %H:%M').values}")
 
 ## plot radar return periods and rain
-names = ['5km', '1km_c4', '1km_c5', '1km', ]
+names = ['5km', '1km-c4', '1km-c5', '1km', ]
 fig, all_axes = plt.subplots(nrows=1, ncols=2, num='radar_return_prds',
                              figsize=(8, 3), clear=True, layout='constrained', sharex='col', sharey='row',
                              )
@@ -94,7 +94,7 @@ for rolling, ax in zip(roll_values, all_axes):
 
     for name in names:
         plot_rp(rp, radar_fit_uncert[name].sel(rolling=rolling), ax, color=CPMlib.radar_cols[name],
-                label=name.replace('_', ' ')
+                label=name
                 )
         accum = radar_rain[name].sel(rolling=rolling) * rolling
 

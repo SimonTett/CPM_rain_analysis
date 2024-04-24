@@ -23,11 +23,15 @@ radar_dataset = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_5
 radar_dataset_c4 = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_1km_c4.nc") # load the processed radar
 radar_dataset_c5 = xarray.load_dataset(CPMlib.radar_dir/"radar_events/events_2008_1km_c5.nc") # load the processed radar
 my_logger.debug(f"Loaded datasets")
+
+
 fig, axs = plt.subplots(nrows=2, ncols=4, figsize=[8, 6],clear=True,
-                        num='kde_smooth_events',sharex='col', layout='constrained')
+                        num='kde_smooth_events',sharex='col', sharey='col',layout='constrained')
 
 fig.get_layout_engine().set(rect=[0.05,0.0,0.95,1.0])#.execute(fig)
-
+colors = CPMlib.radar_cols.copy()
+colors.update({'CPM':'red','Raw':'brown','Fut':'black'})
+linewidths = dict(CPM=1.5,Raw=1.5,Fut=2)
 labels = commonLib.plotLabel()
 plot_col_titles=True
 for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
@@ -43,7 +47,11 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
     time = quant.t.load()
     L= ((cftime.datetime(2008,1,1,calendar='360_day') <= time) &
         (time <= cftime.datetime(2023,12,30,calendar='360_day')) )
+    L2= ((cftime.datetime(2065,1,1,calendar='360_day') <= time) &
+        (time <= cftime.datetime(2080,12,30,calendar='360_day')) )
+    quant_2065_2080 = quant.where(L2,drop=True).dropna('idx').load()
     quant= quant.where(L,drop=True).dropna('idx').load()
+
     time = raw_quant.t.load()
     L= ((cftime.datetime(2008,1,1,calendar='360_day') <= time) &
         (time <= cftime.datetime(2023,12,30,calendar='360_day')) )
@@ -53,8 +61,9 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
     radar_c4_quant = radar_dataset_c4.sel(**sel).rename(EventTime='idx').dropna('idx')
     radar_c5_quant = radar_dataset_c5.sel(**sel).rename(EventTime='idx').dropna('idx')
     my_logger.debug(f"Loaded radar")
-    for ds,area in zip([radar_quant, radar_c4_quant, radar_c5_quant, quant, raw_quant], [25.0, 16.0, 25, 4.4 * 4.4, 4.4 * 4.4]):
-        L = (ds.t.dt.season == 'JJA' ) & (ds.t.dt.year >=2008 )  &  (ds.t.dt.year <= 2023)
+    for ds,area in zip([radar_quant, radar_c4_quant, radar_c5_quant, quant, raw_quant,quant_2065_2080],
+                       [25.0, 16.0, 25, 4.4 * 4.4, 4.4 * 4.4,4.4*4.4]):
+        L = (ds.t.dt.season == 'JJA' )
         ds['Area'] = ds.count_cells*area
         ds['Hour'] = ds.t.dt.hour
         ds['Accum'] = ds.max_precip*rolling
@@ -74,30 +83,43 @@ for (q,rolling),axis in zip(itertools.product([0.5],[1,4]),axs):
     for ax,var,xlabel,kdeplot_args in zip(axis.flatten(),
                         ['Hour','Area','height','Accum'],
                         ['Hour','Area (km$^2$)','Height (m)','Accum precip (mm)'],
-                        [ dict(gridsize=24),dict(gridsize=30,log_scale=(10.,None)),dict(gridsize=30),dict(gridsize=30)]):
+                        [ dict(gridsize=24,clip=(0,24)), # hours
+                          dict(gridsize=50,log_scale=(10,None)), # area
+                          dict(gridsize=50,clip=(0,1000),log_scale=(10,None)), # ht
+                          dict(gridsize=50,log_scale=(10,None),clip=(0.1,150.)) # accum
+                          ]):
 
         for ds,name in zip([quant, raw_quant, radar_quant, radar_c4_quant, radar_c5_quant],
-                                 ['CPM','CPM-Raw','5km','1km-c4','1km-c5']):
-            color = CPMlib.radar_cols.get(name.split(" ")[-1].replace('-','_'),'orange')
-            if 'Raw' in name:
-               color='brown'
-            kdeplot_args.update(label=f'{name} ',color=color,linewidth=2,cut=0)
-            sns.kdeplot(ds[var],ax=ax,**kdeplot_args)
+                                 ['CPM','Raw', '5km','1km-c4','1km-c5']):
+            color = colors[name]
+            kdeplot_args.update(label=name.replace('1km-',''),color=color,linewidth=linewidths.get(name,1.0),cut=0)
+            sns.kdeplot(ds[var],ax=ax,common_norm=True,**kdeplot_args)
 
             if var == 'height': # plot the heights from the topog.
                 kwargs = kdeplot_args.copy()
-                kwargs.update(color='k',linestyle='dashed',label='Topog 5km')
-                sns.kdeplot(topog_5km.values.flatten(),ax=ax, **kwargs)
+                kwargs.update(color='purple',linewidth=1,linestyle='dashed',label='_Topog 5km')
+                sns.kdeplot(topog_5km.values.flatten(),common_norm=True,ax=ax, **kwargs)
             if name == '5km': # 5km radar data.
                 ax.axvline(ds[var].sel(idx=ds.indx_2020_08_12),color=color,linestyle='dashed')
         ax.set_xlabel(xlabel,fontsize='small')
         ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
         labels.plot(ax)
+from matplotlib.ticker import LogLocator
 
-for ax in axs:
-    ax[1].set_xscale('log')
-axs[-1][-1].set_xlim(0,80)
-axs[0][1].legend(fontsize='small',loc='lower left')
+locator = LogLocator(numticks=5)  # 5 ticks
+for ax in axs.flat:
+    if ax.get_xscale() == 'log':
+        ax.xaxis.set_major_locator(locator)
+        #ax.set_xlim(10,None)
+    else:
+        ax.set_xlim(0,None)
+    if ax.get_yscale() == 'log':
+        ax.yaxis.set_major_locator(locator)
+        # truncate at 10^-3
+        ylim = ax.get_ylim()
+        ax.set_ylim(np.max([1e-3,ylim[0]]),None)
+axs[-1][-1].set_xlim(1,200)
+axs[1][2].legend(fontsize='x-small',ncols=2,loc='upper left',columnspacing=0.1,borderaxespad=0,borderpad=0.0)
 fig.show()
 commonLib.saveFig(fig)
 

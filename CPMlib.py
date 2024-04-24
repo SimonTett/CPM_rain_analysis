@@ -28,7 +28,7 @@ cc_scale = 5.7  # computed in plot_scatter
 cc_uncert = 0.04
 cc_dist = scipy.stats.norm(loc=cc_scale, scale=cc_uncert)
 # colours for different radars.
-radar_cols = {'1km': 'black', '5km': 'green', '1km_c4': 'blue', '1km_c5': 'cornflowerblue'}
+radar_cols = {'1km': 'black', '5km': 'green', '1km-c4': 'blue', '1km-c5': 'cornflowerblue'}
 # compute various carmont co-ords
 carmont_long_lat = (-2.3197, 56.95248)  # location of derailment from openstreetmap.
 carmont_drain_long_lat = (-2.3266852553075017, 56.951548724582096)  # "field" where rain fell. From openstreet map and ST clicking!

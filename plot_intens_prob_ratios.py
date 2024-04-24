@@ -20,7 +20,7 @@ def comp_params(
         log10_area: typing.Optional[float] = None,
         hour: typing.Optional[float] = None,
         height: typing.Optional[float] = None
-        ):
+):
     if log10_area is None:
         log10_area = math.log10(150.)
     if hour is None:
@@ -50,7 +50,7 @@ def xarray_samp_cov(
         dim: str,
         param_dim: str = 'parameter',
         param_dim2: typing.Optional[str] = None
-        ) -> xarray.DataArray:
+) -> xarray.DataArray:
     """ Compute the sample covariance of the data array"""
 
     def cov_matrix(arr):
@@ -95,34 +95,35 @@ def comp_scaling_cet_samps(fits: xarray.Dataset, rng, nsamp, temperature: float 
     params = comp_params(samps, temperature=temperature)
     return params
 
-def plot_pr_intensity(ax_pr,ax_intensity,params,prob_pi,intensity_pi,
-                      rain=None,rtn_period=None,rolling=1,
-                      color=None,period=None):
 
+def plot_pr_intensity(
+        ax_pr, ax_intensity, params, prob_pi, intensity_pi,
+        rain=None, rtn_period=None, rolling=1,
+        color=None, period=None
+        ):
     p_prd = gev_r.xarray_gev_sf(params, rain)  # probs of rain
     prob_ratio = p_prd / prob_pi * 100  # prob ratio as a percentage
-    quant = prob_ratio.quantile([0.05, 0.5, 0.95], dim='sample')
-    ax_pr.fill_between(rain * rolling, quant.sel(quantile=0.05), quant.sel(quantile=0.95),
+    quant_pr = prob_ratio.quantile([0.05, 0.5, 0.95], dim='sample')
+    ax_pr.fill_between(rain * rolling, quant_pr.sel(quantile=0.05), quant_pr.sel(quantile=0.95),
                        color=color, alpha=0.5
                        )
     # median estimate
-    ax_pr.plot(rain * rolling, quant.sel(quantile=0.5), label=period, linewidth=2, color=color)
-
+    ax_pr.plot(rain * rolling, quant_pr.sel(quantile=0.5), label=period, linewidth=2, color=color)
+    # print out the 5-95% range and PR values.
     # now plot the intensity ratios
     if ax_intensity is None:
-        return
+        return quant_pr,None
 
     intensity_prd = gev_r.xarray_gev_isf(params, 1.0 / rtn_period)  # Intensity at rtn prd
     change = 100 * (intensity_prd / intensity_pi) - 100
-    quant = change.quantile([0.05, 0.5, 0.95], dim='sample')
-    ax_intensity.fill_between(quant['return_period'], quant.sel(quantile=0.05), quant.sel(quantile=0.95),
+    quant_ic = change.quantile([0.05, 0.5, 0.95], dim='sample')
+    ax_intensity.fill_between(quant_ic['return_period'], quant_ic.sel(quantile=0.05), quant_ic.sel(quantile=0.95),
                               alpha=0.5, color=color
                               )
-    quant.sel(quantile=0.5).plot(ax=ax_intensity, x='return_period', label=period,
+    quant_ic.sel(quantile=0.5).plot(ax=ax_intensity, x='return_period', label=period,
                                  color=color, linewidth=2
                                  )
-
-
+    return quant_pr,quant_ic
 
 
 my_logger = CPM_rainlib.logger
@@ -135,15 +136,14 @@ carmont.update(time='2020-08')
 radar_fit = dict()
 radar_rain = dict()
 
-
 for path in radar_fit_dir.glob('*_fit.nc'):
     name = path.stem.replace('_fit', '')
     radar_fit[name] = xarray.load_dataset(path)
 # read in the summary data and get the actual rain values
 for name in radar_fit.keys():
     summary_path = CPMlib.radar_dir / 'summary' / f'summary_2008_{name}.nc'
-    radar_rain[name] = xarray.open_dataset(summary_path).Radar_rain_Max.sel(**carmont,method='nearest').load()
-    mx_time = xarray.open_dataset(summary_path).Radar_rain_MaxTime.sel(**carmont,method='nearest').load()
+    radar_rain[name] = xarray.open_dataset(summary_path).Radar_rain_Max.sel(**carmont, method='nearest').load()
+    mx_time = xarray.open_dataset(summary_path).Radar_rain_MaxTime.sel(**carmont, method='nearest').load()
     my_logger.debug(f"Max Time for {name} radar data is {mx_time.dt.strftime('%Y-%m-%d %H:%M').values}")
 
 my_logger.debug(f"Loaded radar data")
@@ -152,44 +152,45 @@ my_logger.debug(f"Loaded radar data")
 fit_dir = CPM_rainlib.dataDir / 'CPM_scotland_filter' / "fits"
 fit_file = fit_dir / 'carmont_rgn_fit_CET.nc'
 cpm_gev_params = xarray.open_dataset(fit_file).rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
-cpm_gev_params = cpm_gev_params.sel(**CPMlib.carmont_drain, method='nearest') # get the data for the carmont drain
-cpm_gev_params['Cov'] = cpm_gev_params['Cov'] / 25. # average over 25 points so covariance down by a factor of 25.
+cpm_gev_params = cpm_gev_params.sel(**CPMlib.carmont_drain, method='nearest')  # get the data for the carmont drain
+cpm_gev_params['Cov'] = cpm_gev_params['Cov'] / 25.  # average over 25 points so covariance down by a factor of 25.
 # get in the raw data
 raw_fit_dir = CPM_rainlib.dataDir / 'CPM_scotland' / "fits"
 raw_fit_file = raw_fit_dir / 'carmont_fit_raw_CET.nc'
 raw_cpm_gev_params = xarray.open_dataset(raw_fit_file).rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
-raw_cpm_gev_params = raw_cpm_gev_params.sel(**CPMlib.carmont_drain, method='nearest') # get the data for the carmont drain
-raw_cpm_gev_params['Cov'] = raw_cpm_gev_params['Cov'] / 25. # average over 25 points so covariance down by a factor of 25.
+raw_cpm_gev_params = raw_cpm_gev_params.sel(**CPMlib.carmont_drain, method='nearest'
+                                            )  # get the data for the carmont drain
+raw_cpm_gev_params['Cov'] = raw_cpm_gev_params[
+                                'Cov'] / 25.  # average over 25 points so covariance down by a factor of 25.
 my_logger.debug(f"Loaded CPM data")
 obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA', drop=True)
 t_today = float(obs_cet_jja.sel(**CPMlib.today_sel).mean())
 t_PI = float(obs_cet_jja.sel(**CPMlib.PI_sel).mean())
-t_1980s  = float(obs_cet_jja.sel(time=slice('1980-01-01','1989-12-31')).mean())
+t_1980s = float(obs_cet_jja.sel(time=slice('1980-01-01', '1989-12-31')).mean())
 delta = t_PI - t_today
 temp_p2k = scipy.stats.norm(loc=2 * 0.94 + t_PI, scale=2 * 0.03)
-# how much more summer-time CET is at +2K warming Values provided by Prof. Ed Hawkins (Reading) -- as used in Tett et al, 2023
-nsamp=1000
-temp_p2k_samp = xarray.DataArray(temp_p2k.rvs(nsamp, random_state=123456),dims='sample')
+# how much more summer-time CET is at +2K warming Values provided by Prof. Ed Hawkins (Reading) -- as used in Tett et al, 2023.
+nsamp = 1000
+temp_p2k_samp = xarray.DataArray(temp_p2k.rvs(nsamp, random_state=123456), dims='sample')
 params_cpm_samp = xarray_gen_cov_samp(cpm_gev_params.Parameters, cpm_gev_params.Cov, 123456, nsamp)
-today_str = CPMlib.today_sel['time'].start + '-'+ CPMlib.today_sel['time'].stop[-2:]
-params_cpm = {key:comp_params(params_cpm_samp, temperature=t-t_PI) for
-              key,t in zip([today_str,'PI','+2C','1980-89'],[t_today,t_PI,temp_p2k_samp,t_1980s])}
+today_str = CPMlib.today_sel['time'].start + '-' + CPMlib.today_sel['time'].stop[-2:]
+params_cpm = {key: comp_params(params_cpm_samp, temperature=t - t_PI) for
+              key, t in zip([today_str, 'PI', '+2C', '1980-89'], [t_today, t_PI, temp_p2k_samp, t_1980s])}
 raw_params_cpm_samp = xarray_gen_cov_samp(raw_cpm_gev_params.Parameters, raw_cpm_gev_params.Cov, 123456, nsamp)
-raw_params_cpm = {key:comp_params(raw_params_cpm_samp, temperature=t-t_PI) for
-              key,t in zip([today_str,'PI','+2C','1980-89'],[t_today,t_PI,temp_p2k_samp,t_1980s])}
+raw_params_cpm = {key: comp_params(raw_params_cpm_samp, temperature=t - t_PI) for
+                  key, t in zip([today_str, 'PI', '+2C', '1980-89'], [t_today, t_PI, temp_p2k_samp, t_1980s])}
 # compute scalings for radar dist to take it to specified temperature.
 ratio = dict()
 raw_ratio = dict()
-for key,params in params_cpm.items():
+for key, params in params_cpm.items():
     ratio[key] = params / params_cpm[today_str]
     raw_ratio[key] = raw_params_cpm[key] / raw_params_cpm[today_str]
 
 my_logger.debug(f"Generated samples")
 
-radar_today = {key:xarray_gen_cov_samp(fit.Parameters, fit.Cov, 123456, nsamp) for key, fit in radar_fit.items()}
+radar_today = {key: xarray_gen_cov_samp(fit.Parameters, fit.Cov, 123456, nsamp) for key, fit in radar_fit.items()}
 my_logger.debug(f"Generated radar samples")
-
 
 ## now plot the data
 fig, axs = plt.subplots(num='intens_prob_ratios', clear=True, nrows=2, ncols=3, layout='constrained', figsize=(8, 6),
@@ -200,10 +201,11 @@ fig.get_layout_engine().set(rect=[0.05, 0.0, 0.95, 1.0])
 rain = np.geomspace(2, 80)
 rtn_period = np.geomspace(5, 200)
 label = commonLib.plotLabel()
-i_pi = {key: gev_r.xarray_gev_isf(radar_fit*ratio['PI'], 1.0 / rtn_period) for key, radar_fit in radar_today.items()}
-p_pi = {key: gev_r.xarray_gev_sf(radar_fit*ratio['PI'], rain) for key, radar_fit in radar_today.items()}
-raw_i_pi = {key: gev_r.xarray_gev_isf(radar_fit*raw_ratio['PI'], 1.0 / rtn_period) for key, radar_fit in radar_today.items()}
-raw_p_pi = {key: gev_r.xarray_gev_sf(radar_fit*raw_ratio['PI'], rain) for key, radar_fit in radar_today.items()}
+i_pi = {key: gev_r.xarray_gev_isf(radar_fit * ratio['PI'], 1.0 / rtn_period) for key, radar_fit in radar_today.items()}
+p_pi = {key: gev_r.xarray_gev_sf(radar_fit * ratio['PI'], rain) for key, radar_fit in radar_today.items()}
+raw_i_pi = {key: gev_r.xarray_gev_isf(radar_fit * raw_ratio['PI'], 1.0 / rtn_period) for key, radar_fit in
+            radar_today.items()}
+raw_p_pi = {key: gev_r.xarray_gev_sf(radar_fit * raw_ratio['PI'], rain) for key, radar_fit in radar_today.items()}
 names = ['1km', '5km']
 for axis, rolling in zip(axs, [1, 4]):
     pos = axis[0].get_position()
@@ -226,13 +228,18 @@ for axis, rolling in zip(axs, [1, 4]):
         raw_prob_pi = raw_p_pi[name].sel(rolling=rolling)
         raw_intensity_pi = raw_i_pi[name].sel(rolling=rolling)
         rain_2020 = float(radar_rain[name].sel(rolling=rolling))
-        for color, period,temp in zip(['cornflowerblue', 'blue', 'red'],
-                                      ['1980-89', today_str, '+2C'], [t_1980s, t_today, temp_p2k_samp]):
+        for color, period, temp in zip(['cornflowerblue', 'blue', 'red'],
+                                       ['1980-89', today_str, '+2C'], [t_1980s, t_today, temp_p2k_samp]
+                                       ):
 
             params = ratio[period].sel(rolling=rolling) * radar_fit
-            plot_pr_intensity(ax_pr, ax_intensity, params,prob_pi,intensity_pi,
-                              rain=rain,rtn_period=rtn_period,rolling=rolling,color=color,period=period)
-            if ax_intensity: # got an intensity axis so plot CC
+            q_pr,q_ic = plot_pr_intensity(ax_pr, ax_intensity, params, prob_pi, intensity_pi,
+                              rain=rain, rtn_period=rtn_period, rolling=rolling, color=color, period=period
+                              )
+            pr = q_pr.interp(dict(threshold=rain_2020))
+            prt_pr = " ".join([f"{float(pr[i]):3.0f}" for i in range(3)])
+            print(f"PRs for Rx{rolling:d}h {name} {period}  are ", prt_pr, " %")
+            if ax_intensity:  # got an intensity axis so plot CC
                 if isinstance(temp, xarray.DataArray):
                     cc = xarray.DataArray(CPMlib.cc_dist.rvs(nsamp), dims=['sample']) * (temp - t_PI)
                     cc = cc.quantile([0.05, 0.5, 0.95]).values
@@ -245,7 +252,7 @@ for axis, rolling in zip(axs, [1, 4]):
         period = '+2C'
         params_raw = raw_ratio[period].sel(rolling=rolling) * radar_fit
         plot_pr_intensity(ax_pr, ax_intensity, params_raw, raw_prob_pi, raw_intensity_pi,
-                          rain=rain, rtn_period=rtn_period, rolling=rolling, color='brown', period=period+' Raw'
+                          rain=rain, rtn_period=rtn_period, rolling=rolling, color='brown', period=period + ' Raw'
                           )
         # actual rain values
         ax_pr.axvline(rain_2020 * rolling, color='black', linewidth=2)
@@ -253,6 +260,10 @@ for axis, rolling in zip(axs, [1, 4]):
             # compute the return periods for event today and plot them as median and 5-95% uncertainty.
             rp = 1.0 / (gev_r.xarray_gev_sf(radar_fit, rain_2020))
             rp_quant = rp.quantile([0.05, 0.5, 0.95], dim='sample')
+            ic = q_ic.interp(dict(pvalues=1.0/rp_quant.sel(quantile=0.5).values)).values
+            prt_ic = " ".join([f"{float(ic[i][0]):3.1f}" for i in range(3)])
+            prt_cc = " ".join([f"{float(cc[i]):3.1f}" for i in range(3)])
+            print(f"ICs for Rx{rolling:d}h {name} {period}  are ",prt_ic," % cc=",prt_cc)
             ax_intensity.axvspan(float(rp_quant.sel(quantile=0.05)), float(rp_quant.sel(quantile=0.95)), color='grey',
                                  alpha=0.5
                                  )
@@ -269,12 +280,11 @@ for axis, rolling in zip(axs, [1, 4]):
             ax_intensity.set_ylabel('Intensity Change (%)')
             ax_intensity.set_xscale('log')
 
-
             xticks = [5, 10, 20, 50, 100, 200]
             ax_intensity.set_xticks(xticks)
             ax_intensity.set_xticklabels([str(tick) for tick in xticks])
 for a in axs.flat:
     label.plot(a)
-axs[1][0].legend(ncol=2,fontsize='small',borderpad=0.,labelspacing=0.2,handletextpad=0.25,columnspacing=0.25)
+axs[1][0].legend(ncol=2, fontsize='small', borderpad=0., labelspacing=0.2, handletextpad=0.25, columnspacing=0.25)
 fig.show()
 commonLib.saveFig(fig)
