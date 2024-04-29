@@ -160,6 +160,7 @@ for roll, ax in zip([1, 2, 4], axs):
     ax.set_xlabel(r'Location $\Delta$ %/K')
     ax.set_ylabel(r'Scale $\Delta$ %/K')
     ax.axhline(cc, color='k', linestyle='--')
+    ax.axhline(cc*2, color='red', linestyle='--') # twice CC
     ax.axvline(cc, color='k', linestyle='--')
     ax.set_ylim(0., 14)
     label.plot(ax)
