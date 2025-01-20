@@ -28,6 +28,7 @@ for key, ds in datasets.items():
     hour = ds.t.dt.hour.rename('Hour')
     height = ds.height.rename('Height')
     accum = (ds.max_precip * ds['rolling']).rename("Accum")
+    cet = ds.CET
     L1 = ((cftime.datetime(2008, 1, 1, calendar='360_day') <= time) &
           (time <= cftime.datetime(2023, 12, 30, calendar='360_day')) &
           (time.dt.season == 'JJA')
@@ -37,8 +38,11 @@ for key, ds in datasets.items():
           (time <= cftime.datetime(2080, 12, 30, calendar='360_day')) &
           (time.dt.season == 'JJA')
           )
-    lst_2008_2023 = [area.where(L1.isel(quantv=0), drop=True)]
-    lst_2065_2080 = [area.where(L2.isel(quantv=0), drop=True)]
+    lst_2008_2023=[]
+    lst_2065_2080=[]
+    for var in [area,cet]:
+        lst_2008_2023 += [var.where(L1.isel(quantv=0), drop=True)]
+        lst_2065_2080 += [var.where(L2.isel(quantv=0), drop=True)]
 
     for v in [hour, accum, height]:
         lst_2008_2023 += [v.where(L1, drop=True)]
@@ -116,9 +120,45 @@ for ax in axs.flat:
         ylim = ax.get_ylim()
         ax.set_ylim(np.max([1e-3, ylim[0]]), None)
 axs[-1][-1].set_xlim(1, 200)
+for axis in axs:
+    axis[1].set_xlim(10,None)
 #axs[-1][-1].set_xlim(0, 80)
 axs[0][-2].legend(fontsize='small', loc='upper center')
 fig.show()
 commonLib.saveFig(fig)
 
-##
+## Explore chanegs in rain and area.
+datas=[v.stack(idx=['EventTime', 'ensemble_member']).load()
+    for v in [datasets_2008_2023[''],datasets_2065_2080['']]]
+
+area = [ds.Area for ds in datas]
+wt = (datas[0].Accum.quantv.shift(quantv=-1, fill_value=1) -
+      datas[0].Accum.quantv.shift(quantv=1, fill_value=0))/2.0
+rain = [ds.Accum.weighted(wt).mean('quantv') for ds,a in zip(datas,area)]
+rain_0_9 = [ds.Accum.sel(quantv=0.9) for ds,a in zip(datas,area)]
+rain_mx = [ds.Accum.sel(quantv=1) for ds,a in zip(datas,area)]
+cet = [ds.CET.weighted(a.fillna(0.0)).mean('idx') for ds,a in zip(datas,area)]
+#cet = [ds.CET.mean('idx') for ds in datas]
+
+cet_delta = cet[1]-cet[0]
+area_ratio = (area[1].mean('idx')/area[0].mean('idx'))
+rain_ratio = (rain[1]/rain[0])
+rain_ratio_0_9 = (rain_0_9[1] / rain_0_9[0])
+with (np.printoptions(precision=2)):
+    print('Cet Delta',cet_delta.values)
+for name,var in zip(['Mn Rain','Rain (0.9)','mxRain','Area'],
+                    [rain,rain_0_9,rain_mx,area]):
+    if name == 'Area':
+        mn = [v.mean('idx') for v in var]
+
+
+    else:
+        mn = [v.weighted(a.fillna(0.0)).mean('idx') for v,a in zip(var,area)]
+    ratio = mn[1]/mn[0]
+    values = ((ratio-1)/cet_delta)*100
+    with (np.printoptions(precision=2)):
+        print('ratio ', name,values.values)
+        print('2008-23',name,mn[0].values)
+
+
+

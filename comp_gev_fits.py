@@ -27,7 +27,7 @@ def get_jja_ts(path: pathlib.Path) -> xarray.Dataset:
     return ts.load()
 
 
-recreate_fit = True  # recreate all fits. Set to False to cache -- handy if want to add to existing
+recreate_fit = False  # recreate all fits. Set to False to cache -- handy if want to add to existing
 ts_dir = CPM_rainlib.dataDir / 'CPM_ts'
 sim_cet = get_jja_ts(ts_dir / 'cet.nc').tas.rename('CET')
 sim_reg_es = get_jja_ts(ts_dir / 'rgn_svp.nc')
@@ -71,5 +71,19 @@ for name, cov in fit_cov.items():
     fits_raw = gev_r.xarray_gev(raw_maxRain.stack(**stack_dim),
                                 cov=cov_stack, dim='t_e', name=f'Rgn_{name}',
                                 file=raw_fit_dir / f'carmont_fit_raw_{name}.nc', recreate_fit=recreate_fit
+                                )
+
+# no stacking -- fit for each ensemble member
+fit_cov = dict(NoCov=[], CET=[sim_cet])
+for name, cov in fit_cov.items():
+    my_logger.info(f"Computing per-ensemble fits for {name}")
+    cov_stack = [c.stack(**stack_dim) for c in cov]
+    fits = gev_r.xarray_gev(maxRain,
+                            cov=cov, dim='time', name=f'Rgn_ens_{name}',
+                            file=fit_dir / f'carmont_rgn_fit_ens_{name}.nc', recreate_fit=recreate_fit
+                            )
+    fits_raw = gev_r.xarray_gev(raw_maxRain,
+                                cov=cov, dim='time', name=f'Rgn_ens_{name}',
+                                file=raw_fit_dir / f'carmont_fit_raw_ens_{name}.nc', recreate_fit=recreate_fit
                                 )
 my_logger.info(f"All Done")
