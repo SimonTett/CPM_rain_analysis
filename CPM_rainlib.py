@@ -90,7 +90,7 @@ try:
     import iris.fileformats.nimrod_load_rules
     import cf_units
     import iris.exceptions
-    import iris.fileformats.nimrod_load_rules
+
     bad_data_err = (
         zlib.error, ValueError, TypeError, iris.exceptions.ConstraintMismatchError,
         gzip.BadGzipFile)  # possible bad data

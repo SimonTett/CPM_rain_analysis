@@ -28,6 +28,7 @@ def comp_ratio_gev(
         t_today: float,
 ) -> \
         xarray.Dataset:
+    
     def comp_ratio(fit: xarray.Dataset) -> xarray.DataArray:
         p_today = CPM_rainlib.comp_params(fit.Parameters, 0.0)
         p_p1k = CPM_rainlib.comp_params(fit.Parameters, 1.0)
@@ -58,10 +59,10 @@ nsamp = 100
 logger = CPM_rainlib.logger
 commonLib.init_log(logger, level='INFO')
 
-filt_carmont_file = CPMlib.CPM_filt_dir / 'carmont_rgn_fit.nc'
-nofilt_carmont_file = CPMlib.CPM_dir / 'carmont_rgn_fit.nc'
-filt_rand_carmont_file = CPMlib.CPM_filt_dir / 'carmont_rgn_rand_fit.nc'
-nofilt_rand_carmont_file = CPMlib.CPM_dir / 'carmont_rgn_rand_fit.nc'
+filt_carmont_file = CPMlib.CPM_filt_dir / 'fits/carmont_rgn_fit_CET.nc'
+nofilt_carmont_file = CPMlib.CPM_dir / 'fits/carmont_fit_raw_CET.nc'
+filt_rand_carmont_file = CPMlib.CPM_filt_dir / 'fits/carmont_rgn_rand_fit.nc'
+nofilt_rand_carmont_file = CPMlib.CPM_dir / 'fits/carmont_rgn_rand_fit.nc'
 if use_cache:
     ratio_filt = xarray.load_dataset(filt_carmont_file)
     ratio_nofilt = xarray.load_dataset(nofilt_carmont_file)
@@ -116,45 +117,107 @@ fig, axs = plt.subplots(1, 3, figsize=(8, 4), clear=True, num='carmont_gev_quant
                         sharey=True, sharex=True
                         )
 label   = commonLib.plotLabel()
-delta_rand_quand_filt = (sample_ratio_filt.Quant_ratio - sample_ratio_filt.Quant_ratio.isel(quantile=5))
-mn_delta = delta_rand_quand_filt.mean('sample')
-std_delta = delta_rand_quand_filt.std('sample')
-mx_delta = mn_delta + 2 * std_delta
-min_delta = mn_delta - 2 * std_delta
-delta_quant = ratio_filt.Quant_ratio - ratio_filt.Quant_ratio.isel(quantile=5)
-sig_change_filt = (delta_quant > mx_delta) | (delta_quant < min_delta)
 
-delta_rand_quand_nofilt = (sample_ratio_nofilt.Quant_ratio - sample_ratio_nofilt.Quant_ratio.sel(quantile=0.5))
-mn_delta = delta_rand_quand_nofilt.mean('sample')
-std_delta = delta_rand_quand_nofilt.std('sample')
-mx_delta = mn_delta + 2 * std_delta
-min_delta = mn_delta - 2 * std_delta
-delta_quant = ratio_nofilt.Quant_ratio - ratio_nofilt.Quant_ratio.sel(quantile=0.5)
-sig_change_nofilt = (delta_quant > mx_delta) | (delta_quant < min_delta)
+def comp_vars(sample_ratio:xarray.DataArray,
+              ratio:xarray.DataArray,
+              sd_scale:float = 3.0) -> (xarray.Dataset,xarray.Dataset,xarray.Dataset):
+    """
+    Compute uncertainties for Monte Carlo sample ratio at each quantile - mean.
+    Returns 
+    1) boolian array which  is True where 
+      deteriminstic values at each quantile - mean value are: 
+          > sd_scale * sigma + sample mean.  
+          OR
+          < sample_mean - sd_scale * sigma
+      AND
+      determinisic values > random sample 2 sigma + sample_mean for each quant
+      
+    2) max values from MC data
+    3) Err from MC value -- sd_scale * sigma 
+      
+    """
+    
+    param_sel = dict(parameter=['location','scale'])
+    
+    #sample_rat = sample_ratio.Quant_ratio - sample_ratio.Quant_ratio.sel(quantile=0.5)
+    sample_rat = sample_ratio.Quant_ratio - sample_ratio.Mean_ratio
+    sample_rat = sample_rat.sel(param_sel)
+    mean_delta = sample_rat.mean('sample')
+    std_delta = sample_rat.std('sample')
+    err = sd_scale * std_delta
+    mx_delta = mean_delta + err
+    mn_delta  = mean_delta - err
+    #rat = ratio.Quant_ratio-ratio.Quant_ratio.sel(quantile=0.5)
+    rat = ratio.Quant_ratio - ratio.Mean_ratio
+    rat = rat.sel(param_sel)
+    sig_change = (rat   >= mx_delta) | (rat <= mn_delta)
+    # Greater than random distribution
+    sample_rat = sample_ratio.Quant_ratio.sel(param_sel)
+    mx_values =  sample_rat.mean('sample')+sd_scale*sample_rat.std('sample')
+    sig_change = (ratio_filt.Quant_ratio.sel(param_sel) >= mx_values) & sig_change
+    return sig_change, mx_values,err 
+
+sig_change_filt,mx_values_filt,err_filt = comp_vars(sample_ratio_filt,ratio_filt)
+sig_change_nofilt,mx_values_nofilt,err_nofilt = comp_vars(sample_ratio_nofilt,ratio_nofilt)
+
 
 cmap = matplotlib.colormaps.get_cmap('GnBu')
-q = ratio_filt['quantile'].values
+#q = ratio_filt['quantile'].values
 norm = matplotlib.colors.Normalize(vmin=-0.1, vmax=1.1)
+names=[]
+
 for roll, ax in zip([1, 2, 4], axs):
-    size = xarray.where(sig_change_filt.sel(rolling=1).any('parameter'), 80, 30
-                        )  # large where any param sig different, small where not.
-    cm = ax.scatter(ratio_filt.Quant_ratio.sel(rolling=roll, parameter='location'),
-                    ratio_filt.Quant_ratio.sel(rolling=roll, parameter='scale'),
-                    c=ratio_filt['quantile'], cmap=cmap, norm=norm, ec='black', s=size, marker='o'
-                    )
-    size = xarray.where(sig_change_nofilt.sel(rolling=1).any('parameter'), 80, 30
-                        )  # large where any param sig different, small where not.
-    cm2 = ax.scatter(ratio_nofilt.Quant_ratio.sel(rolling=roll, parameter='location'),
-                     ratio_nofilt.Quant_ratio.sel(rolling=roll, parameter='scale'),
-                     c=ratio_nofilt['quantile'], cmap=cmap, norm=norm, ec='black', s=size, marker='s'
-                     )
+
+    msk = sig_change_filt.sel(rolling=roll).any('parameter')
+    size = xarray.where(msk, 12, 8                         )  # large where any param sig different, small where not.
+    rat = ratio_filt.Quant_ratio.sel(rolling=roll)
+    ax.errorbar(x=rat.sel(parameter='location'),y=rat.sel(parameter='scale'),
+                xerr=err_filt.sel(parameter='location',rolling=roll),
+                yerr=err_filt.sel(parameter='scale',rolling=roll),color='black',
+                linestyle='None')
+    bbox=dict(facecolor='white', edgecolor='none',pad=0.0)
+    for q,loc,scale,sz in zip(rat['quantile'], rat.sel( parameter='location'), rat.sel( parameter='scale'),size):
+       ax.text(loc,scale,f'{int(q*10):1d}',fontsize=sz,ha='center',
+               va='center',color='black',weight='bold',bbox=bbox)
+    ax.plot(mx_values_filt.sel(rolling=roll,parameter='location'),
+            mx_values_filt.sel(rolling=roll,parameter='scale'),color='black',marker='x')
+    ax.plot(sample_ratio_filt.Quant_ratio.sel(rolling=roll,parameter='location').mean('sample'),
+            sample_ratio_filt.Quant_ratio.sel(rolling=roll,parameter='scale').mean('sample'),
+            marker='',linestyle='dashed',color='black',
+            )
+
     ax.plot(ratio_filt.Mean_ratio.sel(parameter='location', rolling=roll),
             ratio_filt.Mean_ratio.sel(rolling=roll, parameter='scale'),
-            mec='k', mfc='None',marker='o',ms=10, mew=3
-            )
+            mec='black', mfc='None',marker='o',ms=8, mew=3
+            ) # plot the Mean_ratio
+
+
+
+    
+    
+    msk = sig_change_nofilt.sel(rolling=roll).any('parameter')
+    size_nofilt = xarray.where(msk, 12, 8  )  # large where any param sig different, small where not.
+    rat = ratio_nofilt.Quant_ratio.sel(rolling=roll)
+    # no error bar for non filtered data. Plot too busy with it in. 
+# =============================================================================
+#     ax.errorbar(x=rat.sel(parameter='location'),y=rat.sel(parameter='scale'),
+#                 xerr=err_nofilt.sel(parameter='location',rolling=roll),
+#                 yerr=err_nofilt.sel(parameter='scale',rolling=roll),color='red',
+#                 linestyle='None')
+# =============================================================================
+    for q,loc,scale,sz in zip(rat['quantile'], rat.sel( parameter='location'), 
+                              rat.sel( parameter='scale'),size_nofilt):
+       ax.text(loc,scale,f'{int(q*10):1d}',fontsize=sz,ha='center',va='center',color='purple',weight='bold')
+    
+# =============================================================================
+#     ax.plot(mx_values_nofilt.sel(rolling=1,parameter='location'),
+#             mx_values_nofilt.sel(rolling=1,parameter='scale'),color='red')
+# =============================================================================
+
+
     ax.plot(ratio_nofilt.Mean_ratio.sel(parameter='location', rolling=roll),
             ratio_nofilt.Mean_ratio.sel(rolling=roll, parameter='scale'),
-            mec='k', marker='s',mfc='None',ms=10, mew=3,
+            mec='purple', marker='o',mfc='None',ms=8, mew=3
             )
     ax.set_title(f'Rx{roll}h')
     ax.set_xlabel(r'Location $\Delta$ %/K')
@@ -163,7 +226,9 @@ for roll, ax in zip([1, 2, 4], axs):
     ax.axhline(cc*2, color='red', linestyle='--') # twice CC
     ax.axvline(cc, color='k', linestyle='--')
     ax.set_ylim(0., 14)
+    ax.set_xlim(0,7)
     label.plot(ax)
+   # breakpoint()
 fig.show()
-fig.colorbar(cm, ax=axs, label='quantile', **CPMlib.kw_colorbar)
-commonLib.saveFig(fig,figtype='pdf')
+#fig.colorbar(cm, ax=axs, label='quantile', **CPMlib.kw_colorbar)
+commonLib.saveFig(fig,figtype=['pdf','png'])

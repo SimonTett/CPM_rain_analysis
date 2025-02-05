@@ -3,7 +3,7 @@
 #  first creating the environment using pycharm to create a conda env
 # Then install modules using the terminal (as env should already be activated)
 # 3) conda env update -f requirements_windows.yml
-# As conda it is very slow. Sadly iris cannot be using pip as can'y build because of udunits2 path.
+# As conda it is very slow. Sadly, iris cannot be using pip as can't build because of udunits2 path.
 name: CPM_rain_analysis
 channels:
     - conda-forge
@@ -11,7 +11,7 @@ channels:
 dependencies:
    - doit
    - r-base>=4.0.5
-   - python~=3.11
+   - python~=3.12
    - ipython~=8.18
    - xarray~=2023.8 # needed to fix annoying numpy error.
    - flox~=0.8
@@ -23,22 +23,24 @@ dependencies:
    - cartopy~=0.22
    - rioxarray~=0.15
    - statsmodels~=0.13
-   - iris~=3.3
-   - cftime~=1.6
-   - dask~=2023.12
+   - netCDF4~=1.6
+   - bottleneck
+   - iris
+   - cftime
+   - dask
    - fiona
-   - shapely~=1.8
-   - zlib~=1.2
-   - requests~=2.28
+   - shapely
+   - zlib
+   - requests
    - r-extRemes
    - r-viridis
    - r-fields
    - r-raster
    - r-codetools
-   - seaborn~=0.13
-   - rioxarray~=0.15
-   - openpyxl~=3.0
-   - nc-time-axis~=1.4
+   - seaborn
+   - rioxarray
+   - openpyxl
+   - nc-time-axis
    - matplotlib-scalebar
 
 

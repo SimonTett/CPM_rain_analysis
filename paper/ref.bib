@@ -1,4 +1,5 @@
 % Encoding: UTF-8
+
 %% references from Chris Long's MSc thesis
 @article{van_Oldenborgh_et_al_2021, title={Pathways and pitfalls in Extreme event attribution}, volume={166}, DOI={10.1007/s10584-021-03071-7}, number={1–2}, journal={Climatic Change}, author={van Oldenborgh, G. J. and van der Wiel, K. and Kew, S. and Philip, S. and Otto, F. and Vautard, R. and King, A. and Lott, F. and Arrighi, J. and Singh, R. and van Aalst, M.}, year={2021}}
 
@@ -12,7 +13,14 @@
      year={1935},
      pages={118}}
 
-@book{Coles_2001, place={London}, title={An introduction to statistical modeling of extreme values}, publisher={Springer}, author={Coles, S.}, year={2001}}
+@Book{Coles_2001,
+  author    = {Coles, S.},
+  title     = {An introduction to statistical modeling of extreme values},
+  doi       = {10.1007/978-1-4471-3675-0},
+  publisher = {Springer},
+  place     = {London},
+  year      = {2001},
+}
 
 @book{IPCC_2021, place={Cambridge}, title={Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on
 Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
@@ -46,7 +54,16 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 
 @article{Kahn_2005, title={The death toll from natural disasters: The role of income, geography, and Institutions}, volume={87}, DOI={10.1162/0034653053970339}, number={2}, journal={Review of Economics and Statistics}, author={Kahn, M. E.}, year={2005}, pages={271–284}}
 
-@article{Stott_2004, title={Human contribution to the European heatwave of 2003}, volume={432}, DOI={10.1038/nature03089}, number={7017}, journal={Nature}, author={Stott, P. A. and Stone, D. A. and Allen, M. R.}, year={2004}, pages={610–614}}
+@Article{Stott_2004,
+  author  = {Stott, P. A. and Stone, D. A. and Allen, M. R.},
+  title   = {Human contribution to the European heatwave of 2003},
+  doi     = {10.1038/nature03089},
+  number  = {7017},
+  pages   = {610--614},
+  volume  = {432},
+  journal = {Nature},
+  year    = {2004},
+}
 
 @misc{van_Oldenborgh_et_al_2018, title={A cold winter in North America, December 2017 to January 2018: https://www.worldweatherattribution.org/winter-in-north-america-is-cold-dec-2017-jan-2018/}, Journal={World Weather Attribution}, author={Van Oldenbourgh, G. J. and de Vries, H. and Vecci, G. and Otto, F. and Tebaldi, C.}, year={2018}, month={Jan}}
 
@@ -162,11 +179,13 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   publisher={SocArXiv}
 }
 
-@Report{NR_DfT_2021,
-  author = {{Network Rail and Department for Transport}},
-  title  = {Resilience of rail infrastructure: final report},
-  year   = {2021},
-  url    = {https://www.networkrail.co.uk/who-we-are/our-approach-to-safety/stonehaven},
+@Misc{NR_DfT_2021,
+  author  = {{Network Rail and Department for Transport}},
+  date    = {2021},
+  title   = {Resilience of rail infrastructure: final report},
+  url     = {https://www.networkrail.co.uk/who-we-are/our-approach-to-safety/stonehaven},
+  urldate = {2025-02-05},
+  year    = {2021},
 }
 
 @Article{fowler2021rainfall_extremes,
@@ -204,30 +223,32 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   author       = {Kirkbride, M. P. and Black, A. R. and Brazier, V. and Pickering, B. S.},
   date         = {2021-10},
   journaltitle = {Scottish Geographical Journal},
-  title        = {Intense rainfall and debris flows in the Lomond Hills, Fife, 11–12 August 2020},
+  title        = {Intense rainfall and debris flows in the Lomond Hills, Fife, 11-12 August 2020},
   doi          = {10.1080/14702541.2021.2012585},
   issn         = {1751-665X},
-  number       = {1–4},
+  number       = {1--4},
   pages        = {210--227},
   volume       = {137},
   publisher    = {Informa UK Limited},
 }
 
-@Report{SEPA2020report_floods,
+@Misc{SEPA2020report_floods,
   author      = {SEPA},
-  title       = {The Flash Floods of 11 and 12 August 2020 in Central and Eastern Scotland},
-  institution = {Scottish Enviornmental Protection Agency},
   date        = {2020},
+  title       = {The Flash Floods of 11 and 12 August 2020 in Central and Eastern Scotland},
   url         = {https://www.sepa.org.uk/media/536333/the-flash-floods-of-11-and-12-august-2020.pdf},
+  urldate     = {2025-02-05},
+  institution = {Scottish Enviornmental Protection Agency},
 }
 
 @Report{Kendon2020thunderstrorms_report,
   author      = {Kendon, Mike},
-  title       = {Thunderstorms north-east Scotland 11-12 August 2020},
-  institution = {Met Office National Climate Information Centre},
-  year        = {2020},
   date        = {2020-09-10},
+  institution = {Met Office National Climate Information Centre},
+  title       = {Thunderstorms north-east Scotland 11-12 August 2020},
   url         = {https://www.metoffice.gov.uk/binaries/content/assets/metofficegovuk/pdf/weather/learn-about/uk-past-events/interesting/2020/2020_07_august_rain.pdf},
+  urldate     = {2025-02-05},
+  year        = {2020},
 }
 
 @Article{pritchard2020weather,
@@ -246,7 +267,7 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   journaltitle = {Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences},
   title        = {Evaluation of extreme sub-daily precipitation in high-resolution global climate model simulations},
   doi          = {10.1098/rsta.2019.0545},
-  issn         = {1471-2962},
+  issn         = {1471--2962},
   number       = {2195},
   pages        = {20190545},
   volume       = {379},
@@ -255,12 +276,12 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 
  
 @Article{tradowsky2023w_europe_rain,
-  author       = {Tradowsky, Jordis S. and Philip, Sjoukje Y. and Kreienkamp, Frank and Kew, Sarah F. and Lorenz, Philip and Arrighi, Julie and Bettmann, Thomas and Caluwaerts, Steven and Chan, Steven C. and De Cruz, Lesley and de Vries, Hylke and Demuth, Norbert and Ferrone, Andrew and Fischer, Erich M. and Fowler, Hayley J. and Goergen, Klaus and Heinrich, Dorothy and Henrichs, Yvonne and Kaspar, Frank and Lenderink, Geert and Nilson, Enno and Otto, Friederike E. L. and Ragone, Francesco and Seneviratne, Sonia I. and Singh, Roop K. and Skålevåg, Amalie and Termonia, Piet and Thalheimer, Lisa and van Aalst, Maarten and Van den Bergh, Joris and Van de Vyver, Hans and Vannitsem, Stéphane and van Oldenborgh, Geert Jan and Van Schaeybroeck, Bert and Vautard, Robert and Vonk, Demi and Wanders, Niko},
+  author       = {Tradowsky, Jordis S. and Philip, Sjoukje Y. and Kreienkamp, Frank and Kew, Sarah F. and Lorenz, Philip and Arrighi, Julie and Bettmann, Thomas and Caluwaerts, Steven and Chan, Steven C. and De Cruz, Lesley and de Vries, Hylke and Demuth, Norbert and Ferrone, Andrew and Fischer, Erich M. and Fowler, Hayley J. and Goergen, Klaus and Heinrich, Dorothy and Henrichs, Yvonne and Kaspar, Frank and Lenderink, Geert and Nilson, Enno and Otto, Friederike E. L. and Ragone, Francesco and Seneviratne, Sonia I. and Singh, Roop K. and Sk\.{a}lev\.{a}g, Amalie and Termonia, Piet and Thalheimer, Lisa and van Aalst, Maarten and Van den Bergh, Joris and Van de Vyver, Hans and Vannitsem, St\'{e}phane and van Oldenborgh, Geert Jan and Van Schaeybroeck, Bert and Vautard, Robert and Vonk, Demi and Wanders, Niko},
   date         = {2023-06},
   journaltitle = {Climatic Change},
   title        = {Attribution of the heavy rainfall events leading to severe flooding in Western Europe during July 2021},
   doi          = {10.1007/s10584-023-03502-7},
-  issn         = {1573-1480},
+  issn         = {1573--1480},
   number       = {7},
   volume       = {176},
   publisher    = {Springer Science and Business Media LLC},
@@ -273,14 +294,14 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   journaltitle = {Environmental Research: Climate},
   title        = {Extreme weather impacts of climate change: an attribution perspective},
   doi          = {10.1088/2752-5295/ac6e7d},
-  issn         = {2752-5295},
+  issn         = {2752--5295},
   number       = {1},
   pages        = {012001},
   volume       = {1},
   publisher    = {IOP Publishing},
 }
 
-@Article{zhang2024attrib_infrastrcture,
+{zhang2024attrib_infrastrcture,
   author       = {Yating Zhang and Bilal M. Ayyub and Juan F. Fung and Zachary M. Labe},
   title        = {Incorporating extreme event attribution into climate change adaptation for civil infrastructure: Methods, benefits, and research needs},
   journaltitle = {Resilient Cities and Structures},
@@ -288,10 +309,10 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   volume       = {3},
   number       = {1},
   pages        = {103-113},
-  issn         = {2772-7416},
+  issn         = {2772--7416},
   doi          = {https://doi.org/10.1016/j.rcns.2024.03.002},
   url          = {https://www.sciencedirect.com/science/article/pii/S277274162400005X},
-  abstract     = {In the last decade, the detection and attribution science that links climate change to extreme weather and climate events has emerged as a growing field of research with an increasing body of literature. This paper overviews the methods for extreme event attribution (EEA) and discusses the new insights that EEA provides for infrastructure adaptation. We found that EEA can inform stakeholders about current climate risk, support vulnerability-based and hazard-based adaptations, assist in the development of cost-effective adaptation strategies, and enhance justice and equity in the allocation of adaptation resources. As engineering practice shifts from a retrospective approach to a proactive, forward-looking risk management strategy, EEA can be used together with climate projections to enhance the comprehensiveness of decision making, including planning and preparing for unprecedented extreme events. Additionally, attribution assessment can be more useful for adaptation planning when the exposure and vulnerability of communities to past events are analyzed, and future changes in the probability of extreme events are evaluated. Given large uncertainties inherent in event attribution and climate projections, future research should examine the sensitivity of engineering design to climate model uncertainties, and adapt engineering practice, including building codes, to uncertain future conditions. While this study focuses on adaptation planning, EEA can also be a useful tool for informing and enhancing decisions related to climate mitigation.},
+  %%abstract     = {In the last decade, the detection and attribution science that links climate change to extreme weather and climate events has emerged as a growing field of research with an increasing body of literature. This paper overviews the methods for extreme event attribution (EEA) and discusses the new insights that EEA provides for infrastructure adaptation. We found that EEA can inform stakeholders about current climate risk, support vulnerability-based and hazard-based adaptations, assist in the development of cost-effective adaptation strategies, and enhance justice and equity in the allocation of adaptation resources. As engineering practice shifts from a retrospective approach to a proactive, forward-looking risk management strategy, EEA can be used together with climate projections to enhance the comprehensiveness of decision making, including planning and preparing for unprecedented extreme events. Additionally, attribution assessment can be more useful for adaptation planning when the exposure and vulnerability of communities to past events are analyzed, and future changes in the probability of extreme events are evaluated. Given large uncertainties inherent in event attribution and climate projections, future research should examine the sensitivity of engineering design to climate model uncertainties, and adapt engineering practice, including building codes, to uncertain future conditions. While this study focuses on adaptation planning, EEA can also be a useful tool for informing and enhancing decisions related to climate mitigation.},
   keywords     = {Climate change, Extreme weather and climate events, Extreme event attribution, Infrastructure adaptation, Uncertainties},
 }
 
@@ -344,7 +365,7 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   journaltitle = {Journal of Hydrology},
   title        = {True interval non-stationary Intensity-Duration-Frequency curves under changing climate and effect of temporal discretisation on rainfall extremes},
   doi          = {10.1016/j.jhydrol.2023.129136},
-  issn         = {0022-1694},
+  issn         = {0022--1694},
   pages        = {129136},
   volume       = {618},
   publisher    = {Elsevier BV},
@@ -364,10 +385,11 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 }
 
 @Misc{carmontReport2024,
-  author = {{Rail Accident Investigation Branch}},
-  date   = {2024-01},
-  title  = {Derailment of a passenger train at Carmont, Aberdeenshire 12 August 2020 v2},
-  url    = {https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1059412/R022022_220310_Carmont.pdf},
+  author  = {{Rail Accident Investigation Branch}},
+  date    = {2024-01},
+  title   = {Derailment of a passenger train at Carmont, Aberdeenshire 12 August 2020 v2},
+  url     = {https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1059412/R022022_220310_Carmont.pdf},
+  urldate = {2025-02-05},
 }
 
 @Misc{ukcp2019cpm,
@@ -385,7 +407,7 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   journaltitle = {Journal of Statistical Software},
   title        = {extRemes2.0: An Extreme Value Analysis Package in R},
   doi          = {10.18637/jss.v072.i08},
-  issn         = {1548-7660},
+  issn         = {1548--7660},
   number       = {8},
   volume       = {72},
   publisher    = {Foundation for Open Access Statistic},
@@ -418,63 +440,33 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 
 @Article{lang2024catmodels,
   author  = {Andreas Lang and Benjamin Poschlod},
-  title   = {Updating catastrophe models to today’s climate -- An application of a large ensemble approach to extreme rainfall},
+  title   = {Updating catastrophe models to today's climate -- An application of a large ensemble approach to extreme rainfall},
   journal = {Climate Risk Management},
   year    = {2024},
   volume  = {44},
   pages   = {100594},
-  issn    = {2212-0963},
+  issn    = {2212--0963},
   doi     = {https://doi.org/10.1016/j.crm.2024.100594},
   url     = {https://www.sciencedirect.com/science/article/pii/S2212096324000111},
 }
 
 @Article{Visser2021hook_precipitation,
   author    = {Johan B. Visser and Conrad Wasko and Ashish Sharma and Rory Nathan},
-  title     = {Eliminating the “Hook” in Precipitation–Temperature Scaling},
+  title     = {Eliminating the``Hook'' in Precipitation-Temperature Scaling},
   journal   = {Journal of Climate},
   year      = {2021},
   volume    = {34},
   number    = {23},
-  pages     = {9535 - 9549},
+  pages     = {9535--9549},
   doi       = {10.1175/JCLI-D-21-0292.1},
   url       = {https://journals.ametsoc.org/view/journals/clim/34/23/JCLI-D-21-0292.1.xml},
   address   = {Boston MA, USA},
   publisher = {American Meteorological Society},
 }
 
-@Article{Moshe2022extremes,
-  author   = {Armon, Moshe and Marra, Francesco and Enzel, Yehouda and Rostkier-Edelstein, Dorita and Garfinkel, Chaim I. and Adam, Ori and Dayan, Uri and Morin, Efrat},
-  title    = {Reduced Rainfall in Future Heavy Precipitation Events Related to Contracted Rain Area Despite Increased Rain Rate},
-  journal  = {Earth's Future},
-  year     = {2022},
-  volume   = {10},
-  number   = {1},
-  pages    = {e2021EF002397},
-  note     = {e2021EF002397 2021EF002397},
-  doi      = {https://doi.org/10.1029/2021EF002397},
-  eprint   = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2021EF002397},
-  url      = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021EF002397},
-  abstract = {Abstract Heavy precipitation events (HPEs) can lead to deadly and costly natural disasters and are critical to the hydrological budget in regions where rainfall variability is high and water resources depend on individual storms. Thus, reliable projections of such events in the future are needed. To provide high-resolution projections under the RCP8.5 scenario for HPEs at the end of the 21st century, and to understand the changes in sub-hourly to daily rainfall patterns, weather research and forecasting (WRF) model simulations of 41 historic HPEs in the eastern Mediterranean are compared with “pseudo global warming” simulations of the same events. This paper presents the changes in rainfall patterns in future storms, decomposed into storms' mean conditional rain rate, duration, and area. A major decrease in rainfall accumulation (−30\% averaged across events) is found throughout future HPEs. This decrease results from a substantial reduction of the rain area of storms (−40\%) and occurs despite an increase in the mean conditional rain intensity (+15\%). The duration of the HPEs decreases (−9\%) in future simulations. Regionally maximal 10-min rain rates increase (+22\%), whereas over most of the region, long-duration rain rates decrease. The consistency of results across events, driven by varying synoptic conditions, suggests that these changes have low sensitivity to the specific synoptic evolution during the events. Future HPEs in the eastern Mediterranean will therefore likely be drier and more spatiotemporally concentrated, with substantial implications on hydrological outcomes of storms.},
-}
-
-@Article{hundhausen2024extreme_precip,
-  author   = {Hundhausen, Marie and Feldmann, Hendrik and Kohlhepp, Regina and Pinto, Joaquim G.},
-  title    = {Climate change signals of extreme precipitation return levels for Germany in a transient convection-permitting simulation ensemble},
-  journal  = {International Journal of Climatology},
-  year     = {2024},
-  volume   = {44},
-  number   = {5},
-  pages    = {1454-1471},
-  doi      = {https://doi.org/10.1002/joc.8393},
-  eprint   = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/joc.8393},
-  url      = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.8393},
-  abstract = {Abstract The increase in extreme precipitation with global warming (GW) and associated uncertainties are major challenges for climate adaptation. To project future extreme precipitation on different time and intensity scales (return periods [RPs] from 1 to 100 a and durations from 1 h to 3 days), we use a novel convection-permitting (CP), multi-global climate model ensemble of COSMO-CLM regional simulations with a transient projection time (1971–2100) over Germany. We find an added value of the CP scale (2.8 km) with respect to the representation of hourly extreme precipitation intensities compared to the coarser scale with parametrized deep convection (7 km). In general, the return levels (RLs) calculated from the CP simulations are in better agreement with those of the conventional observation-based risk products for the region for short event durations than for longer durations, where an overestimation by the simulation-based results was found. A maximum climate change signal of 6–8.5\% increase per degree of GW is projected within the CP ensemble, with the largest changes expected for short durations and long RPs. Analysis of the uncertainty in the climate change signal shows a substantial residual standard deviation of a linear approximation, highlighting the need for transient data sets instead of time-slice experiments to increase confidence in the estimates. Furthermore, the ensemble spread is found to be smallest for intensities of short duration, where changes are expected to be based mainly on thermodynamic contributions. The ensemble spread is larger for long, multi-day durations, where a stronger dependence on the dynamical component is ascribed. In addition, an increase in spatial variance of the RLs with GW implies a more variable future climate and points to an increasing importance of accounting for uncertainties.},
-  keywords = {convection-permitting, COSMO-CLM, extreme precipitation, multi-model ensemble, regional climate modelling},
-}
-
-@Article{martel2021rainfall_ifd,
-  author   = {Jean-Luc Martel and François P. Brissette and Philippe Lucas-Picher and Magali Troin and Richard Arsenault},
-  title    = {Climate Change and Rainfall Intensity–Duration–Frequency Curves: Overview of Science and Guidelines for Adaptation},
+{martel2021rainfall_ifd,
+  author   = {Jean-Luc Martel and Fran\c{c}ois P. Brissette and Philippe Lucas-Picher and Magali Troin and Richard Arsenault},
+  title    = {Climate Change and Rainfall Intensity-Duration-Frequency Curves: Overview of Science and Guidelines for Adaptation},
   journal  = {Journal of Hydrologic Engineering},
   year     = {2021},
   volume   = {26},
@@ -483,7 +475,7 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   doi      = {10.1061/(ASCE)HE.1943-5584.0002122},
   eprint   = {https://ascelibrary.org/doi/pdf/10.1061/%28ASCE%29HE.1943-5584.0002122},
   url      = {https://ascelibrary.org/doi/abs/10.1061/%28ASCE%29HE.1943-5584.0002122},
-  abstract = { One of the most important impacts of a future warmer climate is the projected increase in the frequency and intensity of extreme rainfall events. This increasing trend in extreme rainfall is seen in both the observational record and climate model projections. However, a thorough review of the recent scientific literature paints a complex picture in which the intensification of rainfall extremes depends on a multitude of factors. While some projected rainfall indices follow the Clausius-Clapeyron relationship scaling of an ∼7\% increase in rainfall per 1°C of warming, there is substantial evidence that this scaling depends on rainfall extremes frequency, with longer return period events seeing larger increases, leading to super Clausius-Clapeyron scaling in some cases. The intensification of extreme rainfall events is now well documented at the daily scale but is less clear at the subdaily scale. In recent years, climate model simulations at a finer spatial and temporal resolution, including convection-permitting models, have provided more reliable projections of subdaily rainfall. Recent analyses indicate that rainfall scaling may also increase as a function of duration, such that shorter-duration, longer return period events will likely see the largest rainfall increases in a warmer climate. This has broad implications on the design and the use of rainfall intensity–duration–frequency (IDF) curves, for which both an overall increase in magnitude and a steepening can now be predicted. This paper also presents an overview of measures that have been adopted by various governing bodies to adapt IDF curves to the changing climate. Current measures vary from multiplying historical design rainfall by a simple constant percentage to modulating correction factors based on return periods and to scaling them to the Clausius-Clapeyron relationship based on projected temperature increases. All of these current measures fail to recognize a possible super Clausius-Clapeyron scaling of extreme rainfall and, perhaps more importantly, the increasing scaling toward shorter-duration rainfall and the most extreme rainfall events that will significantly impact stormwater runoff in cities and in small rural catchments. This paper discusses the remaining scientific gaps and offers technical recommendations for practitioners on how to adapt IDF curves to improve climate resilience. },
+  %%abstract = { One of the most important impacts of a future warmer climate is the projected increase in the frequency and intensity of extreme rainfall events. This increasing trend in extreme rainfall is seen in both the observational record and climate model projections. However, a thorough review of the recent scientific literature paints a complex picture in which the intensification of rainfall extremes depends on a multitude of factors. While some projected rainfall indices follow the Clausius-Clapeyron relationship scaling of an ∼7\% increase in rainfall per 1°C of warming, there is substantial evidence that this scaling depends on rainfall extremes frequency, with longer return period events seeing larger increases, leading to super Clausius-Clapeyron scaling in some cases. The intensification of extreme rainfall events is now well documented at the daily scale but is less clear at the subdaily scale. In recent years, climate model simulations at a finer spatial and temporal resolution, including convection-permitting models, have provided more reliable projections of subdaily rainfall. Recent analyses indicate that rainfall scaling may also increase as a function of duration, such that shorter-duration, longer return period events will likely see the largest rainfall increases in a warmer climate. This has broad implications on the design and the use of rainfall intensity–duration–frequency (IDF) curves, for which both an overall increase in magnitude and a steepening can now be predicted. This paper also presents an overview of measures that have been adopted by various governing bodies to adapt IDF curves to the changing climate. Current measures vary from multiplying historical design rainfall by a simple constant percentage to modulating correction factors based on return periods and to scaling them to the Clausius-Clapeyron relationship based on projected temperature increases. All of these current measures fail to recognize a possible super Clausius-Clapeyron scaling of extreme rainfall and, perhaps more importantly, the increasing scaling toward shorter-duration rainfall and the most extreme rainfall events that will significantly impact stormwater runoff in cities and in small rural catchments. This paper discusses the remaining scientific gaps and offers technical recommendations for practitioners on how to adapt IDF curves to improve climate resilience. },
 }
 
 @Article{mishra2023landslide,
@@ -501,14 +493,14 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   year      = {2021},
   volume    = {22},
   number    = {12},
-  pages     = {3159 - 3169},
+  pages     = {3159--3169},
   doi       = {10.1175/JHM-D-21-0034.1},
   url       = {https://journals.ametsoc.org/view/journals/hydr/22/12/JHM-D-21-0034.1.xml},
   address   = {Boston MA, USA},
   publisher = {American Meteorological Society},
 }
 
-@Article{Lee2022CPM_Korea,
+{Lee2022CPM_Korea,
   author   = {Lee, Donghyun and Min, Seung-Ki and Park, In-Hong and Ahn, Joong-Bae and Cha, Dong-Hyun and Chang, Eun-Chul and Byun, Young-Hwa},
   title    = {Enhanced Role of Convection in Future Hourly Rainfall Extremes Over South Korea},
   journal  = {Geophysical Research Letters},
@@ -520,7 +512,7 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   doi      = {https://doi.org/10.1029/2022GL099727},
   eprint   = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2022GL099727},
   url      = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2022GL099727},
-  abstract = {Abstract A convection-permitting regional climate model (CPRCM) with 2.5 km resolution has been simulated over South Korea for current and future conditions, and the role of convection in the scaling of hourly extreme precipitation (EP) with temperature is examined. It is found that the CPRCM can reproduce the observed super Clausius-Clapeyron (C-C) scaling for hourly EP. Precipitation type estimated based on the convective available potential energy reveals the important role of convection in the super C-C scaling. Fraction of convective rainfall events increases rapidly with temperature, and the contribution of convection becomes dominant in future simulations under high-emission scenarios. In the late 21st century, as temperature ranges shift to warmer conditions, unprecedented hourly extreme rainfall events are projected to occur particularly during the late summer season. Future changes in hourly extreme events are found to be affected much by boundary conditions from different global climate models.},
+  %%abstract = {Abstract A convection-permitting regional climate model (CPRCM) with 2.5 km resolution has been simulated over South Korea for current and future conditions, and the role of convection in the scaling of hourly extreme precipitation (EP) with temperature is examined. It is found that the CPRCM can reproduce the observed super Clausius-Clapeyron (C-C) scaling for hourly EP. Precipitation type estimated based on the convective available potential energy reveals the important role of convection in the super C-C scaling. Fraction of convective rainfall events increases rapidly with temperature, and the contribution of convection becomes dominant in future simulations under high-emission scenarios. In the late 21st century, as temperature ranges shift to warmer conditions, unprecedented hourly extreme rainfall events are projected to occur particularly during the late summer season. Future changes in hourly extreme events are found to be affected much by boundary conditions from different global climate models.},
 }
 
 @Article{saltikoff2019radar_climate,
@@ -530,25 +522,14 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   year      = {2019},
   volume    = {100},
   number    = {9},
-  pages     = {1739 - 1752},
+  pages     = {1739--1752},
   doi       = {10.1175/BAMS-D-18-0166.1},
   url       = {https://journals.ametsoc.org/view/journals/bams/100/9/bams-d-18-0166.1.xml},
   address   = {Boston MA, USA},
   publisher = {American Meteorological Society},
 }
 
-@Article{kendon2021ukclimate,
-  author   = {Kendon, Mike and McCarthy, Mark and Jevrejeva, Svetlana and Matthews, Andrew and Sparks, Tim and Garforth, Judith},
-  title    = {State of the UK Climate 2020},
-  journal  = {International Journal of Climatology},
-  year     = {2021},
-  volume   = {41},
-  number   = {S2},
-  pages    = {1-76},
-  doi      = {https://doi.org/10.1002/joc.7285},
-  eprint   = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/joc.7285},
-  url      = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.7285},
-  abstract = {INTRODUCTION This report provides a summary of the UK weather and climate through the calendar year 2020, alongside the historical context for a number of essential climate variables. This is the seventh in a series of annual ‘State of the UK climate’ publications and an update to the 2019 report (Kendon et al., 2020). It provides an accessible, authoritative and up-to-date assessment of UK climate trends, variations and extremes based on the most up to date observational datasets of climate quality. The majority of this report is based on observations of temperature, precipitation, sunshine and wind speed from the UK land weather station network as managed by the Met Office and a number of key partners and co-operating volunteers. The observations are carefully managed such that they conform to current best practice observational standards as defined by the World Meteorological Organization (WMO). The observations also pass through a range of quality assurance procedures at the Met Office before application for climate monitoring. Time series of near-coast sea-surface temperature and sea-level are also presented and in addition a short section on phenology which provides dates of first leaf and bare tree indicators for four common shrub or tree species. National and regional statistics in this report are from the HadUK-Grid dataset which is the principal source of data (Hollis et al., 2019). Temperature and rainfall series from this dataset extend back to 1884 and 1862, respectively. Details of the datasets used throughout this report and how the various series which are presented are derived are provided in the appendices. The report presents summary statistics for the most recent year 2020 against the most recent decade 2011–2020, the most recent 30-year reference period (1981–2010) and the climate reference period 1961–1990. The full series provide longer-term context, while a comparison is also made to centennial averages for the Central England Temperature series. The decade 2011–2020 is a non-standard reference period, but it provides a 10-year ‘snapshot’ of the most recent experience of the UK's climate and how that compares to historical records. This means differences between 2011 and 2020 and 30-year reference periods may reflect shorter-term decadal variations as well as long-term trends. For this annual publication, the most recent decade (currently 2011–2020) changes every year, while the most recent 30-year reference period (currently 1981–2010) changes every decade. For next year's report, the most recent 30-year reference period will change from 1981–2010 to 1991–2020, while the climate reference period 1961–1990 will be retained. However, this report also includes a brief summary of key differences between preliminary 1991–2020 and 1981–2010 averages for temperature and rainfall. Throughout the report's text the terms “above normal” and “above average” and so on refer to the 1981–2010 baseline reference period unless otherwise stated. The majority of maps in this report show the year 2020 relative to the 1981–2010 reference period—that is, they are anomaly maps which show the spatial variation in this difference from average. Maps of actual values are in most cases not displayed because these are dominated by the underlying climatology, which for this report is of a lesser interest than the year-to-year variability. These data are presented to show what has happened in recent years, not necessarily what is expected to happen in a changing climate. Values quoted in tables throughout this report are rounded, but where the difference between two such values is quoted in the text (e.g., comparing the most recent decade with 1981–2010), this difference is calculated from the original unrounded values. Updates Compared to State of UK Climate 2019 A chart showing global surface temperature has been added. The section on sea level rise has been revised. A section summarizing key differences between preliminary 1991–2010 and 1981–2010 averages has been added. Feedback We would welcome suggestions or recommendations for future annual publications of this report. Please send any feedback to the Met Office at ncic@metoffice.gov.uk This State of the UK Climate report was supported by the Met Office Hadley Centre Climate Programme funded by BEIS and Defra.},
+ This State of the UK Climate report was supported by the Met Office Hadley Centre Climate Programme funded by BEIS and Defra.},
 }
 
 @Article{karoly06cet,
@@ -561,31 +542,30 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 }
 
 @Article{harrison2000nimrod,
-  author   = {Harrison, D L and Driscoll, S J and Kitchen, M},
-  title    = {Improving precipitation estimates from weather radar using quality control and correction techniques},
-  journal  = {Meteorological Applications},
-  year     = {2000},
-  volume   = {7},
-  number   = {2},
-  pages    = {135-144},
-  doi      = {https://doi.org/10.1017/S1350482700001468},
-  eprint   = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1017/S1350482700001468},
-  url      = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1017/S1350482700001468},
-  abstract = {Abstract Errors and uncertainty in radar estimates of precipitation result both from errors in the basic measurement of reflectivity and from attempts to relate this to the precipitation falling at the ground. If radar data are to be used to their full potential, it is essential that effective measures are taken to mitigate these problems. The automatic processing of radar data that forms part of the UK Met. Office's Nimrod system addresses a number of specific sources of error. These include the identification and removal of spurious echoes resulting from anomalous propagation of the radar beam, errors resulting from variations in the vertical profile of reflectivity and radar sensitivity errors. Routine verification of the surface precipitation estimates has been undertaken, largely through comparison with rain gauge observations, over a range of timescales, which has allowed the benefits of the quality control and correction processes to be quantified. Although the improvement derived varies according to the dominant synoptic situation, an average reduction in the root-mean-square difference between gauge and radar data of 30\% can be achieved. Copyright © 2000 Royal Meteorological Society},
+  author  = {Harrison, D L and Driscoll, S J and Kitchen, M},
+  title   = {Improving precipitation estimates from weather radar using quality control and correction techniques},
+  doi     = {https://doi.org/10.1017/S1350482700001468},
+  eprint  = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1017/S1350482700001468},
+  number  = {2},
+  pages   = {135-144},
+  url     = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1017/S1350482700001468},
+  volume  = {7},
+  journal = {Meteorological Applications},
+  year    = {2000},
 }
 
-@Article{kendon2023uk_climate,
+{kendon2023uk_climate,
   author   = {Kendon, Mike and McCarthy, Mark and Jevrejeva, Svetlana and Matthews, Andrew and Williams, Joanne and Sparks, Tim and West, Fritha},
   title    = {State of the UK Climate 2022},
   journal  = {International Journal of Climatology},
   year     = {2023},
   volume   = {43},
   number   = {S1},
-  pages    = {1-83},
+  pages    = {1--83},
   doi      = {https://doi.org/10.1002/joc.8167},
   eprint   = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/joc.8167},
   url      = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.8167},
-  abstract = {This report provides a summary of the UK's weather and climate through the calendar year 2022, alongside the historical context for a number of essential climate variables. This is the ninth in a series of annual ‘State of the UK Climate’ publications and an update to the 2021 report (Kendon et al., 2022). It provides an accessible, authoritative and up-to-date assessment of UK climate trends, variations and extremes based on the most up-to-date observational datasets of climate quality.},
+  %%abstract = {This report provides a summary of the UK's weather and climate through the calendar year 2022, alongside the historical context for a number of essential climate variables. This is the ninth in a series of annual ‘State of the UK Climate’ publications and an update to the 2021 report (Kendon et al., 2022). It provides an accessible, authoritative and up-to-date assessment of UK climate trends, variations and extremes based on the most up-to-date observational datasets of climate quality.},
 }
 
 @Article{tett99c20tc,
@@ -621,12 +601,12 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 
 @Article{Reed2021dorian_extreme_rain,
   author       = {Kevin Reed and Michael F. Wehner and Alyssa M. Stansfield and Colin M. Zarzycki},
-  title        = {Anthropogenic Influence on Hurricane Dorian’s Extreme Rainfall},
+  title        = {Anthropogenic Influence on Hurricane Dorian's Extreme Rainfall},
   journaltitle = {Bulletin of the American Meteorological Society},
   date         = {2021},
     volume       = {102},
   number       = {1},
-  pages        = {S9 -- S15},
+  pages        = {S9--S15},
   doi          = {10.1175/BAMS-D-20-0160.1},
   url          = {https://journals.ametsoc.org/view/journals/bams/102/1/BAMS-D-20-0160.1.xml},
   location     = {Boston MA, USA},
@@ -634,19 +614,19 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
 }
 
 @Article{Reed2022,
-  author        = {Reed, Kevin A. and Wehner, Michael F. and Zarzycki, Colin M.},
-  title         = {Attribution of 2020 hurricane season extreme rainfall to human-induced climate change},
-  journal       = {Nature Communications},
-  year          = {2022},
-  volume        = {13},
-  number        = {1},
-  month         = apr,
-  pages         = {1905},
-  issn          = {2041-1723},
-  doi           = {10.1038/s41467-022-29379-1},
-  url           = {https://doi.org/10.1038/s41467-022-29379-1},
-  __markedentry = {[z3542688:6]},
-  refid         = {Reed2022},
+  author  = {Reed, Kevin A. and Wehner, Michael F. and Zarzycki, Colin M.},
+  title   = {Attribution of 2020 hurricane season extreme rainfall to human-induced climate change},
+  doi     = {10.1038/s41467-022-29379-1},
+  issn    = {2041-1723},
+  number  = {1},
+  pages   = {1905},
+  url     = {https://doi.org/10.1038/s41467-022-29379-1},
+  volume  = {13},
+  groups  = {z3542688:6},
+  journal = {Nature Communications},
+  month   = apr,
+  refid   = {Reed2022},
+  year    = {2022},
 }
 
 @Article{Overeem2023euradclim,
@@ -668,7 +648,7 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   year      = {2020},
   volume    = {101},
   number    = {1},
-  pages     = {S65 - S70},
+  pages     = {S65--S70},
   doi       = {10.1175/BAMS-D-19-0147.1},
   url       = {https://journals.ametsoc.org/view/journals/bams/101/1/bams-d-19-0147.1.xml},
   address   = {Boston MA, USA},
@@ -684,22 +664,22 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   publisher = {Cambridge University Press},
   location  = {Cambridge, United Kingdom and New York, NY, USA},
   chapter   = {11},
-  pages     = {1513 - 1766},
+  pages     = {1513--1766},
   doi       = {10.1017/9781009157896.013},
 }
 
-@Article{parker92cet,
+{parker92cet,
   author   = {Parker, D. E. and Legg, T. P. and Folland, C. K.},
-  title    = {A new daily central England temperature series, 1772–1991},
+  title    = {A new daily central England temperature series, 1772--1991},
   journal  = {International Journal of Climatology},
   year     = {1992},
   volume   = {12},
   number   = {4},
-  pages    = {317-342},
+  pages    = {317--342},
   doi      = {https://doi.org/10.1002/joc.3370120402},
   eprint   = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/joc.3370120402},
   url      = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.3370120402},
-  abstract = {Abstract In 1974 Manley produced a time series of monthly average temperatures representative of central England for 1659–1973. The present paper describes how a series of homogenized daily values representative of the same region has been formed. This series starts in 1772, and is consistent with Manley's monthly average values. Between 1772 and 1876 the daily series is based on a sequence of single stations whose variance has been reduced to counter the artificial increase that results from sampling single locations. For subsequent years, the series has been produced from combinations of as few stations as can reliably represent central England in the manner defined by Manley. We have used the daily series to update Manley's published monthly series in a consistent way. We have evaluated recent urban warming influences at the chosen stations by comparison with nearby rural stations, and have corrected the series from 1974 onwards. The corrections do not (yet) exceed 0.1°C. We present all the monthly data from 1974, along with averages and standard deviations for 1961–1990. We also show sequences of daily central England temperature for sample years. All the daily data are available on request.},
+  %%abstract = {Abstract In 1974 Manley produced a time series of monthly average temperatures representative of central England for 1659–1973. The present paper describes how a series of homogenized daily values representative of the same region has been formed. This series starts in 1772, and is consistent with Manley's monthly average values. Between 1772 and 1876 the daily series is based on a sequence of single stations whose variance has been reduced to counter the artificial increase that results from sampling single locations. For subsequent years, the series has been produced from combinations of as few stations as can reliably represent central England in the manner defined by Manley. We have used the daily series to update Manley's published monthly series in a consistent way. We have evaluated recent urban warming influences at the chosen stations by comparison with nearby rural stations, and have corrected the series from 1974 onwards. The corrections do not (yet) exceed 0.1°C. We present all the monthly data from 1974, along with averages and standard deviations for 1961–1990. We also show sequences of daily central England temperature for sample years. All the daily data are available on request.},
   keywords = {Temperature, Climatic variability, Urban warming, Central England, Homogeneous time series},
 }
 
@@ -727,13 +707,7 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   pages     = {730--737},
   doi       = {10.1080/01621459.1974.10480196},
   eprint    = {https://www.tandfonline.com/doi/pdf/10.1080/01621459.1974.10480196},
-  url       = { 
-    
-    
-        https://www.tandfonline.com/doi/abs/10.1080/01621459.1974.10480196
-    
-
-},
+  url       = {https://www.tandfonline.com/doi/abs/10.1080/01621459.1974.10480196},
   publisher = {Taylor \& Francis},
 }
 
@@ -765,6 +739,316 @@ Climate Change}, publisher={Springer}, author={IPCC}, year={2021}}
   url      = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1002/grl.50796},
   abstract = {Convective available potential energy (CAPE) is shown to increase rapidly with warming in simulations of radiative-convective equilibrium over a wide range of surface temperatures. The increase in CAPE implies a systematic deviation of the thermal stratification from moist adiabatic that is non-negligible at high temperatures. However, cloud buoyancy remains much smaller than what CAPE would imply because entrainment is more effective in reducing buoyancy in warmer atmospheres. An entraining plume model in the limit of zero cloud buoyancy is shown to reproduce the increase in CAPE with warming if the entrainment rate is held fixed and increases in the vertical extent of convection are taken into account. These model results together with radiosonde observations are used to support a conceptual model in which entrainment plays a role in determining the thermal stratification of the tropical atmosphere.},
   keywords = {convection, entrainment, CAPE},
+}
+
+@Article{matte2022cloudburst,
+  author   = {Matte, Dominic and Christensen, Jens H. and Feddersen, Henrik and Vedel, Henrik and Nielsen, Niels Woetmann and Pedersen, Rasmus A. and Zeitzen, Rune M. K.},
+  title    = {On the Potentials and Limitations of Attributing a Small-Scale Climate Event},
+  journal  = {Geophysical Research Letters},
+  year     = {2022},
+  volume   = {49},
+  number   = {16},
+  pages    = {e2022GL099481},
+  note     = {e2022GL099481 2022GL099481},
+  doi      = {https://doi.org/10.1029/2022GL099481},
+  eprint   = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2022GL099481},
+  url      = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2022GL099481},
+  abstract = {Abstract Intense convective storms can be hazardous when occurring over large populated cities. In a changing climate, decision makers and the general public increasingly need to be able to better understand if and to what extent these storms are influenced by anthropological climate change and what to expect as climate continues to warm. Unfortunately due to their limited ability to resolve small-scale features in models, convective storms remain a challenge to the modeling community. Here, we use a forecast-ensemble based method using a convection permitting model with full data-assimilation, to assess the risk of exceeding certain precipitation thresholds related to a critical cloudburst event that occurred over Copenhagen, Denmark. Our results show that this set-up is representing well the overall observed intensities. By adapting a pseudo-global warming approach, we show that both the risk for flooding and the risk for reaching unprecedented precipitation intensity increases resulting from further warming.},
+  keywords = {climate change, clouburst, attribution, pseudo-global warming, flash flood},
+}
+
+
+@Article{Harrison2012,
+  author       = {Harrison, Dawn Lesley and Norman, Katie and Pierce, Clive and Gaussiat, Nicolas},
+  date         = {2012-02},
+  journaltitle = {Proceedings of the Institution of Civil Engineers - Water Management},
+  title        = {Radar products for hydrological applications in the UK},
+  doi          = {10.1680/wama.2012.165.2.89},
+  issn         = {1751-7729},
+  number       = {2},
+  pages        = {89--103},
+  volume       = {165},
+  publisher    = {Emerald},
+}
+
+@InProceedings{procedings:harrison15radarnet,
+  author     = {Dawn Harrison and Katie Norman and Tim Darlington and Donal Adams and Nawal Husnoo and Caroline Sandford and Steven Best},
+  date       = {2015},
+  title      = {The evolution of the Met Office radar data quality control and product generation system: radarnet},
+  eventtitle = {37th Conference on Radar Meteorology},
+  publisher  = {American Meteorological Society},
+  url        = {https://ams.confex.com/ams/37RADAR/webprogram/Paper275684.html},
+}
+
+@Article{kendon2021ukclimate,
+  author  = {Kendon, Mike and McCarthy, Mark and Jevrejeva, Svetlana and Matthews, Andrew and Sparks, Tim and Garforth, Judith},
+  title   = {State of the UK Climate 2020},
+  doi     = {https://doi.org/10.1002/joc.7285},
+  eprint  = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/joc.7285},
+  number  = {S2},
+  pages   = {1-76},
+  url     = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.7285},
+  volume  = {41},
+  journal = {International Journal of Climatology},
+  year    = {2021},
+}
+
+@Article{parker92cet,
+  author  = {Parker, D. E. and Legg, T. P. and Folland, C. K.},
+  title   = {A new daily central England temperature series, 1772-1991},
+  doi     = {https://doi.org/10.1002/joc.3370120402},
+  eprint  = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/joc.3370120402},
+  number  = {4},
+  pages   = {317-342},
+  url     = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.3370120402},
+  volume  = {12},
+  journal = {International Journal of Climatology},
+  year    = {1992},
+}
+
+@Article{hundhausen2024extreme_precip,
+  author  = {Hundhausen, Marie and Feldmann, Hendrik and Kohlhepp, Regina and Pinto, Joaquim G.},
+  title   = {Climate change signals of extreme precipitation return levels for Germany in a transient convection-permitting simulation ensemble},
+  doi     = {https://doi.org/10.1002/joc.8393},
+  eprint  = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/joc.8393},
+  number  = {5},
+  pages   = {1454-1471},
+  url     = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.8393},
+  volume  = {44},
+  journal = {International Journal of Climatology},
+  year    = {2024},
+}
+
+@Article{martel2021rainfall_ifd,
+  author  = {Jean-Luc Martel and François P. Brissette and Philippe Lucas-Picher and Magali Troin and Richard Arsenault},
+  title   = {Climate Change and Rainfall Intensity-Duration-Frequency Curves: Overview of Science and Guidelines for Adaptation},
+  doi     = {10.1061/(ASCE)HE.1943-5584.0002122},
+  eprint  = {https://ascelibrary.org/doi/pdf/10.1061/%28ASCE%29HE.1943-5584.0002122},
+  number  = {10},
+  pages   = {03121001},
+  url     = {https://ascelibrary.org/doi/abs/10.1061/%28ASCE%29HE.1943-5584.0002122},
+  volume  = {26},
+  journal = {Journal of Hydrologic Engineering},
+  year    = {2021},
+}
+
+@Article{Moshe2022extremes,
+  author  = {Armon, Moshe and Marra, Francesco and Enzel, Yehouda and Rostkier-Edelstein, Dorita and Garfinkel, Chaim I. and Adam, Ori and Dayan, Uri and Morin, Efrat},
+  title   = {Reduced Rainfall in Future Heavy Precipitation Events Related to Contracted Rain Area Despite Increased Rain Rate},
+  doi     = {https://doi.org/10.1029/2021EF002397},
+  eprint  = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2021EF002397},
+  number  = {1},
+  pages   = {e2021EF002397},
+  url     = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021EF002397},
+  volume  = {10},
+  journal = {Earth's Future},
+  year    = {2022},
+}
+
+@Article{Lee2022CPM_Korea,
+  author  = {Lee, Donghyun and Min, Seung-Ki and Park, In-Hong and Ahn, Joong-Bae and Cha, Dong-Hyun and Chang, Eun-Chul and Byun, Young-Hwa},
+  title   = {Enhanced Role of Convection in Future Hourly Rainfall Extremes Over South Korea},
+  doi     = {https://doi.org/10.1029/2022GL099727},
+  eprint  = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2022GL099727},
+  note    = {e2022GL099727 2022GL099727},
+  number  = {22},
+  pages   = {e2022GL099727},
+  url     = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2022GL099727},
+  volume  = {49},
+  journal = {Geophysical Research Letters},
+  year    = {2022},
+}
+
+@Report{report:kendon_cpm2019,
+  author      = {Elizabeth Kendon, Giorgia Fosser, James Murphy, Steven Chan, Robin Clark, Glen Harris, Adrian Lock, Jason Lowe,Gill Martin, Jenny Pirret, Nigel Roberts, Mike Sanderson, Simon Tucker},
+  date        = {2019},
+  institution = {Met Office},
+  title       = {UKCP Convection-permittingmodel projections: Science report},
+  type        = {techreport},
+  url         = {https://www.metoffice.gov.uk/pub/data/weather/uk/ukcp18/science-reports/UKCP-Convection-permitting-model-projections-report.pdf},
+}
+
+@Article{art:fosser20,
+  author       = {Fosser, Giorgia and Kendon, Elizabeth and Chan, Steven and Lock, Adrian and Roberts, Nigel and Bush, Mike},
+  date         = {2020},
+  journaltitle = {International Journal of Climatology},
+  title        = {Optimal configuration and resolution for the first convection-permitting ensemble of climate projections over the United Kingdom},
+  doi          = {https://doi.org/10.1002/joc.6415},
+  eprint       = {https://rmets.onlinelibrary.wiley.com/doi/pdf/10.1002/joc.6415},
+  number       = {7},
+  pages        = {3585-3606},
+  url          = {https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.6415},
+  volume       = {40},
+  abstract     = {Abstract Convection-permitting models (CPMs) provide a better representation of sub-daily precipitation statistics and convective processes on both climate and weather forecasting timescales. This study aims to establish what horizontal resolution and physical process settings are suitable for the first ensemble of convection-permitting climate projections for the United Kingdom. For this purpose, 12-year-long simulations were run using three different convection-permitting resolutions (grid spacing of 4 km, 2.2 km and 1.5 km) each with several configurations. The focus is on the ability to represent sub-daily precipitation due to its potential for high impacts on society through flooding. The analysis shows that the use of a finer grid spacing within the convection-permitting regime improves the representation of sub-daily precipitation but the added value decreases as the grid becomes increasingly finer, while the computational costs substantially increase. Changes in the representation of physical processes can have as much impact as the grid spacing and can lead to similar differences in the diurnal cycle as between convection-parametrized models and CPMs. Although the 4km model shows some key deficiencies that make it unreliable for climate projection, the 2.2km model performs as well as the 1.5km model for most of the metrics examined with considerable benefits in terms of computer cost. The optimal configuration and resolution identified here is being used for an ensemble of simulations run within the UK Climate Projections 2018 (UKCP18) project, which allows, for the first time, an estimate of uncertainty in future changes at convection-permitting scale and providing more reliable climate change projections at local and hourly scales.},
+  keywords     = {climate, convection-permitting models, physical process configuration, rainfall, UKCP18 ensemble},
+}
+
+@Article{Shepherd2016,
+  author       = {Shepherd, Theodore G.},
+  date         = {2016-02},
+  journaltitle = {Current Climate Change Reports},
+  title        = {A Common Framework for Approaches to Extreme Event Attribution},
+  doi          = {10.1007/s40641-016-0033-y},
+  issn         = {2198-6061},
+  number       = {1},
+  pages        = {28--38},
+  volume       = {2},
+  publisher    = {Springer Science and Business Media LLC},
+}
+
+@Article{Otto2012russian,
+  author       = {Otto, F. E. L. and Massey, N. and van Oldenborgh, G. J. and Jones, R. G. and Allen, M. R.},
+  date         = {2012-02},
+  journaltitle = {Geophysical Research Letters},
+  title        = {Reconciling two approaches to attribution of the 2010 Russian heat wave},
+  doi          = {10.1029/2011gl050422},
+  issn         = {1944-8007},
+  number       = {4},
+  volume       = {39},
+  publisher    = {American Geophysical Union (AGU)},
+}
+
+@Article{li2018yangtze,
+  author                     = {Li, Chunxiang and Tian, Qinhua and Yu, Rong and Zhou, Baiquan and Xia, Jiangjiang and Burke, Claire and Dong, Buwen and Tett, Simon F. B. and Freychet, Nicolas and Lott, Fraser and Ciavarella, Andrew},
+  journaltitle               = {Environmental Research Letters},
+  title                      = {{Attribution of extreme precipitation in the lower reaches of the Yangtze River during May 2016}},
+  doi                        = {10.1088/1748-9326/aa9691},
+  number                     = {1},
+  volume                     = {13},
+  affiliation                = {{Li, CX (Reprint Author), Chinese Acad Sci, Inst Atmospher Phys, CAS Key Lab Reg Climate Environm Temperate East A, Beijing, Peoples R China. Li, Chunxiang; Xia, Jiangjiang, Chinese Acad Sci, Inst Atmospher Phys, CAS Key Lab Reg Climate Environm Temperate East A, Beijing, Peoples R China. Tian, Qinhua, China Meteorol Adm, Natl Climate Ctr, Beijing, Peoples R China. Yu, Rong, Nanjing Univ Informat Sci \& Technol, Coll Atmospher Sci, Nanjing 210044, Jiangsu, Peoples R China. Zhou, Baiquan, CMA, Chinese Acad Meteorol Sci, State Key Lab Severe Weather, Beijing, Peoples R China. Burke, Claire; Lott, Fraser; Ciavarella, Andrew, Met Off, Met Off Hadley Ctr, Exeter, Devon, England. Dong, Buwen, Univ Reading, Dept Meteorol, Natl Ctr Atmospher Sci, Reading, Berks, England. Tett, Simon F. B.; Freychet, Nicolas, Univ Edinburgh, Sch Geosci, Edinburgh, Midlothian, Scotland.}},
+  article-number             = {{014015}},
+  author-email               = {{quan20080141@126.com}},
+  da                         = {{2018-02-17}},
+  doc-delivery-number        = {{FS9LT}},
+  funding-acknowledgement    = {{National Key R\&D Program of China {[}2016YFA0600400]; National Natural Science Foundation of China (NFSC) {[}41605066]; NFSC {[}41675074, 41575094]; Climate Change Project {[}CCSF201704]; Postgraduate Research and Practice Innovation Program of Jiangsu Province {[}KYLX16\_0941]; UK-China Research \& Innovation Partnership Fund through the Met Office Climate Science for Service Partnership (CSSP) China as part of the Newton Fund, China}},
+  funding-text               = {{We thank Dr Siyan Dong for helpful comments and discussions. LC and JX were funded by the National Key R\&D Program of China (2016YFA0600400) and the National Natural Science Foundation of China (NFSC, 41605066), QT was funded by the NFSC (41675074) and Climate Change Project (CCSF201704), RY was funded by the Postgraduate Research and Practice Innovation Program of Jiangsu Province (KYLX16\_0941), and BZ was funded by the NFSC (41575094). This work was largely carried out during a workshop on Operational Attribution at the University of Edinburgh supported by the UK-China Research \& Innovation Partnership Fund through the Met Office Climate Science for Service Partnership (CSSP) China as part of the Newton Fund, China.}},
+  journal-iso                = {{Environ. Res. Lett.}},
+  keywords                   = {{extreme rainfall; extreme event attribution; El Nino; risk ratio; anthropogenic influence}},
+  keywords-plus              = {{CLIMATE-CHANGE; EL-NINO; NORMALIZED ANOMALIES; EVENTS; CHINA; WEATHER; CIRCULATION; PREDICTION; FREQUENCY; RAINFALL}},
+  month                      = {{JAN}},
+  number-of-cited-references = {{37}},
+  oa                         = {{gold}},
+  orcid-numbers              = {{Dong, Buwen/0000-0003-0809-7911 Tett, Simon/0000-0001-7526-560X}},
+  publisher                  = {{IOP PUBLISHING LTD}},
+  research-areas             = {{Environmental Sciences \& Ecology; Meteorology \& Atmospheric Sciences}},
+  times-cited                = {{0}},
+  type                       = {{Article}},
+  unique-id                  = {{ISI:000422740400003}},
+  usage-count-last-180-days  = {{1}},
+  usage-count-since-2013     = {{1}},
+  web-of-science-categories  = {{Environmental Sciences; Meteorology \& Atmospheric Sciences}},
+  year                       = {{2018}},
+}
+
+@Article{christidis2022wetUK,
+  author       = {Christidis, Nikolaos and Stott, Peter A.},
+  date         = {2022-12},
+  journaltitle = {Bulletin of the American Meteorological Society},
+  title        = {The Extremely Wet May of 2021 in the United Kingdom},
+  doi          = {10.1175/bams-d-22-0108.1},
+  issn         = {1520-0477},
+  number       = {12},
+  pages        = {E2912--E2916},
+  volume       = {103},
+  publisher    = {American Meteorological Society},
+}
+
+@Article{Pei2022precip,
+  author       = {Pei, Lin and Yan, Zhongwei and Chen, Deliang and Miao, Shiguang},
+  date         = {2022-03},
+  journaltitle = {Bulletin of the American Meteorological Society},
+  title        = {The Contribution of Human-Induced Atmospheric Circulation Changes to the Record-Breaking Winter Precipitation Event over Beijing in February 2020},
+  doi          = {10.1175/bams-d-21-0153.1},
+  issn         = {1520-0477},
+  number       = {3},
+  pages        = {S55--S60},
+  volume       = {103},
+  publisher    = {American Meteorological Society},
+}
+
+@Article{Qian2022rain,
+  author       = {Qian, Cheng and Ye, Yangbo and Zhang, Wenxia and Zhou, Tianjun},
+  date         = {2022-03},
+  journaltitle = {Bulletin of the American Meteorological Society},
+  title        = {Heavy Rainfall Event in Mid-August 2020 in Southwestern China: Contribution of Anthropogenic Forcings and Atmospheric Circulation},
+  doi          = {10.1175/bams-d-21-0233.1},
+  issn         = {1520-0477},
+  number       = {3},
+  pages        = {S111--S117},
+  volume       = {103},
+  publisher    = {American Meteorological Society},
+}
+
+@Article{Kawase2022japan_rain,
+  author       = {Kawase, Hiroaki and Watanabe, Shunichi and Hirockawa, Yasutaka and Imada, Yukiko},
+  date         = {2022-03},
+  journaltitle = {Bulletin of the American Meteorological Society},
+  title        = {Timely Event Attribution of Extreme Precipitation in Japan: An Example of Heavy Rainfall in July 2020},
+  doi          = {10.1175/bams-d-21-0192.1},
+  issn         = {1520-0477},
+  number       = {3},
+  pages        = {S118--S123},
+  volume       = {103},
+  publisher    = {American Meteorological Society},
+}
+
+@Article{Kawase2020rain,
+  author       = {Kawase, Hiroaki and Imada, Yukiko and Tsuguti, Hiroshige and Nakaegawa, Toshiyuki and Seino, Naoko and Murata, Akihiko and Takayabu, Izuru},
+  date         = {2020-01},
+  journaltitle = {Bulletin of the American Meteorological Society},
+  title        = {The Heavy Rain Event of July 2018 in Japan Enhanced by Historical Warming},
+  doi          = {10.1175/bams-d-19-0173.1},
+  issn         = {1520-0477},
+  number       = {1},
+  pages        = {S109--S114},
+  volume       = {101},
+  publisher    = {American Meteorological Society},
+}
+
+@Article{Eden2018dutchrain,
+  author       = {Eden, Jonathan M. and Kew, Sarah F. and Bellprat, Omar and Lenderink, Geert and Manola, Iris and Omrani, Hiba and van Oldenborgh, Geert Jan},
+  date         = {2018-09},
+  journaltitle = {Weather and Climate Extremes},
+  title        = {Extreme precipitation in the Netherlands: An event attribution case study},
+  doi          = {10.1016/j.wace.2018.07.003},
+  issn         = {2212-0947},
+  pages        = {90--101},
+  volume       = {21},
+  publisher    = {Elsevier BV},
+}
+
+@Article{Tozer2020tas_rain,
+  author       = {Tozer, Carly R. and Risbey, James S. and Grose, Michael and Monselesan, Didier P. and Squire, Dougal T. and Black, Amanda S. and Richardson, Doug and Sparrow, Sarah N. and Li, Sihan and Wallom, David},
+  date         = {2020-01},
+  journaltitle = {Bulletin of the American Meteorological Society},
+  title        = {A 1-Day Extreme Rainfall Event in Tasmania: Process Evaluation and Long Tail Attribution},
+  doi          = {10.1175/bams-d-19-0219.1},
+  issn         = {1520-0477},
+  number       = {1},
+  pages        = {S123--S128},
+  volume       = {101},
+  publisher    = {American Meteorological Society},
+}
+
+@Article{Li2022typhoon_rain,
+  author       = {Li, Sihan and Otto, Friederike E. L.},
+  date         = {2022-05},
+  journaltitle = {Climatic Change},
+  title        = {The role of human-induced climate change in heavy rainfall events such as the one associated with Typhoon Hagibis},
+  doi          = {10.1007/s10584-022-03344-9},
+  issn         = {1573--1480},
+  number       = {1--2},
+  volume       = {172},
+  publisher    = {Springer Science and Business Media LLC},
+}
+
+@Book{Efron1994bootstrap,
+  author    = {Efron, Bradley and Tibshirani, R.J.},
+  date      = {1994-05},
+  title     = {An Introduction to the Bootstrap},
+  doi       = {10.1201/9780429246593},
+  isbn      = {9780429246593},
+  publisher = {Chapman and Hall/CRC},
 }
 
 @Comment{jabref-meta: databaseType:biblatex;}

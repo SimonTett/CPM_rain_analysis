@@ -12,7 +12,7 @@ import commonLib
 import CPMlib
 from R_python import gev_r
 import scipy.stats
-
+import pathlib
 
 def comp_params(
         param: xarray.DataArray,
@@ -125,9 +125,50 @@ def plot_pr_intensity(
                                  )
     return quant_pr,quant_ic
 
+def open_ds(path:pathlib.Path,dp:int=3) -> xarray.Dataset:
+    # read in and then round grid_lat/grid_long coords to specified no of dps
+    ds = xarray.open_dataset(path )
+    # fix coords
+    for c in ['grid_latitude','grid_longitude']:
+        try:
+            ds[c]=np.round(ds[c].astype('float32'),dp)
+        except KeyError: # not coord match
+            print(f'no coord {c}')
+    return ds
+
+def comp_boots_cov(boots_params:xarray.DataArray) -> xarray.DataArray:
+    cv = boots_params.parameter.values
+    coords=dict(parameter=cv,parameter2=cv)
+    cov = []
+    for roll in boots_params['rolling']:
+        cov.append(
+            xarray.DataArray(
+                np.cov(boots_params.sel(rolling=roll),rowvar=False),
+                coords=coords)
+            .assign_coords(rolling=roll) 
+            )
+
+    cov = xarray.concat(cov,'rolling')
+    return cov 
+
+def b_cov(file:pathlib.Path,coords:dict,nroll:int,msk:[bool,xarray.Dataset]=True) -> xarray.DataArray:
+    params = open_ds(file).Parameters.where(msk).rolling(grid_latitude=nroll, grid_longitude=nroll, center=True).mean()
+    params = params.sel(**coords, method='nearest')
+
+    cov = comp_boots_cov(params)
+    return cov
+
 
 my_logger = CPM_rainlib.logger
 commonLib.init_log(my_logger, level='INFO')
+npts=5 # Number of x/y points to average over. 
+if npts == 5: # default output file 
+    fig_name = 'intens_prob_ratios'
+else:
+    fig_name = f'intens_prob_ratios_{npts}'
+ht = open_ds(CPM_rainlib.dataDir/'cpm_topog_fix_c2.nc').ht.sel(CPMlib.carmont_rgn)
+# fix coords. They differ by small fp values...
+msk = ht > 0
 # read in the radar data
 radar_fit_dir = CPMlib.radar_dir / 'radar_rgn_fit'
 #
@@ -151,17 +192,31 @@ my_logger.debug(f"Loaded radar data")
 ## get in the model fits and work out ratios for today and PI
 fit_dir = CPM_rainlib.dataDir / 'CPM_scotland_filter' / "fits"
 fit_file = fit_dir / 'carmont_rgn_fit_CET.nc'
-cpm_gev_params = xarray.open_dataset(fit_file).rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
+fits = open_ds(fit_file).where(msk) 
+cpm_gev_params = fits.rolling(grid_latitude=npts, grid_longitude=npts, center=True,min_periods=1).mean()
 cpm_gev_params = cpm_gev_params.sel(**CPMlib.carmont_drain, method='nearest')  # get the data for the carmont drain
-cpm_gev_params['Cov'] = cpm_gev_params['Cov'] / 25.  # average over 25 points so covariance down by a factor of 25.
+count = float(fits.Parameters.isel(rolling=0,parameter=0).\
+    rolling(grid_latitude=npts, grid_longitude=npts, center=True,min_periods=1).count().\
+    sel(**CPMlib.carmont_drain, method='nearest'))
+cpm_gev_params['Cov'] = cpm_gev_params['Cov'] / count  # average over count points so covariance down by a factor of count
+# get inthe bootstrap data and compute covariance
+
+
+boots_fit_file = fit_dir/f'carmont_rgn_fit_boot_CET.nc'
+boots_cov = b_cov(boots_fit_file,CPMlib.carmont_drain,5,msk=msk)
+cpm_gev_params['Cov_boots']=boots_cov
+ 
 # get in the raw data
 raw_fit_dir = CPM_rainlib.dataDir / 'CPM_scotland' / "fits"
 raw_fit_file = raw_fit_dir / 'carmont_fit_raw_CET.nc'
-raw_cpm_gev_params = xarray.open_dataset(raw_fit_file).rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
+raw_cpm_gev_params = open_ds(raw_fit_file).where(msk).rolling(grid_latitude=5, grid_longitude=5, center=True).mean()
 raw_cpm_gev_params = raw_cpm_gev_params.sel(**CPMlib.carmont_drain, method='nearest'
                                             )  # get the data for the carmont drain
 raw_cpm_gev_params['Cov'] = raw_cpm_gev_params[
                                 'Cov'] / 25.  # average over 25 points so covariance down by a factor of 25.
+boots_fit_file = raw_fit_dir/f'carmont_fit_raw_boot_CET.nc'
+boots_cov = b_cov(boots_fit_file,CPMlib.carmont_drain,5,msk=msk)
+raw_cpm_gev_params['Cov_boots']=boots_cov
 my_logger.debug(f"Loaded CPM data")
 obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA', drop=True)
@@ -173,11 +228,11 @@ temp_p2k = scipy.stats.norm(loc=2 * 0.94 + t_PI, scale=2 * 0.03)
 # how much more summer-time CET is at +2K warming Values provided by Prof. Ed Hawkins (Reading) -- as used in Tett et al, 2023.
 nsamp = 1000
 temp_p2k_samp = xarray.DataArray(temp_p2k.rvs(nsamp, random_state=123456), dims='sample')
-params_cpm_samp = xarray_gen_cov_samp(cpm_gev_params.Parameters, cpm_gev_params.Cov, 123456, nsamp)
+params_cpm_samp = xarray_gen_cov_samp(cpm_gev_params.Parameters, cpm_gev_params.Cov_boots, 123456, nsamp)
 today_str = CPMlib.today_sel['time'].start + '-' + CPMlib.today_sel['time'].stop[-2:]
 params_cpm = {key: comp_params(params_cpm_samp, temperature=t - t_PI) for
               key, t in zip([today_str, 'PI', '+2C', '1980-89'], [t_today, t_PI, temp_p2k_samp, t_1980s])}
-raw_params_cpm_samp = xarray_gen_cov_samp(raw_cpm_gev_params.Parameters, raw_cpm_gev_params.Cov, 123456, nsamp)
+raw_params_cpm_samp = xarray_gen_cov_samp(raw_cpm_gev_params.Parameters, raw_cpm_gev_params.Cov_boots, 123456, nsamp)
 raw_params_cpm = {key: comp_params(raw_params_cpm_samp, temperature=t - t_PI) for
                   key, t in zip([today_str, 'PI', '+2C', '1980-89'], [t_today, t_PI, temp_p2k_samp, t_1980s])}
 # compute scalings for radar dist to take it to specified temperature.
@@ -193,7 +248,7 @@ radar_today = {key: xarray_gen_cov_samp(fit.Parameters, fit.Cov, 123456, nsamp) 
 my_logger.debug(f"Generated radar samples")
 
 ## now plot the data
-fig, axs = plt.subplots(num='intens_prob_ratios', clear=True, nrows=2, ncols=3, layout='constrained', figsize=(8, 6),
+fig, axs = plt.subplots(num=fig_name, clear=True, nrows=2, ncols=3, layout='constrained', figsize=(8, 6),
                         sharey='col', sharex='col'
                         )
 fig.get_layout_engine().set(rect=[0.05, 0.0, 0.95, 1.0])
@@ -269,13 +324,13 @@ for axis, rolling in zip(axs, [1, 4]):
                                  )
             ax_intensity.axvline(rp_quant.sel(quantile=0.5), linestyle='solid', color='black', linewidth=2)
         # decorate the axis
-        ax_pr.set_title(f'{name} Probability Ratio', fontsize='small')
+        ax_pr.set_title(f'{name} Probability Ratio')
         ax_pr.set_xlabel('Accumulated Rain (mm)')
         ax_pr.set_ylabel('Probability Ratio (%)')
         ax_pr.set_xlim(5, 80)
         ax_pr.set_ylim(100, 170)
         if ax_intensity is not None:
-            ax_intensity.set_title(f'{name} Intensity Increase', fontsize='small')
+            ax_intensity.set_title(f'{name} Intensity Increase')
             ax_intensity.set_xlabel('Return Period (summers)')
             ax_intensity.set_ylabel('Intensity Change (%)')
             ax_intensity.set_xscale('log')

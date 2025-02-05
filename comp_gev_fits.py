@@ -1,10 +1,14 @@
 # compute a bunch of GEV fits for the CPM data.
+import numpy as np
+import numpy.random
+
 import xarray
 import CPM_rainlib
 import CPMlib
 import commonLib
 import pathlib
 from R_python import gev_r
+
 
 my_logger = CPM_rainlib.logger
 commonLib.init_log(my_logger, level='INFO')
@@ -61,28 +65,59 @@ for root in ['', 'land_']:
     fit_cov[root + 'Rgn_svp_sqr'] = [sim_reg_es[root + 'svp'].rename(root + 'Rgn_svp'),
                                    (sim_reg_es[root + 'svp']**2).rename(root + 'Rgn_svp_sqr')]
 
+fits=dict()
+fits_raw=dict()
 for name, cov in fit_cov.items():
     my_logger.info(f"Computing fits for {name}")
     cov_stack = [c.stack(**stack_dim) for c in cov]
-    fits = gev_r.xarray_gev(maxRain.stack(**stack_dim),
+    fits[name] = gev_r.xarray_gev(maxRain.stack(**stack_dim),
                             cov=cov_stack, dim='t_e', name=f'Rgn_{name}',
                             file=fit_dir / f'carmont_rgn_fit_{name}.nc', recreate_fit=recreate_fit
                             )
-    fits_raw = gev_r.xarray_gev(raw_maxRain.stack(**stack_dim),
+    fits_raw[name] = gev_r.xarray_gev(raw_maxRain.stack(**stack_dim),
                                 cov=cov_stack, dim='t_e', name=f'Rgn_{name}',
                                 file=raw_fit_dir / f'carmont_fit_raw_{name}.nc', recreate_fit=recreate_fit
                                 )
+## bootstrap.
+
+my_logger.info("Computing bootstrap fits")
+nboot = 100 # number of bootstrap samples
+fit_cov = dict(NoCov=[], CET=[sim_cet])
+rng = numpy.random.default_rng()
+recreate_fit_boot = False
+for name, cov in fit_cov.items():
+    my_logger.info(f"Computing bootstrap fits for {name}")
+
+    mx_rain_stack = maxRain.stack(**stack_dim)
+    raw_mx_rain_stack = raw_maxRain.stack(**stack_dim)
+    # Generating index and then doing calculations seems very expensive
+    indx = rng.choice(mx_rain_stack.sizes['t_e'], (nboot, mx_rain_stack.sizes['t_e']), replace=True)
+    # make indx  a dataarray
+    indx = xarray.DataArray(indx, dims=['bootstrap', 't_e'], coords={'bootstrap': np.arange(nboot)})#,'t_e': mx_rain_stack.coords['t_e']})
+    boot_rain = mx_rain_stack.isel(t_e=indx)
+
+    cov_stack = [c.stack(**stack_dim).isel(t_e=indx) for c in cov]
+    fits_boot = gev_r.xarray_gev(boot_rain,
+                            cov=cov_stack, dim='t_e', name=f'Rgn_boot_{name}',
+                            file=fit_dir / f'carmont_rgn_fit_boot_{name}.nc', recreate_fit=recreate_fit_boot,
+
+                            )
+    boot_rain = raw_mx_rain_stack.isel(t_e=indx) # big array. Don't want it twice.
+    raw_fits_boot = gev_r.xarray_gev(boot_rain,verbose=True,
+                            cov=cov_stack, dim='t_e', name=f'Rgn_raw_boot_{name}',
+                            file=raw_fit_dir / f'carmont_fit_raw_boot_{name}.nc', recreate_fit=recreate_fit_boot,
+
+                            )
 
 # no stacking -- fit for each ensemble member
 fit_cov = dict(NoCov=[], CET=[sim_cet])
 for name, cov in fit_cov.items():
     my_logger.info(f"Computing per-ensemble fits for {name}")
-    cov_stack = [c.stack(**stack_dim) for c in cov]
-    fits = gev_r.xarray_gev(maxRain,
+    fits_ens = gev_r.xarray_gev(maxRain,
                             cov=cov, dim='time', name=f'Rgn_ens_{name}',
                             file=fit_dir / f'carmont_rgn_fit_ens_{name}.nc', recreate_fit=recreate_fit
                             )
-    fits_raw = gev_r.xarray_gev(raw_maxRain,
+    fits_raw_ens = gev_r.xarray_gev(raw_maxRain,
                                 cov=cov, dim='time', name=f'Rgn_ens_{name}',
                                 file=raw_fit_dir / f'carmont_fit_raw_ens_{name}.nc', recreate_fit=recreate_fit
                                 )

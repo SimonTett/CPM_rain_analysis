@@ -65,6 +65,10 @@ delta = obs_t_today-sim_t_today
 rtn_prd=100
 pv = 1.0 /rtn_prd
 accum_filt_carmont  = gev_r.xarray_gev_isf(comp_params(fit,temperature=delta).sel(**CPMlib.carmont_drain, method='Nearest'), [pv])*fit['rolling']
+# now plot things
+# %%
+
+
 for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_intensity_delta_raw']):
     intensity = gev_r.xarray_gev_isf(comp_params(fit_params,temperature=delta), [pv])
     intensity_p1k = gev_r.xarray_gev_isf(comp_params(fit_params, temperature=delta+1.0), [pv])
@@ -107,8 +111,8 @@ for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_int
         i_percent.sel(rolling=rolling).squeeze(drop=True).plot.contour(ax=axis_delta, levels=[CPMlib.cc_dist.mean()],
                                                                        colors='black', linewidths=1, linestyles='dashed'
                                                                        )
-        axis_today.set_title(f'Rx{rolling:d}h Accumulation (2008-23)')
-        axis_delta.set_title(f'Rx{rolling:d}h'+' Accumulation $\Delta$ %C$^{-1}$')
+        axis_today.set_title(f'Rx{rolling:d}h  (2008-23)')
+        axis_delta.set_title(f'Rx{rolling:d}h'+'  $\Delta$ %C$^{-1}$')
     carmont_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
     xstart = carmont_rgn['projection_x_coordinate'].start
     xstop = carmont_rgn['projection_x_coordinate'].stop
@@ -127,6 +131,7 @@ for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_int
         # add on carmont
         ax.plot(*CPMlib.carmont_drain_long_lat, transform=ccrs.PlateCarree(), marker='o', ms=6, color='cornflowerblue')
         ax.plot(x, y, color='black', linewidth=2, transform=CPMlib.projOSGB)
-    fig_today.suptitle(f"{extra_title}CPM intensity and % change for return period = {rtn_prd:d}", size='small')
+    #fig_today.suptitle(f"{extra_title}CPM intensity and % change for return period = {rtn_prd:d}", size='small')
+    print(f"{extra_title}CPM intensity and % change for return period = {rtn_prd:d}")
     fig_today.show()
     commonLib.saveFig(fig_today)

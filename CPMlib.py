@@ -62,6 +62,7 @@ kw_colorbar = dict(orientation='horizontal', fraction=0.1, aspect=40, pad=0.05, 
 
 today_sel = dict(time=slice('2008', '2023'))  # so "today" is common throughout!
 PI_sel = dict(time=slice('1851', '1900'))  # so "PI" is common throughout!
+future_sel = dict(time=slice('2065', '2080'))  # so "future" is common throughout!
 
 
 def discretise(time: xarray.DataArray) -> xarray.DataArray:

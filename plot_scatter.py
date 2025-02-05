@@ -34,8 +34,8 @@ def regress(x: xarray.DataArray, y: xarray.DataArray):
     fit = model.fit()
     return fit
 
-root='land_' # set to '' if want the whole rgm avg
-#root= '' # plotting the whole region rather than the land region.
+root='land_' # set to '' if want the whole rgn avg
+root= '' # plotting the whole region rather than the land region.
 ts_dir = CPM_rainlib.dataDir / 'CPM_ts'
 sim_cet = get_jja_ts(ts_dir / 'cet_tas.nc').tas
 sim_reg_es = get_jja_ts(ts_dir / 'rgn_svp.nc')[root + 'svp']
@@ -52,8 +52,17 @@ obs_cet = commonLib.read_cet()  # read in the obs CET
 obs_cet_jja = obs_cet.where(obs_cet.time.dt.season == 'JJA', drop=True)
 t_today = obs_cet_jja.sel(**CPMlib.today_sel).mean()
 t_PI = obs_cet_jja.sel(**CPMlib.PI_sel).mean()
+delta_p2k = 2 * 0.94 + t_PI-t_today
+# Summer-time CET is at +2K warming Values provided by Prof. Ed Hawkins (Reading) -- as used in Tett et al, 2023.
 # put a scatter plot of CET "now" vs local temp "now"
 mn_cet = sim_cet.sel(**CPMlib.today_sel).mean('time')
+# print out mean simulated CET compared  to obs value.
+print(f'Observed CET: {float(t_today):3.1f} C Simulated CET: {float(mn_cet.mean()):3.1f} C')
+# and print the 2065-2980 mean.
+mn_cet_21st = sim_cet.sel(**CPMlib.future_sel).mean('time')
+print(f'Future CET: {float(mn_cet_21st.mean()):3.1f} C {float(mn_cet_21st.min()):3.1f} - {float(mn_cet_21st.max()):3.1f} C')
+
+
 
 label = commonLib.plotLabel()
 fig_scatter, axis = plt.subplots(nrows=2, ncols=2, num=root+'scatter', clear=True, figsize=[8, 5], layout='constrained')
@@ -63,12 +72,14 @@ def plt_scatter(x, y, label, axis):
     axis.scatter(x, y, color='grey', s=6)
     x_mn = x.sel(**CPMlib.today_sel).mean('time')
     y_mn = y.sel(**CPMlib.today_sel).mean('time')
-    axis.scatter(x_mn, y_mn, color='red', s=50, marker='+', zorder=100)
+    axis.scatter(x_mn, y_mn, color='red', s=50, marker='+', zorder=10)
     label.plot(axis)
 
 
 for var, ax in zip([sim_reg_tas, sim_reg_es, sim_reg_pr], axis.flat):
     plt_scatter(sim_cet, var, label, ax)
+    # add on the mean
+
 # now do the regional temp vs regional SVP
 ax = axis[-1][-1]
 plt_scatter(sim_reg_tas, sim_reg_es, label, ax)
@@ -85,12 +96,14 @@ for fit, ax, title in zip([fit_reg, fit_es, fit_pr, fit_es_reg], axis.flat,
         ref_t = t_today
         ref_p1k = t_today + 1
         ref_pi = t_PI
+        ref_p2k = t_PI+2 * 0.94 
     else:
         x = np.linspace(9.5, 19.5, num=npts)
         units = 'K Reg. T'
         ref_pi = sim_reg_tas.sel(**CPMlib.PI_sel).mean()
         ref_t = sim_reg_tas.sel(**CPMlib.today_sel).mean()
         ref_p1k = ref_t + 1
+        ref_p2k= np.nan
     #x = np.column_stack((x, x ** 2))
     best_fit = fit.predict(sm.add_constant(x))
     #ax.plot(x[:, 0], best_fit, color='black', linewidth=3)
@@ -101,8 +114,10 @@ for fit, ax, title in zip([fit_reg, fit_es, fit_pr, fit_es_reg], axis.flat,
     fit_PI = fit.predict([[1.0, ref_pi]])[0]
     fit_today = fit.predict([[1.0, ref_t]])[0]
     fit_p1k = fit.predict([[1.0, ref_p1k]])[0]
+    fit_p2k = fit.predict([[1.0,ref_p2k]])
     ax.plot(ref_t, fit_today, marker='h', ms=10, color='red')
     ax.plot(ref_pi, fit_PI, marker='h', ms=10, color='green')
+    ax.plot(ref_p2k,fit_p2k,marker='h',ms=10,color='blue',zorder=20)
     # work out fractional change per K CET increase
     if 'Temp' in title:
         increase = (fit_p1k - fit_today)
