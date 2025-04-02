@@ -342,4 +342,4 @@ for a in axs.flat:
     label.plot(a)
 axs[1][0].legend(ncol=2, fontsize='small', borderpad=0., labelspacing=0.2, handletextpad=0.25, columnspacing=0.25)
 fig.show()
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='pdf')

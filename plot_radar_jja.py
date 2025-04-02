@@ -66,4 +66,4 @@ for ax in axis:
 axis[0].set_title("Mean JJA rain")
 axis[1].set_title("Median JJA Monthly Max rain")
 fig_radar_summ.show()
-commonLib.saveFig(fig_radar_summ)
+commonLib.saveFig(fig_radar_summ,figtype='pdf')

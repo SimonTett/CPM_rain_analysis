@@ -56,4 +56,4 @@ for a, title in zip(axs, ['Raw', '1h']):
                xytext=(0,5),textcoords='offset fontsize',
              arrowprops=dict(facecolor='black', shrink=0.01))
 fig.show()
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='pdf')

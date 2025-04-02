@@ -93,14 +93,15 @@ roll_values = [1, 4]
 for rolling, ax in zip(roll_values, all_axes):
 
     for name in names:
-        plot_rp(rp, radar_fit_uncert[name].sel(rolling=rolling), ax, color=CPMlib.radar_cols[name],
+        radar_name = name.replace('-c','_c')
+        plot_rp(rp, radar_fit_uncert[radar_name].sel(rolling=rolling), ax, color=CPMlib.radar_cols[name],
                 label=name
                 )
-        accum = radar_rain[name].sel(rolling=rolling) * rolling
+        accum = radar_rain[radar_name].sel(rolling=rolling) * rolling
 
         # work out median rp for radar_rain.
-        rp_intersect = 1.0 / gev_r.xarray_gev_sf(radar_fit_uncert[name].sel(rolling=rolling),
-                                                 [float(radar_rain[name].sel(rolling=rolling))]
+        rp_intersect = 1.0 / gev_r.xarray_gev_sf(radar_fit_uncert[radar_name].sel(rolling=rolling),
+                                                 [float(radar_rain[radar_name].sel(rolling=rolling))]
                                                  )
         q = rp_intersect.quantile([0.05, 0.5, 0.95], dim='sample')
         l, m, u = q[0], q[1], q[2]
@@ -119,11 +120,12 @@ for rolling, ax in zip(roll_values, all_axes):
 all_axes[0].legend(ncol=2)
 
 fig.show()
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='pdf')
 ## and print out the mean values + 5-95%
 for rolling in roll_values:
     for name in names:
-        print_rp(radar_fit_uncert[name].sel(rolling=rolling), float(radar_rain[name].sel(rolling=rolling)))
+        radar_name = name.replace('-c','_c')
+        print_rp(radar_fit_uncert[radar_name].sel(rolling=rolling), float(radar_rain[radar_name].sel(rolling=rolling)))
 ## plot RP's for all field!
 
 
@@ -151,4 +153,4 @@ for ax in axis.flatten():
     label.plot(ax)
 fig.colorbar(cm, ax=axis,label='Return Period (summers)', **CPMlib.kw_colorbar)
 fig.show()
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='pdf')

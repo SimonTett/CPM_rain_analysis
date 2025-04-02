@@ -94,10 +94,10 @@ for locn, coord in locations.items():
     axis['topog'].text(*coord,locn[0:2], transform=ccrs.PlateCarree(),fontweight='bold')#,backgroundcolor='grey',alpha=0.7)
 # add circles around the radar at roughly 60 and 120 km corresponding to roughly 1 km and 2km resoln.
 
-for (range, name) in itertools.product([60, 120], ['Hill of Dudwick', 'Munduff Hill']):
+for (rng, name) in itertools.product([60, 120], ['Hill of Dudwick', 'Munduff Hill']):
     co_ords = CPM_rainlib.radar_stations.loc[name, ['Easting', 'Northing']].astype(float)
     # Create a circle
-    circle = mpatches.Circle(co_ords, radius=range * 1000, transform=ccrs.OSGB(),
+    circle = mpatches.Circle(co_ords, radius=rng * 1000, transform=ccrs.OSGB(),
                              edgecolor='green', linewidth=2, facecolor='none'
                              )
     # Add the circle to the axis
@@ -149,4 +149,4 @@ axBI.coastlines()
 ##
 fig.colorbar(cm, ax=list(axis.values()), label='Rx4h Accumulation (mm)', **CPMlib.kw_colorbar)
 fig.show()
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='pdf')

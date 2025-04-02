@@ -154,7 +154,7 @@ ax_c_int.set_title('Carmont Intensity (mm/h')
 ax_c_int.set_xlabel('Return Period (summers)')
 ax_c_int.set_ylabel('Intensity (mm/h)')
 fig_carmont_int.show()
-commonLib.saveFig(fig_carmont_int)
+commonLib.saveFig(fig_carmont_int,figtype='.pdf')
 ## Now plot the intensity and prob changes.
 scale_cet = 5.61 # Hard wired from earlier comp.
 

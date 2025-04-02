@@ -219,7 +219,7 @@ ax.set_title('Median Seasonal Extreme Increase (%)')
 ax.set_yticks([5,10,15,20,25])
 labels.plot(ax)
 fig.show()
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='pdf')
         
         
         

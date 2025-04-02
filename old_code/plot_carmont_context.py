@@ -18,4 +18,4 @@ ax.plot(*CPMlib.carmont_long_lat, transform=ccrs.PlateCarree(), marker='*', ms=1
 CPM_rainlib.std_decorators(ax=ax,showregions=False)
 ax.set_title("Great Britain DEM @ 1km")
 fig.show()
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='.pdf')

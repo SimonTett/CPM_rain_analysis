@@ -134,4 +134,4 @@ for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_int
     #fig_today.suptitle(f"{extra_title}CPM intensity and % change for return period = {rtn_prd:d}", size='small')
     print(f"{extra_title}CPM intensity and % change for return period = {rtn_prd:d}")
     fig_today.show()
-    commonLib.saveFig(fig_today)
+    commonLib.saveFig(fig_today,figtype='pdf')

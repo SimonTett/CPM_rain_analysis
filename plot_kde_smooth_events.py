@@ -121,5 +121,5 @@ for ax in axs.flat:
 axs[-1][-1].set_xlim(1,200)
 axs[1][2].legend(fontsize='x-small',ncols=2,loc='upper left',columnspacing=0.1,borderaxespad=0,borderpad=0.0)
 fig.show()
-commonLib.saveFig(fig)
+commonLib.saveFig(fig,figtype='pdf')
 

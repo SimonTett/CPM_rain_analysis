@@ -42,6 +42,7 @@ dependencies:
    - openpyxl
    - nc-time-axis
    - matplotlib-scalebar
+   - GDAL
 
 
 
