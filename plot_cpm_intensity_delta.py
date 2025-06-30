@@ -112,7 +112,7 @@ for fit_params, fig_name in zip([fit, raw_fit], ['cpm_intensity_delta', 'cpm_int
                                                                        colors='black', linewidths=1, linestyles='dashed'
                                                                        )
         axis_today.set_title(f'Rx{rolling:d}h  (2008-23)')
-        axis_delta.set_title(f'Rx{rolling:d}h'+'  $\Delta$ %C$^{-1}$')
+        axis_delta.set_title(f'Rx{rolling:d}h'+r' $\Delta$ (%$\degree$C$^{-1}$)')
     carmont_rgn = {k: slice(v - 75e3, v + 75e3) for k, v in CPMlib.carmont_drain_OSGB.items()}
     xstart = carmont_rgn['projection_x_coordinate'].start
     xstop = carmont_rgn['projection_x_coordinate'].stop

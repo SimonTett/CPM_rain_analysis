@@ -2,12 +2,12 @@
 
 ## Intermediate processing codes
 
-| Code                      | Short description                                               | Input Data                              | Output Data                                          | 
-|---------------------------|-----------------------------------------------------------------|-----------------------------------------|------------------------------------------------------|
-| comp_radar_dist_params.py | Computes GEV and covariance by sampling over max rain in events | Radar event file                        | GEV distribution parameters, covariances and others. |
-| comp_cpm_events.py        | Compute events from CPM                                         | CPM seasonal max data                   | CPM events and characteristics                       |
-| comp_gev_fits.py        | Fit GEV to CPM events.                                          | CPM seasonal maxima, various timeseires | GEV fits and covariates to the data.                 |
-| comp_radar_events.py      | Compute events from Radar                                      | Radar seasonal max data                 | Radar events and characteristics                     |
+| Code                       | Short description                                               | Input Data                              | Output Data                                          | 
+|----------------------------|-----------------------------------------------------------------|-----------------------------------------|------------------------------------------------------|
+| comp_radar_dist_params.py  | Computes GEV and covariance by sampling over max rain in events | Radar event file                        | GEV distribution parameters, covariances and others. |
+| comp_cpm_events.py         | Compute events from CPM                                         | CPM seasonal max data                   | CPM events and characteristics                       |
+| comp_gev_fits.py           | Fit GEV to CPM events.                                          | CPM seasonal maxima, various timeseires | GEV fits and covariates to the data.                 |
+| comp_radar_events.py       | Compute events from Radar                                       | Radar seasonal max data                 | Radar events and characteristics                     |
  
 
 ## Images used in paper and  code  to generate them.
@@ -23,4 +23,4 @@
 | 7             | map_return_prds            | plot_radar_return_prds.py           |                     |
 | 8             | kde_smooth_events          | plot_kde_smooth_events.py           |                     |
 | 9             | intens_prob_ratios         | plot_intens_prob_ratios.py          |                     |
-| 10            | kde_smooth_events_2065_2080 | plot_kde_smooth_events_2065_2080.py |                | 
+| 10            | kde_smooth_events_2065_2080| plot_kde_smooth_events_2065_2080.py |                | 
